@@ -35,13 +35,9 @@ jobs:
           sudo apt-get install -y fakeroot dpkg-dev binutils
 
       # ── Windows: WiX Toolset fuer jpackage exe-Installer ─────────────────
-      # WiX 3.x wird von jpackage benoetigt. GitHub Actions Windows-Runner
-      # hat WiX 3.x vorinstalliert, aber manchmal an unerwarteter Stelle.
-      # Dieser Schritt stellt sicher dass es verfuegbar ist.
       - name: Install WiX Toolset (Windows)
         if: runner.os == 'Windows'
         run: |
-          # WiX ist auf windows-latest vorinstalliert, PATH pruefen
           echo "Checking WiX..."
           if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
             Write-Host "WiX already available"
@@ -57,11 +53,10 @@ jobs:
           java -version
           jpackage --version
 
-      # ── Dein Projekt bauen und Fat JAR erstellen ──────────────────────────
+      # ── Projekt bauen und Fat JAR erstellen ───────────────────────────────
       - name: Build project and create Fat JAR
         run: java -jar TBuild.jar build-export-fat
         shell: bash
-        # Timeout verhindert haengende Builds (z.B. wegen eines JAR-Hang-Bugs)
         timeout-minutes: 15
 
       # ── Nativen Installer via jpackage erstellen ──────────────────────────
@@ -79,12 +74,12 @@ jobs:
           ls -la dist/ || echo "(dist/ not found)"
         shell: bash
 
-      # ── Fat JAR als Artefakt hochladen ────────────────────────────────────
+      # ── Fat JAR als Artefakt hochladen (dynamischer Name) ─────────────────
       - name: Upload Fat JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: fat-jar-${{ matrix.os }}
-          path: Export-Fat.jar
+          path: "*.jar"
           if-no-files-found: error
 
       # ── Installer als Artefakt hochladen ──────────────────────────────────
@@ -114,12 +109,13 @@ jobs:
       - name: Show downloaded artifacts
         run: find artifacts/ -type f | sort
 
-      # Dateien flach ablegen damit der Release-Schritt einfache Glob-Patterns nutzen kann
+      # Dateien flach ablegen fuer den Release-Schritt
       - name: Flatten artifact structure
         run: |
           mkdir -p release_files
-          # Fat JARs (nur Linux-Version nehmen, beide sind identisch)
-          cp artifacts/fat-jar-ubuntu-latest/Export-Fat.jar release_files/Export-Fat.jar || true
+          # Fat JAR — dynamischer Name, einfach alle JARs aus Linux-Build nehmen
+          find artifacts/fat-jar-ubuntu-latest/ -name "*.jar" \
+            -exec cp {} release_files/ \;
           # Linux Installer
           find artifacts/installer-ubuntu-latest/ -type f \( -name "*.deb" -o -name "*.rpm" \) \
             -exec cp {} release_files/ \;
