@@ -3,16 +3,19 @@ name: Build and Release Desktop Apps
 on:
   push:
     tags:
-      - 'v*' # Trigger bei Tags wie v1.0, v2.1.3 etc.
+      - 'v*'
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # BUILD-JOB: Laeuft auf Linux UND Windows parallel
+  # ─────────────────────────────────────────────────────────────────────────
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false   # Beide Plattformen fertig bauen, auch wenn eine failt
       matrix:
-        # Wir nutzen Windows für die EXE und Ubuntu für das DEB-Paket
-        os: [windows-latest, ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout Code
@@ -21,49 +24,132 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
+          # Temurin JDK 21 (LTS) - enthaelt jpackage.
+          # JDK 25 ist noch Early Access und kann Probleme mit jpackage haben.
+          # Wenn du JDK 25 benoedigst, aendere dies auf '25'.
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
 
-      - name: Install WiX Toolset (Windows only)
-        if: runner.os == 'Windows'
-        run: dotnet tool install --global wix
-
-      - name: Install fakeroot (Linux only)
+      # ── Linux-spezifische Abhaengigkeiten fuer .deb-Erstellung ───────────
+      - name: Install Linux packaging tools
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y fakeroot
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fakeroot dpkg-dev binutils
 
-      - name: Run TBuild - Build and Export Fat JAR
-        # Nutzt den speziellen CI-Befehl von T-Build
+      # ── Windows: WiX Toolset fuer jpackage exe-Installer ─────────────────
+      # WiX 3.x wird von jpackage benoetigt. GitHub Actions Windows-Runner
+      # hat WiX 3.x vorinstalliert, aber manchmal an unerwarteter Stelle.
+      # Dieser Schritt stellt sicher dass es verfuegbar ist.
+      - name: Install WiX Toolset (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # WiX ist auf windows-latest vorinstalliert, PATH pruefen
+          echo "Checking WiX..."
+          if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
+            Write-Host "WiX already available"
+          } else {
+            Write-Host "Installing WiX via choco..."
+            choco install wixtoolset --no-progress -y
+            refreshenv
+          }
+        shell: pwsh
+
+      - name: Show Java version and jpackage
+        run: |
+          java -version
+          jpackage --version
+
+      # ── TBuild kompilieren ────────────────────────────────────────────────
+      # TBuild.java liegt im Projekt-Root und wird als erstes kompiliert.
+      # Das erzeugte TBuild.jar wird dann fuer alle weiteren Schritte verwendet.
+      - name: Compile TBuild itself
+        run: |
+          mkdir -p tbuild_out
+          javac -d tbuild_out TBuild.java
+          jar cfe TBuild.jar TBuild -C tbuild_out .
+        shell: bash
+
+      # ── Dein Projekt bauen und Fat JAR erstellen ──────────────────────────
+      - name: Build project and create Fat JAR
         run: java -jar TBuild.jar build-export-fat
+        shell: bash
+        # Timeout verhindert haengende Builds (z.B. wegen eines JAR-Hang-Bugs)
+        timeout-minutes: 15
 
-      - name: Run TBuild - Create Native Installer (jpackage)
-        # Erstellt EXE auf Windows und DEB auf Linux
+      # ── Nativen Installer via jpackage erstellen ──────────────────────────
+      - name: Create native installer (jpackage)
         run: java -jar TBuild.jar jpackage
+        shell: bash
+        timeout-minutes: 15
 
-      - name: Upload Artifacts
+      # ── Debug: zeige erzeugte Dateien ─────────────────────────────────────
+      - name: List generated files
+        run: |
+          echo "=== Project root ==="
+          ls -la
+          echo "=== dist/ ==="
+          ls -la dist/ || echo "(dist/ not found)"
+        shell: bash
+
+      # ── Fat JAR als Artefakt hochladen ────────────────────────────────────
+      - name: Upload Fat JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fat-jar-${{ matrix.os }}
+          path: Export-Fat.jar
+          if-no-files-found: error
+
+      # ── Installer als Artefakt hochladen ──────────────────────────────────
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.os }}
-          path: |
-            dist/*.exe
-            dist/*.msi
-            dist/*.deb
-            Export-Fat.jar
+          path: dist/
+          if-no-files-found: error
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # RELEASE-JOB: Wartet auf beide Build-Jobs, erstellt dann den Release
+  # ─────────────────────────────────────────────────────────────────────────
   release:
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Benoetigt um Releases zu erstellen
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts/   # Alle Artefakte landen in artifacts/
+
+      - name: Show downloaded artifacts
+        run: find artifacts/ -type f | sort
+
+      # Dateien flach ablegen damit der Release-Schritt einfache Glob-Patterns nutzen kann
+      - name: Flatten artifact structure
+        run: |
+          mkdir -p release_files
+          # Fat JARs (nur Linux-Version nehmen, beide sind identisch)
+          cp artifacts/fat-jar-ubuntu-latest/Export-Fat.jar release_files/Export-Fat.jar || true
+          # Linux Installer
+          find artifacts/installer-ubuntu-latest/ -type f \( -name "*.deb" -o -name "*.rpm" \) \
+            -exec cp {} release_files/ \;
+          # Windows Installer
+          find artifacts/installer-windows-latest/ -type f \( -name "*.exe" -o -name "*.msi" \) \
+            -exec cp {} release_files/ \;
+          echo "=== Files to release ==="
+          ls -lh release_files/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: |
-            installer-windows-latest/*.exe
-            installer-ubuntu-latest/*.deb
-            installer-ubuntu-latest/Export-Fat.jar
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: release_files/*
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
