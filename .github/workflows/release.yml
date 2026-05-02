@@ -53,6 +53,18 @@ jobs:
           java -version
           jpackage --version
 
+      # ── TBuild.jar herunterladen falls nicht im Repo vorhanden ───────────
+      - name: Ensure TBuild.jar is available
+        run: |
+          if [ ! -f "TBuild.jar" ]; then
+            echo "TBuild.jar not found, downloading latest release..."
+            curl -L "https://github.com/Thillager/TBuild/releases/latest/download/TBuild.jar" -o TBuild.jar
+            echo "Download complete."
+          else
+            echo "TBuild.jar already present."
+          fi
+        shell: bash
+
       # ── Projekt bauen und Fat JAR erstellen ───────────────────────────────
       - name: Build project and create Fat JAR
         run: java -jar TBuild.jar build-export-fat
@@ -74,12 +86,14 @@ jobs:
           ls -la dist/ || echo "(dist/ not found)"
         shell: bash
 
-      # ── Fat JAR als Artefakt hochladen (dynamischer Name) ─────────────────
+      # ── Fat JAR als Artefakt hochladen (TBuild.jar explizit ausschliessen) ─
       - name: Upload Fat JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: fat-jar-${{ matrix.os }}
-          path: "*.jar"
+          path: |
+            *.jar
+            !TBuild.jar
           if-no-files-found: error
 
       # ── Installer als Artefakt hochladen ──────────────────────────────────
@@ -104,7 +118,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts/   # Alle Artefakte landen in artifacts/
+          path: artifacts/
 
       - name: Show downloaded artifacts
         run: find artifacts/ -type f | sort
@@ -113,7 +127,7 @@ jobs:
       - name: Flatten artifact structure
         run: |
           mkdir -p release_files
-          # Fat JAR — dynamischer Name, einfach alle JARs aus Linux-Build nehmen
+          # Fat JAR aus Linux-Build (TBuild.jar ist bereits ausgeschlossen)
           find artifacts/fat-jar-ubuntu-latest/ -name "*.jar" \
             -exec cp {} release_files/ \;
           # Linux Installer
