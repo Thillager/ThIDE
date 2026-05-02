@@ -1,5 +1,3 @@
-
-
 import com.formdev.flatlaf.FlatDarkLaf;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -12,6 +10,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -23,6 +22,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 public class TIDE extends JFrame {
 
@@ -221,6 +222,66 @@ public class TIDE extends JFrame {
         repaint();
     }
 
+    // ================== T.XML LESEN ==================
+
+    /**
+     * Liest die T.xml aus dem Projektordner und befüllt automatisch:
+     * - mainClassInput  (mainClass)
+     * - Fenstertitel    (appName + version)
+     *
+     * Gibt eine Warnung in der Konsole aus, wenn keine T.xml vorhanden ist.
+     */
+    private void loadTXml(File folder) {
+        File txml = new File(folder, "T.xml");
+
+        if (!txml.exists()) {
+            log("[WARNUNG] Keine T.xml im Projektordner gefunden. Bitte Main-Klasse manuell eingeben.\n", Color.ORANGE);
+            setTitle("T-IDE - " + folder.getName());
+            return;
+        }
+
+        try {
+            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(txml);
+
+            String mainClass = getXmlTag(doc, "mainClass");
+            String appName   = getXmlTag(doc, "appName");
+            String version   = getXmlTag(doc, "version");
+
+            // Main-Class ins Textfeld schreiben
+            if (mainClass != null && !mainClass.isEmpty()) {
+                mainClassInput.setText(mainClass);
+            }
+
+            // Fenstertitel aktualisieren
+            String titleAppName = (appName != null && !appName.isEmpty()) ? appName : folder.getName();
+            String titleVersion = (version != null && !version.isEmpty()) ? version : "";
+            if (!titleVersion.isEmpty()) {
+                setTitle("T-IDE - " + titleAppName + " v" + titleVersion);
+            } else {
+                setTitle("T-IDE - " + titleAppName);
+            }
+
+            log("[INFO] T.xml geladen — Main-Class: " + mainClass
+                    + " | App: " + titleAppName
+                    + " | Version: " + titleVersion + "\n", Color.GREEN);
+
+        } catch (Exception e) {
+            log("[FEHLER] T.xml konnte nicht gelesen werden: " + e.getMessage() + "\n", Color.RED);
+        }
+    }
+
+    /** Hilfsmethode: Liest den Textinhalt eines XML-Tags (erstes Vorkommen). */
+    private String getXmlTag(Document doc, String tagName) {
+        NodeList nl = doc.getElementsByTagName(tagName);
+        if (nl.getLength() > 0) {
+            String val = nl.item(0).getTextContent();
+            return val != null ? val.trim() : null;
+        }
+        return null;
+    }
+
+    // ================== RUN ==================
+
     private void runProject() {
         if (currentProjectFolder == null) {
             log("[WARNUNG] Bitte öffne zuerst einen Projektordner.\n", Color.ORANGE);
@@ -293,8 +354,6 @@ public class TIDE extends JFrame {
                 File activeBat = getActiveFile();
                 if (activeBat != null) {
                     log("[BATCH] Starte " + activeBat.getName() + "...\n", Color.CYAN);
-                    // Unter Windows führen wir die Datei direkt aus.
-                    // executeCommand fügt intern bereits "cmd.exe /c" hinzu.
                     executeCommand("\"" + activeBat.getAbsolutePath() + "\"", false);
                 } else {
                     log("[FEHLER] Keine Batch-Datei (.bat) offen.\n", Color.RED);
@@ -416,18 +475,17 @@ public class TIDE extends JFrame {
     }
 
     private void openFolderDialog() {
-        // Hole den Pfad des Benutzer-Verzeichnisses (z.B. C:\Users\DeinName)
         String userHome = System.getProperty("user.home");
-
-        // Übergebe diesen Pfad an den JFileChooser
         JFileChooser chooser = new JFileChooser(userHome);
-
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             currentProjectFolder = chooser.getSelectedFile();
             updateFileTree(currentProjectFolder);
             log("[INFO] Ordner geöffnet: " + currentProjectFolder.getName() + "\n", Color.CYAN);
+
+            // T.xml auslesen und UI befüllen
+            loadTXml(currentProjectFolder);
         }
     }
 
