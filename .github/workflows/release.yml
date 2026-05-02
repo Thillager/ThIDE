@@ -21,13 +21,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          # Temurin JDK 21 (LTS) - enthaelt jpackage.
-          # JDK 25 ist noch Early Access und kann Probleme mit jpackage haben.
-          # Wenn du JDK 25 benoedigst, aendere dies auf '25'.
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
 
       # ── Linux-spezifische Abhaengigkeiten fuer .deb-Erstellung ───────────
@@ -59,16 +56,6 @@ jobs:
         run: |
           java -version
           jpackage --version
-
-      # ── TBuild kompilieren ────────────────────────────────────────────────
-      # TBuild.java liegt im Projekt-Root und wird als erstes kompiliert.
-      # Das erzeugte TBuild.jar wird dann fuer alle weiteren Schritte verwendet.
-      - name: Compile TBuild itself
-        run: |
-          mkdir -p tbuild_out
-          javac -d tbuild_out TBuild.java
-          jar cfe TBuild.jar TBuild -C tbuild_out .
-        shell: bash
 
       # ── Dein Projekt bauen und Fat JAR erstellen ──────────────────────────
       - name: Build project and create Fat JAR
