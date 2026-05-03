@@ -10,6 +10,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -46,6 +47,8 @@ public class TIDE extends JFrame {
     private static final String MODE_CPP = "C++";
     private static final String MODE_BATCH = "Batch";
 
+    private File clipboard = null;
+
     public static void main(String[] args) {
         UIManager.put("Component.arc", 8);
         UIManager.put("Button.arc", 8);
@@ -64,7 +67,7 @@ public class TIDE extends JFrame {
 
     public TIDE() {
         setTitle("T-IDE - Leichte IDE");
-        setSize(1300, 900);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // <- das ersetzt setSize()
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -115,13 +118,12 @@ public class TIDE extends JFrame {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // --- Dateibaum (Links) ---
+// --- Dateibaum (Links) ---
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Kein Projekt geöffnet");
         treeModel = new DefaultTreeModel(root);
         fileTree = new JTree(treeModel);
         fileTree.setBackground(new Color(30, 31, 34));
         fileTree.setBorder(new EmptyBorder(10, 10, 10, 10));
-
         fileTree.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent me) {
                 if (me.getClickCount() == 2) {
@@ -132,7 +134,342 @@ public class TIDE extends JFrame {
                     }
                 }
             }
+
+
+            public void mousePressed(MouseEvent me) {
+                if (me.isPopupTrigger()) {
+                    JPopupMenu popup = new JPopupMenu();
+                    TreePath path = fileTree.getPathForLocation(me.getX(), me.getY());
+
+                    JMenuItem neuDatei = new JMenuItem("Neue Datei");
+                    JMenuItem neuOrdner = new JMenuItem("Neuer Ordner");
+                    JMenuItem umbenennen = new JMenuItem("Umbenennen");
+                    JMenuItem delete = new JMenuItem("Löschen");
+                    JMenuItem explorer = new JMenuItem("In Explorer öffnen");
+                    JMenuItem copy = new JMenuItem("Kopieren");
+                    JMenuItem cut = new JMenuItem("Ausschneiden");
+                    JMenuItem paste = new JMenuItem("Einfügen");
+                    JMenuItem aktualisieren = new JMenuItem("Aktualisieren");
+                    aktualisieren.addActionListener(e -> updateFileTree(currentProjectFolder));
+
+                    if (path != null) {
+                        fileTree.setSelectionPath(path);
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File clickedFile = null;
+                        if (node.getUserObject() instanceof FileNode) {
+                            clickedFile = ((FileNode) node.getUserObject()).getFile();
+                        }
+                        final File finalClickedFile = clickedFile;
+
+                        neuDatei.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll die neue Datei heißen?",
+                                    "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                try {
+                                    new File(zielOrdner, name.trim()).createNewFile();
+                                    updateFileTree(currentProjectFolder);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
+                                }
+                            }
+                        });
+
+                        neuOrdner.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll der neue Ordner heißen?",
+                                    "Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                new File(zielOrdner, name.trim()).mkdirs();
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+
+                        copy.addActionListener(e -> {
+                            clipboard = finalClickedFile;
+                            log("[INFO] Kopiert: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                        });
+
+                        cut.addActionListener(e -> {
+                            clipboard = finalClickedFile;
+                            log("[INFO] Ausgeschnitten: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                        });
+
+                        paste.addActionListener(e -> {
+                            if (clipboard == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            try {
+                                Files.copy(clipboard.toPath(),
+                                        new File(zielOrdner, clipboard.getName()).toPath(),
+                                        StandardCopyOption.REPLACE_EXISTING);
+                                updateFileTree(currentProjectFolder);
+                                log("[INFO] Eingefügt: " + clipboard.getName() + "\n", Color.GREEN);
+                            } catch (IOException ex) {
+                                log("[FEHLER] Einfügen fehlgeschlagen.\n", Color.RED);
+                            }
+                        });
+
+                        delete.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            int confirm = JOptionPane.showConfirmDialog(
+                                    TIDE.this,
+                                    "'" + finalClickedFile.getName() + "' wirklich löschen?",
+                                    "Löschen bestätigen",
+                                    JOptionPane.YES_NO_OPTION);
+                            if (confirm == JOptionPane.YES_OPTION) {
+                                try {
+                                    Files.walk(finalClickedFile.toPath())
+                                            .sorted(java.util.Comparator.reverseOrder())
+                                            .map(java.nio.file.Path::toFile)
+                                            .forEach(File::delete);
+                                    updateFileTree(currentProjectFolder);
+                                    log("[INFO] Gelöscht: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Löschen fehlgeschlagen.\n", Color.RED);
+                                }
+                            }
+                        });
+
+                        umbenennen.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Neuer Name:",
+                                    "Umbenennen", JOptionPane.PLAIN_MESSAGE, null, null,
+                                    finalClickedFile.getName());
+                            if (name != null && !name.trim().isEmpty()) {
+                                finalClickedFile.renameTo(new File(finalClickedFile.getParentFile(), name.trim()));
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+
+                        explorer.addActionListener(e -> {
+                            try {
+                                File ordner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                                Desktop.getDesktop().open(ordner);
+                            } catch (IOException ex) {
+                                log("[FEHLER] Explorer konnte nicht geöffnet werden.\n", Color.RED);
+                            }
+                        });
+
+                        popup.add(neuDatei);
+                        popup.add(neuOrdner);
+                        popup.addSeparator();
+                        popup.add(umbenennen);
+                        popup.add(delete);
+                        popup.addSeparator();
+                        popup.add(explorer);
+                        popup.addSeparator();
+                        popup.add(copy);
+                        popup.add(cut);
+                        popup.add(paste);
+                        popup.addSeparator();
+                        popup.add(aktualisieren);
+
+                    } else {
+                        neuDatei.addActionListener(e -> {
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll die neue Datei heißen?",
+                                    "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                try {
+                                    new File(currentProjectFolder, name.trim()).createNewFile();
+                                    updateFileTree(currentProjectFolder);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
+                                }
+                            }
+                        });
+                        neuOrdner.addActionListener(e -> {
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll der neue Ordner heißen?",
+                                    "Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                new File(currentProjectFolder, name.trim()).mkdirs();
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+                        popup.add(neuDatei);
+                        popup.add(neuOrdner);
+                        popup.addSeparator();
+                        popup.add(aktualisieren);
+                    }
+
+                    popup.show(fileTree, me.getX(), me.getY());
+                }
+            }
+
+            public void mouseReleased(MouseEvent me) {
+                if (me.isPopupTrigger()) {
+                    JPopupMenu popup = new JPopupMenu();
+                    TreePath path = fileTree.getPathForLocation(me.getX(), me.getY());
+
+                    JMenuItem neuDatei = new JMenuItem("Neue Datei");
+                    JMenuItem neuOrdner = new JMenuItem("Neuer Ordner");
+                    JMenuItem umbenennen = new JMenuItem("Umbenennen");
+                    JMenuItem delete = new JMenuItem("Löschen");
+                    JMenuItem explorer = new JMenuItem("In Explorer öffnen");
+                    JMenuItem copy = new JMenuItem("Kopieren");
+                    JMenuItem cut = new JMenuItem("Ausschneiden");
+                    JMenuItem paste = new JMenuItem("Einfügen");
+                    JMenuItem aktualisieren = new JMenuItem("Aktualisieren");
+                    aktualisieren.addActionListener(e -> updateFileTree(currentProjectFolder));
+
+                    if (path != null) {
+                        fileTree.setSelectionPath(path);
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File clickedFile = null;
+                        if (node.getUserObject() instanceof FileNode) {
+                            clickedFile = ((FileNode) node.getUserObject()).getFile();
+                        }
+                        final File finalClickedFile = clickedFile;
+
+                        neuDatei.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll die neue Datei heißen?",
+                                    "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                try {
+                                    new File(zielOrdner, name.trim()).createNewFile();
+                                    updateFileTree(currentProjectFolder);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
+                                }
+                            }
+                        });
+
+                        neuOrdner.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll der neue Ordner heißen?",
+                                    "Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                new File(zielOrdner, name.trim()).mkdirs();
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+
+                        copy.addActionListener(e -> {
+                            clipboard = finalClickedFile;
+                            log("[INFO] Kopiert: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                        });
+
+                        cut.addActionListener(e -> {
+                            clipboard = finalClickedFile;
+                            log("[INFO] Ausgeschnitten: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                        });
+
+                        paste.addActionListener(e -> {
+                            if (clipboard == null) return;
+                            File zielOrdner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                            try {
+                                Files.copy(clipboard.toPath(),
+                                        new File(zielOrdner, clipboard.getName()).toPath(),
+                                        StandardCopyOption.REPLACE_EXISTING);
+                                updateFileTree(currentProjectFolder);
+                                log("[INFO] Eingefügt: " + clipboard.getName() + "\n", Color.GREEN);
+                            } catch (IOException ex) {
+                                log("[FEHLER] Einfügen fehlgeschlagen.\n", Color.RED);
+                            }
+                        });
+
+                        delete.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            int confirm = JOptionPane.showConfirmDialog(
+                                    TIDE.this,
+                                    "'" + finalClickedFile.getName() + "' wirklich löschen?",
+                                    "Löschen bestätigen",
+                                    JOptionPane.YES_NO_OPTION);
+                            if (confirm == JOptionPane.YES_OPTION) {
+                                try {
+                                    Files.walk(finalClickedFile.toPath())
+                                            .sorted(java.util.Comparator.reverseOrder())
+                                            .map(java.nio.file.Path::toFile)
+                                            .forEach(File::delete);
+                                    updateFileTree(currentProjectFolder);
+                                    log("[INFO] Gelöscht: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Löschen fehlgeschlagen.\n", Color.RED);
+                                }
+                            }
+                        });
+
+                        umbenennen.addActionListener(e -> {
+                            if (finalClickedFile == null) return;
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Neuer Name:",
+                                    "Umbenennen", JOptionPane.PLAIN_MESSAGE, null, null,
+                                    finalClickedFile.getName());
+                            if (name != null && !name.trim().isEmpty()) {
+                                finalClickedFile.renameTo(new File(finalClickedFile.getParentFile(), name.trim()));
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+
+                        explorer.addActionListener(e -> {
+                            try {
+                                File ordner = finalClickedFile.isDirectory() ? finalClickedFile : finalClickedFile.getParentFile();
+                                Desktop.getDesktop().open(ordner);
+                            } catch (IOException ex) {
+                                log("[FEHLER] Explorer konnte nicht geöffnet werden.\n", Color.RED);
+                            }
+                        });
+
+                        popup.add(neuDatei);
+                        popup.add(neuOrdner);
+                        popup.addSeparator();
+                        popup.add(umbenennen);
+                        popup.add(delete);
+                        popup.addSeparator();
+                        popup.add(explorer);
+                        popup.addSeparator();
+                        popup.add(copy);
+                        popup.add(cut);
+                        popup.add(paste);
+                        popup.addSeparator();
+                        popup.add(aktualisieren);
+
+                    } else {
+                        neuDatei.addActionListener(e -> {
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll die neue Datei heißen?",
+                                    "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                try {
+                                    new File(currentProjectFolder, name.trim()).createNewFile();
+                                    updateFileTree(currentProjectFolder);
+                                } catch (IOException ex) {
+                                    log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
+                                }
+                            }
+                        });
+                        neuOrdner.addActionListener(e -> {
+                            String name = (String) JOptionPane.showInputDialog(
+                                    TIDE.this, "Wie soll der neue Ordner heißen?",
+                                    "Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
+                            if (name != null && !name.trim().isEmpty()) {
+                                new File(currentProjectFolder, name.trim()).mkdirs();
+                                updateFileTree(currentProjectFolder);
+                            }
+                        });
+                        popup.add(neuDatei);
+                        popup.add(neuOrdner);
+                        popup.addSeparator();
+                        popup.add(aktualisieren);
+                    }
+
+                    popup.show(fileTree, me.getX(), me.getY());
+                }
+            }
+
         });
+
 
         JScrollPane treeScroll = new JScrollPane(fileTree);
         treeScroll.setPreferredSize(new Dimension(250, 0));
