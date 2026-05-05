@@ -565,7 +565,7 @@ public class TIDE extends JFrame {
      * Liest die T.xml aus dem Projektordner und befüllt automatisch:
      * - mainClassInput  (mainClass)
      * - Fenstertitel    (appName + version)
-     *
+     * <p>
      * Gibt eine Warnung in der Konsole aus, wenn keine T.xml vorhanden ist.
      */
     private void loadTXml(File folder) {
@@ -581,8 +581,8 @@ public class TIDE extends JFrame {
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(txml);
 
             String mainClass = getXmlTag(doc, "mainClass");
-            String appName   = getXmlTag(doc, "appName");
-            String version   = getXmlTag(doc, "version");
+            String appName = getXmlTag(doc, "appName");
+            String version = getXmlTag(doc, "version");
 
             // Main-Class ins Textfeld schreiben
             if (mainClass != null && !mainClass.isEmpty()) {
@@ -607,7 +607,9 @@ public class TIDE extends JFrame {
         }
     }
 
-    /** Hilfsmethode: Liest den Textinhalt eines XML-Tags (erstes Vorkommen). */
+    /**
+     * Hilfsmethode: Liest den Textinhalt eines XML-Tags (erstes Vorkommen).
+     */
     private String getXmlTag(Document doc, String tagName) {
         NodeList nl = doc.getElementsByTagName(tagName);
         if (nl.getLength() > 0) {
@@ -859,10 +861,13 @@ public class TIDE extends JFrame {
             String fileName = file.getName().toLowerCase();
             if (fileName.endsWith(".java")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
             else if (fileName.endsWith(".py")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
-            else if (fileName.endsWith(".c") || fileName.endsWith(".h")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
-            else if (fileName.endsWith(".cpp") || fileName.endsWith(".hpp")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS);
+            else if (fileName.endsWith(".c") || fileName.endsWith(".h"))
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
+            else if (fileName.endsWith(".cpp") || fileName.endsWith(".hpp"))
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS);
             else if (fileName.endsWith(".xml")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
-            else if (fileName.endsWith(".bat") || fileName.endsWith(".cmd")) textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH);
+            else if (fileName.endsWith(".bat") || fileName.endsWith(".cmd"))
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH);
             else textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
 
             textArea.setCodeFoldingEnabled(true);
@@ -895,7 +900,9 @@ public class TIDE extends JFrame {
 
             textArea.requestFocusInWindow();
 
-        } catch (Exception e) { log("Öffnen fehlgeschlagen\n", Color.RED); }
+        } catch (Exception e) {
+            log("Öffnen fehlgeschlagen\n", Color.RED);
+        }
     }
 
     private void saveCurrentFile() {
@@ -906,7 +913,9 @@ public class TIDE extends JFrame {
             try {
                 Files.writeString(file.toPath(), ta.getText());
                 log("[SAVE] " + file.getName() + " gespeichert.\n", Color.GREEN);
-            } catch (IOException e) { log("Fehler beim Speichern\n", Color.RED); }
+            } catch (IOException e) {
+                log("Fehler beim Speichern\n", Color.RED);
+            }
         }
     }
 
@@ -924,14 +933,25 @@ public class TIDE extends JFrame {
             try {
                 doc.insertString(doc.getLength(), msg, style);
                 consolePane.setCaretPosition(doc.getLength());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
     }
 
     private static class FileNode {
         private File file;
-        public FileNode(File file) { this.file = file; }
-        public File getFile() { return file; }
-        @Override public String toString() { return file.getName(); }
+
+        public FileNode(File file) {
+            this.file = file;
+        }
+
+        public File getFile() {
+            return file;
+        }
+
+        @Override
+        public String toString() {
+            return file.getName();
+        }
     }
 }
