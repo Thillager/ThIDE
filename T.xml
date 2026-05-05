@@ -1,5 +1,5 @@
 <project>
   <mainClass>TIDE</mainClass>
-  <appName>TIDE-17</appName>
-  <version>1.2.0</version>
+  <appName>TIDE</appName>
+  <version>1.4.0</version>
 </project>
