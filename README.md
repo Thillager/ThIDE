@@ -17,13 +17,30 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 ## 📋 Anforderungen
 
-- **Java Runtime Environment (JRE) 8 oder höher**
+- **Java Runtime Environment (JRE) 25 oder höher**
 - **Mindestens 256 MB RAM**
 - **50 MB freier Festplattenspeicher**
 
 ## 🚀 Installation und Verwendung
 
-### Option 1: Vorkompiliertes JAR ausführen (Schnellstart)
+### Option 1: Installer
+
+#### Linux:
+
+1. .deb aus dem letzten release herunterladen.
+
+2. Installieren:
+   ```bash
+   sudo apt install ./dateiname.deb
+   ```
+
+#### Windows:
+
+1. .msi oder .exe (versionsabhängig) installer aus dem letzten release herunterladen
+
+2. Per doppelklick ausführen.
+
+### Option 2: Vorkompiliertes JAR ausführen (Schnellstart)
 
 1. Stelle sicher, dass Java auf deinem System installiert ist:
    ```bash
@@ -37,7 +54,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 3. Die TIDE IDE wird sich öffnen und ist bereit zur Verwendung.
 
-### Option 2: Aus dem Source Code kompilieren
+### Option 3: Aus dem Source Code kompilieren
 
 1. Klone das Repository:
    ```bash
@@ -102,10 +119,7 @@ TIDE/
 │       └── java/             # Java-Source-Dateien
 ├── libs/                      # Externe Bibliotheken
 ├── production/                # Produktions-Artefakte
-├── TIDE.jar                   # Vorkompilierte ausführbare JAR
-├── T.xml                      # Projektkonfiguration
-├── LICENSE                    # MIT-Lizenz
-└── README.md                  # Diese Datei
+├── T.xml                      # Projektkonfigurationi
 ```
 
 ## 🔧 Konfiguration
@@ -121,6 +135,7 @@ Die Datei `T.xml` enthält die Projektkonfiguration:
 ```
 
 Du kannst diese Datei anpassen, um verschiedene Konfigurationen für dein Projekt zu setzen.
+Oder du nutzt TBuild, dass sich per TBuild knopf herunterladen und ausführen lässt und die T.xml dann grafisch bearbeiten kann.
 
 ## 📚 Beispiel: Erstes Programm mit TIDE
 
