@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="0aad760a-feae-4b28-a088-1f4bd45a9dd3" name="Changes" comment="second release">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/T.xml" beforeDir="false" afterPath="$PROJECT_DIR$/T.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TBuild.jar" beforeDir="false" afterPath="$PROJECT_DIR$/TBuild.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TIDE.jar" beforeDir="false" afterPath="$PROJECT_DIR$/TIDE.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TBuild.jar" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$1.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$2.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$FileNode.class" beforeDir="false" afterPath="$PROJECT_DIR$/production/Thillagers_Anfaenger_IDE/TIDE$FileNode.class" afterDir="false" />
@@ -48,24 +46,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.TIDE.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "master",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/thies/Projekte/java/Thillagers_Anfaenger_IDE",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "project.scopes"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.TIDE.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/thies/Projekte/java/Thillagers_Anfaenger_IDE&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.scopes&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE" />
@@ -203,7 +201,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777982646834</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="second release">
+      <option name="closed" value="true" />
+      <created>1777995459151</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1777995459151</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
