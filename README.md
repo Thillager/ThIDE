@@ -191,9 +191,6 @@ Falls du Fragen oder Probleme hast:
 - Sieh dir existierende Issues an für häufig gestellte Fragen
 
 ---
-
-**Version:** 1.0.0  
-**Letztes Update:** 2026-05-06  
 **Maintainer:** [@Thillager](https://github.com/Thillager)
 
 Viel Erfolg beim Programmieren mit TIDE! 🎉
