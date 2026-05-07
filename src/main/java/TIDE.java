@@ -32,7 +32,7 @@ import org.w3c.dom.NodeList;
 public class TIDE extends JFrame {
 
     // Aktuelle Version der App - bei jedem Release erhoehen
-    private static final String APP_VERSION = "1.11.0";
+    private static final String APP_VERSION = "1.7.0";
     private static final String GITHUB_REPO = "Thillager/TIDE";
 
     private JTree fileTree;
