@@ -467,16 +467,24 @@ public class TIDE extends JFrame {
 
     try (PrintWriter pw = new PrintWriter(batFile)) {
         pw.println("@echo off");
-        pw.println("timeout /t 3 /nobreak > nul");
-        pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn");
-        pw.println("start \"\" \"%ProgramFiles%\\TIDE\\tide.exe\"");
+        pw.println("echo Warte auf TIDE-Beendigung...");
+        pw.println("timeout /t 5 /nobreak > nul");
+        pw.println("echo Installiere Update...");
+        pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
+        pw.println("if %errorlevel% neq 0 (");
+        pw.println("  echo Installation fehlgeschlagen!");
+        pw.println("  pause");
+        pw.println("  exit /b 1");
+        pw.println(")");
+        pw.println("echo Update erfolgreich installiert.");
         pw.println("del \"%~f0\"");
     }
 
+    log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
     SwingUtilities.invokeLater(() -> {
         JOptionPane.showMessageDialog(TIDE.this,
                 "Das Update wird jetzt installiert.\n" +
-                "TIDE wird sich gleich beenden und automatisch neu starten.",
+                "TIDE wird sich gleich beenden.",
                 "Update wird installiert",
                 JOptionPane.INFORMATION_MESSAGE);
         try {
