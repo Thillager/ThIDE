@@ -464,22 +464,29 @@ public class TIDE extends JFrame {
      */
     private void launchWindowsUpdate(File msiFile) throws IOException {
         File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
-        String appPath = new File(System.getProperty("user.dir")).getAbsolutePath();
+
+        // Installationspfad der laufenden App ermitteln
+        String appExe = ProcessHandle.current().info().command().orElse(null);
 
         try (PrintWriter pw = new PrintWriter(batFile)) {
             pw.println("@echo off");
             pw.println("echo Warte auf TIDE-Beendigung...");
-            pw.println("timeout /t 2 /nobreak > nul");
-            // MSI-Installer mit Admin-Rechten ausfuehren (qn = quiet, keine UI)
+            pw.println("timeout /t 3 /nobreak > nul");
             pw.println("echo Installiere Update...");
-            pw.println("PowerShell -Command \"Start-Process msiexec -ArgumentList '/i " +
-                    msiFile.getAbsolutePath().replace("\\", "\\\\") +
-                    " /qn' -Verb RunAs -Wait\"");
-            pw.println("echo Update abgeschlossen.");
-            // App nach Installation neu starten (optional)
-            pw.println("echo Starte TIDE neu...");
-            pw.println("start \"\" \"" + appPath + "\\TIDE.exe\"");
-            pw.println("del \"%~f0\""); // Skript selbst loeschen
+            // Anführungszeichen korrekt escaped, kein Leerzeichen-Problem
+            pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn");
+            pw.println("if %errorlevel% neq 0 (");
+            pw.println("  echo Installation fehlgeschlagen, versuche mit Adminrechten...");
+            pw.println("  PowerShell -Command \"Start-Process msiexec -ArgumentList '/i \\\""
+                    + msiFile.getAbsolutePath().replace("\\", "\\\\")
+                    + "\\\" /qn' -Verb RunAs -Wait\"");
+            pw.println(")");
+            // App neu starten falls Pfad bekannt
+            if (appExe != null && new File(appExe).exists() && appExe.endsWith(".exe")) {
+                pw.println("echo Starte TIDE neu...");
+                pw.println("start \"\" \"" + appExe + "\"");
+            }
+            pw.println("del \"%~f0\"");
         }
 
         log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
@@ -489,9 +496,9 @@ public class TIDE extends JFrame {
                             "TIDE wird sich gleich beenden und automatisch neu starten.",
                     "Update wird installiert",
                     JOptionPane.INFORMATION_MESSAGE);
-            // Skript starten, dann App beenden
             try {
-                new ProcessBuilder("cmd.exe", "/c", "start", "", batFile.getAbsolutePath())
+                // Korrekte Übergabe: cmd /c mit dem Pfad in Anführungszeichen
+                new ProcessBuilder("cmd.exe", "/c", "\"" + batFile.getAbsolutePath() + "\"")
                         .start();
             } catch (IOException e) {
                 log("[FEHLER] Konnte Update-Skript nicht starten.\n", Color.RED);
