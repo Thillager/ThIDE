@@ -160,6 +160,19 @@ public class Main {
 - Drücke **Ctrl+B** zum Kompilieren
 - Drücke **Ctrl+R** zum Ausführen oder klicke auf den **Run**-Button
 
+## Updates
+
+### Häufigkeit
+- Es kommen Updates wann immer ich Zeit finde, Ideen habe oder Fehler auftreten
+
+### Wie installiere ich sie?
+- TIDE als Administrator starten
+- Auf den "über" button klicken
+- Auf den "Nach Updates suchen" button klicken
+- Installieren
+- Kurz warten (Bis das desktop icon neu lädt)
+- Starten
+
 ## Troubleshooting
 
 ### Problem: "Java nicht gefunden"
