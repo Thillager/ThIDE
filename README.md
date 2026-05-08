@@ -196,7 +196,6 @@ java -jar /pfad/zu/TIDE.jar
 
 ## 📖 Dokumentation und Links
 
-- **Original tIDE Projekt**: https://sites.google.com/site/tidejava/
 - **Java Dokumentation**: https://docs.oracle.com/en/java/
 - **GitHub Repository**: https://github.com/Thillager/TIDE
 
