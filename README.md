@@ -6,7 +6,7 @@
 
 TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development Environment)**, die speziell für Java-Entwicklung entwickelt wurde. Sie bietet alle wesentlichen Funktionen für das Schreiben, Kompilieren und Ausführen von Java-Programmen – ohne die Komplexität größerer IDEs wie Eclipse oder IntelliJ IDEA.
 
-## 🎯 Features
+## Features
 
 - ✅ **Projektmanagement** - Einfache Verwaltung von Java-Projekten
 - ✅ **Code-Editor** - Syntax-Highlighting und Code-Bearbeitung
@@ -16,14 +16,14 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 - ✅ **GUI mit Java Swing** - Native und responsive Benutzeroberfläche
 - ✅ **Update Button** - Weder nerviges neu installieren bei neuen Versionen, noch automatische updates mit eventueller malware
 
-## 📋 Anforderungen
+## Anforderungen
 
 - **Java Runtime Environment (JRE) 25 oder höher**
      - Oder die .msi/.deb Installer nutzen
 - **Mindestens 750 MB RAM**
 - **50 MB freier Festplattenspeicher**
 
-## 🚀 Installation und Verwendung
+## Installation und Verwendung 
 
 ### Option 1: Installer
 
@@ -42,7 +42,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 2. Per doppelklick ausführen.
 
-### Option 2: Vorkompiliertes JAR ausführen (Schnellstart)
+### Option 2: Vorkompiliertes JAR ausführen
 
 1. Stelle sicher, dass Java auf deinem System installiert ist:
    ```bash
