@@ -14,11 +14,13 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 - ✅ **Leichtgewicht** - Schnelle Performance und geringer Ressourcenverbrauch
 - ✅ **Plattformunabhängig** - Läuft auf Windows, Linux und macOS (alle Java-unterstützenden Systeme)
 - ✅ **GUI mit Java Swing** - Native und responsive Benutzeroberfläche
+- ✅ **Update Button** - Weder nerviges neu installieren bei neuen Versionen, noch automatische updates mit eventueller malware
 
 ## 📋 Anforderungen
 
 - **Java Runtime Environment (JRE) 25 oder höher**
-- **Mindestens 256 MB RAM**
+     - Oder die .msi/.deb Installer nutzen
+- **Mindestens 750 MB RAM**
 - **50 MB freier Festplattenspeicher**
 
 ## 🚀 Installation und Verwendung
@@ -36,7 +38,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 #### Windows:
 
-1. .msi oder .exe (versionsabhängig) installer aus dem letzten release herunterladen
+1. .msi oder .exe (versionsabhängig) Installer aus dem letzten release herunterladen
 
 2. Per doppelklick ausführen.
 
@@ -77,7 +79,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
    java -cp bin TIDE
    ```
 
-## 💻 Wie funktioniert TIDE?
+## Wie funktioniert TIDE?
 
 ### Architektur-Übersicht
 
@@ -110,7 +112,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 4. **Ausführen**: Führe dein Programm direkt aus TIDE heraus aus
 5. **Debuggen**: Sieh dir Compiler-Fehler in der Konsole an
 
-## 📁 Projektstruktur
+## Projektstruktur
 
 ```
 TIDE/
@@ -122,7 +124,7 @@ TIDE/
 ├── T.xml                      # Projektkonfigurationi
 ```
 
-## 🔧 Konfiguration
+## Konfiguration
 
 Die Datei `T.xml` enthält die Projektkonfiguration:
 
@@ -137,7 +139,7 @@ Die Datei `T.xml` enthält die Projektkonfiguration:
 Du kannst diese Datei anpassen, um verschiedene Konfigurationen für dein Projekt zu setzen.
 Oder du nutzt TBuild, dass sich per TBuild knopf herunterladen und ausführen lässt und die T.xml dann grafisch bearbeiten kann.
 
-## 📚 Beispiel: Erstes Programm mit TIDE
+## Beispiel: Erstes Programm mit TIDE
 
 ### Schritt 1: Neues Projekt erstellen
 Starte TIDE und gehe zu **File → New Project** → Gib dem Projekt einen Namen
@@ -147,7 +149,7 @@ Gehe zu **File → New Class** und erstelle eine Klasse namens `HelloWorld`
 
 ### Schritt 3: Code schreiben
 ```java
-public class HelloWorld {
+public class Main {
     public static void main(String[] args) {
         System.out.println("Willkommen bei TIDE!");
     }
@@ -158,7 +160,7 @@ public class HelloWorld {
 - Drücke **Ctrl+B** zum Kompilieren
 - Drücke **Ctrl+R** zum Ausführen oder klicke auf den **Run**-Button
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Problem: "Java nicht gefunden"
 **Lösung**: Installiere Java Runtime Environment (JRE) von [java.com](https://www.java.com)
