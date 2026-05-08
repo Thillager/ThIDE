@@ -85,7 +85,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 ```
 ┌─────────────────────────────────────────┐
-│         TIDE Benutzeroberfläche          │
+│         TIDE Benutzeroberfläche         │
 │  (Editor, Menüs, Projektbaum, Konsole)  │
 └────────────────────┬────────────────────┘
                      │
