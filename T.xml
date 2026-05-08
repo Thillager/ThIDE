@@ -2,4 +2,5 @@
   <mainClass>TIDE</mainClass>
   <appName>TIDE</appName>
   <version>1.9.0</version>
+  <winUpgradeUuid>a1b2c3d4-e5f6-7890-abcd-ef1234567890</winUpgradeUuid>
 </project>
