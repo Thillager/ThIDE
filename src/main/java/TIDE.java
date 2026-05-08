@@ -5,6 +5,8 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
+import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rsyntaxtextarea.parser.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,7 +34,7 @@ import org.w3c.dom.NodeList;
 public class TIDE extends JFrame {
 
     // Aktuelle Version der App - bei jedem Release erhoehen
-    private static final String APP_VERSION = "1.8.0";
+    private static final String APP_VERSION = "1.9.0";
     private static final String GITHUB_REPO = "Thillager/TIDE";
 
     private JTree fileTree;
@@ -312,6 +314,52 @@ public class TIDE extends JFrame {
         dialog.getContentPane().setBackground(new Color(43, 45, 48));
         dialog.setVisible(true);
     }
+
+
+    private void markCompilerErrors(String output) {
+    // Suche nach "Dateiname.java:42: error:" Pattern
+    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+    "(.+\\.java):(\\d+): (?:error|Fehler): (.+)");
+    java.util.regex.Matcher matcher = pattern.matcher(output);
+
+    while (matcher.find()) {
+        String fileName = new File(matcher.group(1)).getName();
+        int    lineNum  = Integer.parseInt(matcher.group(2)) - 1; // 0-basiert
+        String message  = matcher.group(3);
+
+        // Tab suchen der zur Datei gehoert
+        for (int i = 0; i < editorTabs.getTabCount(); i++) {
+            Component tab = editorTabs.getComponentAt(i);
+            File tabFile  = openFiles.get(tab);
+            if (tabFile != null && tabFile.getName().equals(fileName)
+                    && tab instanceof RTextScrollPane) {
+                RSyntaxTextArea ta = (RSyntaxTextArea)
+                    ((RTextScrollPane) tab).getTextArea();
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        int start = ta.getLineStartOffset(lineNum);
+                        int end   = ta.getLineEndOffset(lineNum);
+                        // Roten Highlight setzen
+                        ta.addLineHighlight(lineNum,
+                            new Color(180, 30, 30, 60));
+                    } catch (Exception ignored) {}
+                });
+                log("[FEHLER Zeile " + (lineNum + 1) + "] " + message + "\n",
+                    Color.RED);
+            }
+        }
+    }
+}
+
+private void clearCompilerErrors() {
+    for (int i = 0; i < editorTabs.getTabCount(); i++) {
+        Component tab = editorTabs.getComponentAt(i);
+        if (tab instanceof RTextScrollPane) {
+            RSyntaxTextArea ta = (RSyntaxTextArea) ((RTextScrollPane) tab).getTextArea();
+            ta.removeAllLineHighlights();
+        }
+    }
+}
 
     /**
      * Prueft auf GitHub ob eine neuere Version verfuegbar ist.
@@ -911,28 +959,40 @@ public class TIDE extends JFrame {
     }
 
     private void executeCommand(String command, boolean isTBuild) {
-        log("> " + command + "\n", Color.GRAY);
-        new Thread(() -> {
-            try {
-                ProcessBuilder pb;
-                if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                    pb = new ProcessBuilder("cmd.exe", "/c", command);
-                } else {
-                    pb = new ProcessBuilder("bash", "-c", command);
-                }
-                if (currentProjectFolder != null) pb.directory(currentProjectFolder);
-                pb.redirectErrorStream(true);
-                Process p = pb.start();
-                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
-                String line;
-                while ((line = r.readLine()) != null) log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
-                int exitCode = p.waitFor();
-                if (exitCode != 0) log("[PROZESS BEENDET MIT CODE " + exitCode + "]\n", Color.RED);
-            } catch (Exception e) {
-                log("[TERMINAL FEHLER] " + e.getMessage() + "\n", Color.RED);
-            }
-        }).start();
+    log("> " + command + "\n", Color.GRAY);
+    if (!isTBuild) {
+        SwingUtilities.invokeLater(this::clearCompilerErrors); // <-- neu
     }
+    new Thread(() -> {
+        try {
+            ProcessBuilder pb;
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                pb = new ProcessBuilder("cmd.exe", "/c", command);
+            } else {
+                pb = new ProcessBuilder("bash", "-c", command);
+            }
+            if (currentProjectFolder != null) pb.directory(currentProjectFolder);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+            String line;
+            StringBuilder fullOutput = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                fullOutput.append(line).append("\n");
+                log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
+            }
+            int exitCode = p.waitFor();
+            if (exitCode != 0) {
+                log("[PROZESS BEENDET MIT CODE " + exitCode + "]\n", Color.RED);
+                if (!isTBuild) {
+                    markCompilerErrors(fullOutput.toString());
+                }
+            }
+        } catch (Exception e) {
+            log("[TERMINAL FEHLER] " + e.getMessage() + "\n", Color.RED);
+        }
+    }).start();
+}
 
     private void openFolderDialog() {
         JFileChooser chooser = new JFileChooser(System.getProperty("user.home"));
@@ -988,10 +1048,14 @@ public class TIDE extends JFrame {
 
             textArea.setCodeFoldingEnabled(true);
             textArea.setFont(new Font("Consolas", Font.PLAIN, 15));
-            textArea.setBackground(new Color(30, 31, 34));
-            textArea.setForeground(Color.WHITE);
-            textArea.setCaretColor(Color.WHITE);
-            textArea.setCurrentLineHighlightColor(new Color(45, 45, 45));
+            try {
+    Theme theme = Theme.load(getClass().getResourceAsStream(
+        "/org/fife/ui/rsyntaxtextarea/themes/monokai.xml"));
+    theme.apply(textArea);
+} catch (IOException ioe) {
+    textArea.setBackground(new Color(30, 31, 34));
+}
+textArea.setCaretColor(Color.WHITE);
 
             RTextScrollPane sp = new RTextScrollPane(textArea);
             sp.setBorder(null);
