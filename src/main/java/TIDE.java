@@ -511,51 +511,39 @@ private void clearCompilerErrors() {
      * dann den MSI-Installer ausfuehrt und TIDE neu startet.
      */
     private void launchWindowsUpdate(File msiFile) throws IOException {
-        File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
+    File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
 
-        // Installationspfad der laufenden App ermitteln
-        String appExe = ProcessHandle.current().info().command().orElse(null);
-
-        try (PrintWriter pw = new PrintWriter(batFile)) {
-            pw.println("@echo off");
-            pw.println("echo Warte auf TIDE-Beendigung...");
-            pw.println("timeout /t 3 /nobreak > nul");
-            pw.println("echo Installiere Update...");
-            // Anführungszeichen korrekt escaped, kein Leerzeichen-Problem
-            pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn");
-            pw.println("if %errorlevel% neq 0 (");
-            pw.println("  echo Installation fehlgeschlagen, versuche mit Adminrechten...");
-            pw.println("  PowerShell -Command \"Start-Process msiexec -ArgumentList '/i \\\""
-                    + msiFile.getAbsolutePath().replace("\\", "\\\\")
-                    + "\\\" /qn' -Verb RunAs -Wait\"");
-            pw.println(")");
-            // App neu starten falls Pfad bekannt
-            if (appExe != null && new File(appExe).exists() && appExe.endsWith(".exe")) {
-                pw.println("echo Starte TIDE neu...");
-                pw.println("start \"\" \"" + appExe + "\"");
-            }
-            pw.println("del \"%~f0\"");
-        }
-
-        log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(TIDE.this,
-                    "Das Update wird jetzt installiert.\n" +
-                            "TIDE wird sich gleich beenden und automatisch neu starten.",
-                    "Update wird installiert",
-                    JOptionPane.INFORMATION_MESSAGE);
-            try {
-                // Korrekte Übergabe: cmd /c mit dem Pfad in Anführungszeichen
-                new ProcessBuilder("cmd.exe", "/c", "\"" + batFile.getAbsolutePath() + "\"")
-                        .start();
-            } catch (IOException e) {
-                log("[FEHLER] Konnte Update-Skript nicht starten.\n", Color.RED);
-                return;
-            }
-            System.exit(0);
-        });
+    try (PrintWriter pw = new PrintWriter(batFile)) {
+        pw.println("@echo off");
+        pw.println("echo Warte auf TIDE-Beendigung...");
+        pw.println("timeout /t 5 /nobreak > nul");
+        pw.println("echo Installiere Update...");
+        pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
+        pw.println("if %errorlevel% neq 0 (");
+        pw.println("  echo Installation fehlgeschlagen!");
+        pw.println("  pause");
+        pw.println("  exit /b 1");
+        pw.println(")");
+        pw.println("echo Update erfolgreich installiert.");
+        pw.println("del \"%~f0\"");
     }
 
+    log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
+    SwingUtilities.invokeLater(() -> {
+        JOptionPane.showMessageDialog(TIDE.this,
+                "Das Update wird jetzt installiert.\n" +
+                "TIDE wird sich gleich beenden.",
+                "Update wird installiert",
+                JOptionPane.INFORMATION_MESSAGE);
+        try {
+            new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath()).start();
+        } catch (IOException e) {
+            log("[FEHLER] Konnte Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+            return;
+        }
+        System.exit(0);
+    });
+}
     /**
      * Erstellt ein .sh-Skript das pkexec (grafischer Passwort-Dialog) nutzt
      * um dpkg mit Root-Rechten auszufuehren.
