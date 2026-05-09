@@ -1032,8 +1032,12 @@ private void clearCompilerErrors() {
         new Thread(() -> {
             // Credentials-Status
             String[] creds = loadGitCredentials();
-            if (creds != null) {
+            if (creds != null && creds[1] != null && !creds[1].isEmpty()) {
                 log("[GIT]  Angemeldet als: " + creds[0] + "\n", new Color(255, 200, 80));
+            } else if (creds != null && creds[0] != null) {
+                log("[GIT]  Git-Nutzer: " + creds[0] + " (kein Token – Push/Pull nicht möglich ohne TBuild-Anmeldung)\n", Color.ORANGE);
+            } else {
+                log("[GIT]  Nicht angemeldet. TBuild → Git → Anmelden.\n", Color.ORANGE);
             }
             // Ist es ein Git-Repo?
             try (Git git = openRepo()) {
@@ -1203,28 +1207,99 @@ textArea.setCaretColor(Color.WHITE);
 
     /** Laedt Credentials aus ~/.git-credentials (shared mit TBuild und nativem Git) */
     private String[] loadGitCredentials() {
+        // 1. ~/.git-credentials (git credential store)
         File credFile = new File(System.getProperty("user.home"), ".git-credentials");
-        if (!credFile.exists()) return null;
-        try {
-            java.util.List<String> lines = Files.readAllLines(credFile.toPath());
-            for (String line : lines) {
-                line = line.trim();
-                if (line.contains("github.com") && line.startsWith("https://")) {
-                    String part = line.substring("https://".length());
-                    int atIdx = part.lastIndexOf('@');
-                    if (atIdx > 0) {
-                        String userPass = part.substring(0, atIdx);
-                        int colonIdx = userPass.indexOf(':');
-                        if (colonIdx > 0) {
-                            return new String[]{
-                                userPass.substring(0, colonIdx),
-                                userPass.substring(colonIdx + 1)
-                            };
+        if (credFile.exists()) {
+            try {
+                java.util.List<String> lines = Files.readAllLines(credFile.toPath());
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.contains("github.com") && line.startsWith("https://")) {
+                        String part = line.substring("https://".length());
+                        int atIdx = part.lastIndexOf('@');
+                        if (atIdx > 0) {
+                            String userPass = part.substring(0, atIdx);
+                            int colonIdx = userPass.indexOf(':');
+                            if (colonIdx > 0) {
+                                return new String[]{
+                                    userPass.substring(0, colonIdx),
+                                    userPass.substring(colonIdx + 1)
+                                };
+                            }
                         }
                     }
                 }
+            } catch (IOException ignored) {}
+        }
+
+        // 2. git credential fill - explizit HOME-Verzeichnis setzen damit
+        //    Windows Credential Manager auch ohne Git-Repo-Kontext funktioniert
+        try {
+            ProcessBuilder pb = new ProcessBuilder("git", "credential", "fill");
+            pb.redirectErrorStream(false);
+            pb.environment().put("HOME", System.getProperty("user.home"));
+            // Arbeitsverzeichnis auf Home setzen - kein Git-Repo noetig
+            pb.directory(new File(System.getProperty("user.home")));
+            Process p = pb.start();
+            // Input in separatem Thread schreiben damit kein Deadlock entsteht
+            new Thread(() -> {
+                try {
+p.getOutputStream().write("protocol=https\nhost=github.com\n\n".getBytes());
+
+
+                    p.getOutputStream().flush();
+                    p.getOutputStream().close();
+                } catch (Exception ignored2) {}
+            }).start();
+            String out = new String(p.getInputStream().readAllBytes()).trim();
+            p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            String user = null, pass = null;
+            for (String l : out.split("[\r\n]+")) {
+                if (l.startsWith("username=")) user = l.substring(9).trim();
+                if (l.startsWith("password=")) pass = l.substring(9).trim();
             }
-        } catch (IOException ignored) {}
+            if (user != null && pass != null && !user.isEmpty() && !pass.isEmpty()) {
+                return new String[]{user, pass};
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Windows Credential Manager direkt via cmdkey auslesen
+        //    (Fallback falls git nicht im PATH ist)
+        if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            try {
+                Process p = new ProcessBuilder("cmdkey", "/list:git:https://github.com")
+                        .redirectErrorStream(true)
+                        .directory(new File(System.getProperty("user.home")))
+                        .start();
+                String out = new String(p.getInputStream().readAllBytes()).trim();
+                p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+                // Benutzername aus cmdkey-Ausgabe extrahieren
+                for (String l : out.split("[\r\n]+")) {
+                    l = l.trim();
+                    if (l.startsWith("Benutzername:") || l.startsWith("User name:")) {
+                        String user = l.substring(l.indexOf(':') + 1).trim();
+                        if (!user.isEmpty()) {
+                            // Token koennen wir nicht aus cmdkey lesen,
+                            // aber git credential fill sollte dann funktionieren
+                            // - nochmal versuchen mit bekanntem User
+                            return new String[]{user, ""};
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 4. Nur Username aus git config (fuer Anzeige)
+        try {
+            ProcessBuilder pb = new ProcessBuilder("git", "config", "--global", "user.name");
+            pb.redirectErrorStream(true);
+            pb.directory(new File(System.getProperty("user.home")));
+            Process p = pb.start();
+            String name = new String(p.getInputStream().readAllBytes()).trim();
+            p.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+            if (!name.isEmpty()) return new String[]{name, null};
+        } catch (Exception ignored) {}
+
         return null;
     }
 
@@ -1239,7 +1314,7 @@ textArea.setCaretColor(Color.WHITE);
     /** Gibt CredentialsProvider zurueck oder null */
     private UsernamePasswordCredentialsProvider getCredentials() {
         String[] c = loadGitCredentials();
-        if (c == null) return null;
+        if (c == null || c[1] == null || c[1].isEmpty()) return null;
         return new UsernamePasswordCredentialsProvider(c[0], c[1]);
     }
 
@@ -1294,7 +1369,13 @@ textArea.setCaretColor(Color.WHITE);
         }
         UsernamePasswordCredentialsProvider cp = getCredentials();
         if (cp == null) {
-            log("[GIT] Nicht angemeldet. Bitte in TBuild → Git → Anmelden.\n", Color.ORANGE);
+            String[] creds = loadGitCredentials();
+            if (creds != null && creds[0] != null) {
+                log("[GIT] Git-Nutzer erkannt (" + creds[0] + "), aber kein Token gefunden.\n", Color.ORANGE);
+                log("[GIT] Bitte in TBuild → Git → Anmelden einen PAT eintragen.\n", Color.ORANGE);
+            } else {
+                log("[GIT] Nicht angemeldet. Bitte in TBuild → Git → Anmelden.\n", Color.ORANGE);
+            }
             return;
         }
         String[] creds = loadGitCredentials();
