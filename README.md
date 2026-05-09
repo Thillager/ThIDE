@@ -202,7 +202,7 @@ java -jar /pfad/zu/TIDE.jar
 ## 📝 Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Siehe [LICENSE](LICENSE) für Details.
-In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in der THIRD_PARTY_LICENSES.md (https://github.com/Thillager/TIDE/THIRD_PARTY_LICENSES.md)
+In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in der THIRD_PARTY_LICENSES.md ([https://github.com/Thillager/TIDE/THIRD_PARTY_LICENSES.md](https://github.com/Thillager/TIDE/blob/master/THIRD_PARTY_LICENSES.md))
 
 ## Beitragen
 
