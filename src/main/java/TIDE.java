@@ -30,6 +30,15 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
+// JGit
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 public class TIDE extends JFrame {
 
@@ -118,6 +127,28 @@ public class TIDE extends JFrame {
         btnTBuild.setForeground(new Color(100, 150, 255));
         btnAbout.setForeground(new Color(180, 180, 180));
 
+        // ---- Git-Dropdown ----
+        JMenuBar gitMenuBar = new JMenuBar();
+        gitMenuBar.setOpaque(false);
+        gitMenuBar.setBorder(null);
+        JMenu gitMenu = new JMenu("⎇ Git ▾");
+        gitMenu.setForeground(new Color(255, 200, 80));
+        gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
+
+        JMenuItem gitCommit = new JMenuItem("✔  Commit");
+        JMenuItem gitPush   = new JMenuItem("⬆  Push");
+        JMenuItem gitPull   = new JMenuItem("⬇  Pull");
+
+        gitMenu.add(gitCommit);
+        gitMenu.add(gitPush);
+        gitMenu.add(gitPull);
+
+        gitCommit.addActionListener(e -> gitCommit());
+        gitPush.addActionListener(e   -> gitPush());
+        gitPull.addActionListener(e   -> gitPull());
+
+        gitMenuBar.add(gitMenu);
+
         // --- Editor Container ---
         JPanel editorContainer = new JPanel(new BorderLayout());
         editorContainer.add(searchPanel, BorderLayout.NORTH);
@@ -136,6 +167,8 @@ public class TIDE extends JFrame {
         toolBar.add(btnRun);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnTBuild);
+        toolBar.add(Box.createHorizontalStrut(5));
+        toolBar.add(gitMenuBar);
         toolBar.add(Box.createHorizontalGlue());
         toolBar.add(btnClear);
         toolBar.add(Box.createHorizontalStrut(5));
@@ -990,7 +1023,34 @@ private void clearCompilerErrors() {
             updateFileTree(currentProjectFolder);
             log("[INFO] Ordner geöffnet: " + currentProjectFolder.getName() + "\n", Color.CYAN);
             loadTXml(currentProjectFolder);
+            // Git-Status beim Öffnen prüfen
+            checkGitStatusOnOpen();
         }
+    }
+
+    private void checkGitStatusOnOpen() {
+        new Thread(() -> {
+            // Credentials-Status
+            String[] creds = loadGitCredentials();
+            if (creds != null) {
+                log("[GIT]  Angemeldet als: " + creds[0] + "\n", new Color(255, 200, 80));
+            }
+            // Ist es ein Git-Repo?
+            try (Git git = openRepo()) {
+                String branch = git.getRepository().getBranch();
+                Status status = git.status().call();
+                log("[GIT]  Branch: " + branch, new Color(255, 200, 80));
+                if (!status.isClean()) {
+                    int changed = status.getModified().size() + status.getAdded().size()
+                            + status.getUntracked().size() + status.getRemoved().size();
+                    log("  (" + changed + " Änderungen)\n", Color.ORANGE);
+                } else {
+                    log("  (sauber)\n", new Color(80, 200, 120));
+                }
+            } catch (Exception ignored) {
+                // Kein Git-Repo – kein Problem, kein Log
+            }
+        }).start();
     }
 
     private void updateFileTree(File rootFolder) {
@@ -1138,4 +1198,150 @@ textArea.setCaretColor(Color.WHITE);
         searchPanel.add(matchCaseCB);
         searchPanel.add(btnClose);
     }
+
+    // ================== GIT INTEGRATION ==================
+
+    /** Laedt Credentials aus ~/.git-credentials (shared mit TBuild und nativem Git) */
+    private String[] loadGitCredentials() {
+        File credFile = new File(System.getProperty("user.home"), ".git-credentials");
+        if (!credFile.exists()) return null;
+        try {
+            java.util.List<String> lines = Files.readAllLines(credFile.toPath());
+            for (String line : lines) {
+                line = line.trim();
+                if (line.contains("github.com") && line.startsWith("https://")) {
+                    String part = line.substring("https://".length());
+                    int atIdx = part.lastIndexOf('@');
+                    if (atIdx > 0) {
+                        String userPass = part.substring(0, atIdx);
+                        int colonIdx = userPass.indexOf(':');
+                        if (colonIdx > 0) {
+                            return new String[]{
+                                userPass.substring(0, colonIdx),
+                                userPass.substring(colonIdx + 1)
+                            };
+                        }
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        return null;
+    }
+
+    /** Oeffnet das Git-Repo im aktuellen Projektordner */
+    private Git openRepo() throws IOException {
+        if (currentProjectFolder == null) throw new IOException("Kein Projektordner geöffnet.");
+        FileRepositoryBuilder builder = new FileRepositoryBuilder();
+        Repository repo = builder.findGitDir(currentProjectFolder).readEnvironment().build();
+        return new Git(repo);
+    }
+
+    /** Gibt CredentialsProvider zurueck oder null */
+    private UsernamePasswordCredentialsProvider getCredentials() {
+        String[] c = loadGitCredentials();
+        if (c == null) return null;
+        return new UsernamePasswordCredentialsProvider(c[0], c[1]);
+    }
+
+    private void gitCommit() {
+        if (currentProjectFolder == null) {
+            log("[GIT] Bitte zuerst einen Projektordner öffnen.\n", Color.ORANGE);
+            return;
+        }
+        // Alle offenen Dateien speichern
+        saveCurrentFile();
+
+        // Anmeldestatus anzeigen
+        String[] creds = loadGitCredentials();
+        String userHint = creds != null ? " (als " + creds[0] + ")" : " (nicht angemeldet)";
+
+        String message = (String) JOptionPane.showInputDialog(this,
+                "Commit-Nachricht:" + userHint,
+                "Git Commit", JOptionPane.PLAIN_MESSAGE, null, null,
+                "Update");
+        if (message == null || message.trim().isEmpty()) return;
+
+        new Thread(() -> {
+            log("[GIT] Committe Änderungen...\n", new Color(255, 200, 80));
+            try (Git git = openRepo()) {
+                // Alle Änderungen stagen
+                Status status = git.status().call();
+                if (status.isClean()) {
+                    log("[GIT] Nichts zu committen – alles sauber.\n", Color.LIGHT_GRAY);
+                    return;
+                }
+                git.add().addFilepattern(".").call();
+                // Auch gelöschte Dateien stagen
+                for (String missing : status.getMissing()) {
+                    git.rm().addFilepattern(missing).call();
+                }
+                RevCommit commit = git.commit().setMessage(message.trim()).call();
+                log("[GIT] ✓ Commit: " + commit.getShortMessage()
+                        + " [" + commit.abbreviate(7).name() + "]\n", new Color(80, 200, 120));
+            } catch (Exception e) {
+                log("[GIT FEHLER] Commit fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
+                if (e.getMessage() != null && e.getMessage().contains("git dir not found")) {
+                    log("[GIT] Tipp: Repo noch nicht initialisiert. TBuild → Git → Lokales Repo erstellen.\n", Color.ORANGE);
+                }
+            }
+        }).start();
+    }
+
+    private void gitPush() {
+        if (currentProjectFolder == null) {
+            log("[GIT] Bitte zuerst einen Projektordner öffnen.\n", Color.ORANGE);
+            return;
+        }
+        UsernamePasswordCredentialsProvider cp = getCredentials();
+        if (cp == null) {
+            log("[GIT] Nicht angemeldet. Bitte in TBuild → Git → Anmelden.\n", Color.ORANGE);
+            return;
+        }
+        String[] creds = loadGitCredentials();
+        new Thread(() -> {
+            log("[GIT] Pushe zu Remote...\n", new Color(255, 200, 80));
+            try (Git git = openRepo()) {
+                git.push()
+                        .setCredentialsProvider(cp)
+                        .setRemote("origin")
+                        .call();
+                log("[GIT] ✓ Push erfolgreich" + (creds != null ? " (als " + creds[0] + ")" : "") + ".\n",
+                        new Color(80, 200, 120));
+            } catch (Exception e) {
+                log("[GIT FEHLER] Push fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
+                if (e.getMessage() != null && e.getMessage().contains("no remote")) {
+                    log("[GIT] Tipp: Kein Remote gesetzt. TBuild → Git → Remote hinzufügen.\n", Color.ORANGE);
+                }
+            }
+        }).start();
+    }
+
+    private void gitPull() {
+        if (currentProjectFolder == null) {
+            log("[GIT] Bitte zuerst einen Projektordner öffnen.\n", Color.ORANGE);
+            return;
+        }
+        UsernamePasswordCredentialsProvider cp = getCredentials();
+        new Thread(() -> {
+            log("[GIT] Pulle vom Remote...\n", new Color(255, 200, 80));
+            try (Git git = openRepo()) {
+                org.eclipse.jgit.api.PullCommand pullCmd = git.pull();
+                if (cp != null) pullCmd.setCredentialsProvider(cp);
+                PullResult result = pullCmd.call();
+                if (result.isSuccessful()) {
+                    String mergeMsg = result.getMergeResult() != null
+                            ? result.getMergeResult().getMergeStatus().toString()
+                            : "OK";
+                    log("[GIT] ✓ Pull erfolgreich: " + mergeMsg + "\n", new Color(80, 200, 120));
+                    // Dateibaum aktualisieren
+                    SwingUtilities.invokeLater(() -> updateFileTree(currentProjectFolder));
+                } else {
+                    log("[GIT FEHLER] Pull nicht erfolgreich.\n", Color.RED);
+                }
+            } catch (Exception e) {
+                log("[GIT FEHLER] Pull fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
+            }
+        }).start();
+    }
+
 }
