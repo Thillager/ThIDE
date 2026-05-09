@@ -199,7 +199,7 @@ java -jar /pfad/zu/TIDE.jar
 - **Java Dokumentation**: https://docs.oracle.com/en/java/
 - **GitHub Repository**: https://github.com/Thillager/TIDE
 
-## 📝 Lizenz
+## Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Siehe [LICENSE](LICENSE) für Details.
 In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in der THIRD_PARTY_LICENSES.md ([https://github.com/Thillager/TIDE/THIRD_PARTY_LICENSES.md](https://github.com/Thillager/TIDE/blob/master/THIRD_PARTY_LICENSES.md))
@@ -229,4 +229,4 @@ Falls du Fragen oder Probleme hast:
 ---
 **Maintainer:** [@Thillager](https://github.com/Thillager)
 
-Viel Erfolg beim Programmieren mit TIDE! 🎉
+Viel Erfolg beim Programmieren mit TIDE!
