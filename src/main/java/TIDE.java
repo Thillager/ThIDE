@@ -43,7 +43,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class TIDE extends JFrame {
 
     // Aktuelle Version der App - bei jedem Release erhoehen
-    private static final String APP_VERSION = "1.9.0";
+    private static final String APP_VERSION = "2.0.0";
     private static final String GITHUB_REPO = "Thillager/TIDE";
 
     private JTree fileTree;
