@@ -204,6 +204,12 @@ java -jar /pfad/zu/TIDE.jar
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Siehe [LICENSE](LICENSE) für Details.
 In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in der THIRD_PARTY_LICENSES.md ([https://github.com/Thillager/TIDE/THIRD_PARTY_LICENSES.md](https://github.com/Thillager/TIDE/blob/master/THIRD_PARTY_LICENSES.md))
 
+## Built With
+TIDE nutzt die Power bewährter Open-Source-Bibliotheken:
+* **[JGit](https://www.eclipse.org/jgit/)** - Für die integrierte Versionsverwaltung.
+* **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - Für das Syntax-Highlighting im Editor.
+* **[FlatLaf](https://www.formdev.com/flatlaf/)** - Für das moderne, flache Design der Benutzeroberfläche.
+
 ## Beitragen
 
 Beiträge sind willkommen! Um beizutragen:
