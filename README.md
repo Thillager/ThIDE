@@ -194,7 +194,7 @@ java -jar /pfad/zu/TIDE.jar
 - Stelle sicher, dass alle Klassen in den korrekten Verzeichnissen sind
 - Schaue in die Fehlerausgabe in der Konsole
 
-## 📖 Dokumentation und Links
+## Dokumentation und Links
 
 - **Java Dokumentation**: https://docs.oracle.com/en/java/
 - **GitHub Repository**: https://github.com/Thillager/TIDE
@@ -202,8 +202,9 @@ java -jar /pfad/zu/TIDE.jar
 ## 📝 Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Siehe [LICENSE](LICENSE) für Details.
+In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in der THIRD_PARTY_LICENSES.md (https://github.com/Thillager/TIDE/THIRD_PARTY_LICENSES.md)
 
-## 🤝 Beitragen
+## Beitragen
 
 Beiträge sind willkommen! Um beizutragen:
 
@@ -213,7 +214,7 @@ Beiträge sind willkommen! Um beizutragen:
 4. Pushe zu dem Branch (`git push origin feature/AmazingFeature`)
 5. Öffne einen Pull Request
 
-## ❓ Fragen und Support
+## Fragen und Support
 
 Falls du Fragen oder Probleme hast:
 - Öffne ein [GitHub Issue](https://github.com/Thillager/TIDE/issues)
