@@ -93,6 +93,7 @@ END OF TERMS AND CONDITIONS
 - SLF4J (api, simple)
 - Bouncy Castle (bcprov, bcpg, bcpkix, bcutil)
 - RSyntaxTextArea
+- Autocomplete
 - JZlib
 - JSch
 - Args4j
