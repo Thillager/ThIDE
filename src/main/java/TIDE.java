@@ -7,6 +7,7 @@ import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rsyntaxtextarea.parser.*;
+import org.fife.ui.autocomplete.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -43,7 +44,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class TIDE extends JFrame {
 
     // Aktuelle Version der App - bei jedem Release erhoehen
-    private static final String APP_VERSION = "2.0.0";
+    private static final String APP_VERSION = "2.1.0";
     private static final String GITHUB_REPO = "Thillager/TIDE";
 
     private JTree fileTree;
@@ -71,6 +72,8 @@ public class TIDE extends JFrame {
     private JTextField searchField;
     private JCheckBox matchCaseCB;
 
+    
+
     public static void main(String[] args) {
         UIManager.put("Component.arc", 8);
         UIManager.put("Button.arc", 8);
@@ -95,6 +98,10 @@ public class TIDE extends JFrame {
         initUI();
     }
 
+
+
+    
+
     private void initUI() {
         // --- Search Panel initialisieren (MUSS vor editorContainer!) ---
         initSearchPanel();
@@ -107,8 +114,8 @@ public class TIDE extends JFrame {
         toolBar.setBorder(new EmptyBorder(8, 10, 8, 10));
         toolBar.setBackground(new Color(43, 45, 48));
 
-        JButton btnOpen  = new JButton("📁 Ordner öffnen");
-        JButton btnSave  = new JButton("💾 Speichern");
+        JButton btnOpen  = new JButton("Ordner öffnen");
+        JButton btnSave  = new JButton("Speichern");
 
         modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
         modeSelector.setMaximumSize(new Dimension(100, 30));
@@ -117,10 +124,10 @@ public class TIDE extends JFrame {
         mainClassInput = new JTextField("Main", 15);
         mainClassInput.setMaximumSize(new Dimension(200, 30));
 
-        JButton btnRun   = new JButton("▶ Run");
-        btnTBuild        = new JButton("🛠 T-Build");
-        JButton btnClear = new JButton("🗑 Clear Console");
-        JButton btnAbout = new JButton("ℹ Über");
+        JButton btnRun   = new JButton("▶");
+        btnTBuild        = new JButton("T-Build");
+        JButton btnClear = new JButton("Konsole leeren");
+        JButton btnAbout = new JButton("Über");
 
         btnRun.setForeground(new Color(80, 200, 120));
         btnRun.setFont(btnRun.getFont().deriveFont(Font.BOLD));
@@ -131,13 +138,13 @@ public class TIDE extends JFrame {
         JMenuBar gitMenuBar = new JMenuBar();
         gitMenuBar.setOpaque(false);
         gitMenuBar.setBorder(null);
-        JMenu gitMenu = new JMenu("⎇ Git ▾");
+        JMenu gitMenu = new JMenu("Git ▾");
         gitMenu.setForeground(new Color(255, 200, 80));
         gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
 
-        JMenuItem gitCommit = new JMenuItem("✔  Commit");
-        JMenuItem gitPush   = new JMenuItem("⬆  Push");
-        JMenuItem gitPull   = new JMenuItem("⬇  Pull");
+        JMenuItem gitCommit = new JMenuItem("Commit");
+        JMenuItem gitPush   = new JMenuItem("Push");
+        JMenuItem gitPull   = new JMenuItem("Pull");
 
         gitMenu.add(gitCommit);
         gitMenu.add(gitPush);
@@ -283,6 +290,12 @@ public class TIDE extends JFrame {
         updateDynamicUI();
     }
 
+
+
+
+
+
+
     // ================== ÜBER-DIALOG & UPDATE-SYSTEM ==================
 
     private void showAboutDialog() {
@@ -312,7 +325,7 @@ public class TIDE extends JFrame {
         repoLabel.setForeground(new Color(100, 150, 255));
         repoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel descLabel = new JLabel("<html><center>Einfache IDE fuer Anfaenger.<br>Kein Maven, kein Gradle - einfach bauen.</center></html>");
+        JLabel descLabel = new JLabel("<html><center>Einfache, leichte IDE fuer Anfaenger.<br></center></html>");
         descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         descLabel.setForeground(new Color(160, 160, 160));
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -329,7 +342,7 @@ public class TIDE extends JFrame {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnPanel.setBackground(new Color(43, 45, 48));
 
-        JButton btnUpdate = new JButton("🔄 Nach Updates suchen");
+        JButton btnUpdate = new JButton("Nach Updates suchen");
         JButton btnClose  = new JButton("Schließen");
 
         btnUpdate.setForeground(new Color(80, 200, 120));
@@ -349,16 +362,23 @@ public class TIDE extends JFrame {
     }
 
 
+
+
+
+
+
     private void markCompilerErrors(String output) {
-    // Suche nach "Dateiname.java:42: error:" Pattern
+    // Suche nach "Dateiname.
     java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
     "(.+\\.java):(\\d+): (?:error|Fehler): (.+)");
     java.util.regex.Matcher matcher = pattern.matcher(output);
 
     while (matcher.find()) {
         String fileName = new File(matcher.group(1)).getName();
-        int    lineNum  = Integer.parseInt(matcher.group(2)) - 1; // 0-basiert
+ // Dateinamen nehmen
+        int    lineNum  = Integer.parseInt(matcher.group(2)) - 1; // Zeile nehmen
         String message  = matcher.group(3);
+ // Nachricht nehmen
 
         // Tab suchen der zur Datei gehoert
         for (int i = 0; i < editorTabs.getTabCount(); i++) {
@@ -393,6 +413,15 @@ private void clearCompilerErrors() {
         }
     }
 }
+
+
+
+
+
+//==================== UPDATES===========================
+
+
+
 
     /**
      * Prueft auf GitHub ob eine neuere Version verfuegbar ist.
@@ -466,6 +495,9 @@ private void clearCompilerErrors() {
         }).start();
     }
 
+
+
+
     /**
      * Laedt den Installer herunter und startet ihn ueber ein externes Skript.
      * Das Skript wartet bis die App beendet ist, installiert dann und startet neu.
@@ -538,6 +570,10 @@ private void clearCompilerErrors() {
             }
         }).start();
     }
+
+
+
+    
 
     /**
      * Erstellt eine .bat-Datei die wartet bis TIDE beendet ist,
@@ -667,6 +703,14 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+
+
+
+
+    
+
     // ================== FILE TREE POPUP & HELFERMETHODEN ==================
 
     private void showFileTreePopup(MouseEvent me) {
@@ -727,6 +771,10 @@ private void clearCompilerErrors() {
         popup.show(fileTree, me.getX(), me.getY());
     }
 
+
+
+
+
     private void createNewFile(File target) {
         if (target == null || currentProjectFolder == null) return;
         File zielOrdner = target.isDirectory() ? target : target.getParentFile();
@@ -743,6 +791,10 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+    
+
     private void createNewFolder(File target) {
         if (target == null || currentProjectFolder == null) return;
         File zielOrdner = target.isDirectory() ? target : target.getParentFile();
@@ -755,6 +807,11 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+
+    
+
     private void copyFile(File file) {
         if (file != null) {
             clipboard = file;
@@ -762,12 +819,23 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+
+
+    
+
     private void cutFile(File file) {
         if (file != null) {
             clipboard = file;
             log("[INFO] Ausgeschnitten: " + file.getName() + "\n", Color.LIGHT_GRAY);
         }
     }
+
+
+
+
+    
 
     private void pasteFile(File target) {
         if (clipboard == null || currentProjectFolder == null) return;
@@ -782,6 +850,11 @@ private void clearCompilerErrors() {
             log("[FEHLER] Einfügen fehlgeschlagen.\n", Color.RED);
         }
     }
+
+
+
+
+    
 
     private void deleteFile(File file) {
         if (file == null) return;
@@ -802,6 +875,11 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+
+    
+
     private void renameFile(File file) {
         if (file == null) return;
         String name = (String) JOptionPane.showInputDialog(
@@ -813,6 +891,12 @@ private void clearCompilerErrors() {
         }
     }
 
+
+
+
+
+    
+
     private void openExplorer(File file) {
         try {
             File ordner = file.isDirectory() ? file : file.getParentFile();
@@ -821,6 +905,10 @@ private void clearCompilerErrors() {
             log("[FEHLER] Explorer konnte nicht geöffnet werden.\n", Color.RED);
         }
     }
+
+
+
+    
 
     private void createNewFileInRoot()   { createNewFile(currentProjectFolder);   }
     private void createNewFolderInRoot() { createNewFolder(currentProjectFolder); }
@@ -834,6 +922,16 @@ private void clearCompilerErrors() {
         revalidate();
         repaint();
     }
+
+
+
+
+
+
+
+
+
+    
 
     // ================== T.XML LESEN ==================
 
@@ -871,6 +969,14 @@ private void clearCompilerErrors() {
         }
         return null;
     }
+
+
+
+
+
+
+
+    
 
     // ================== RUN ==================
 
@@ -951,6 +1057,12 @@ private void clearCompilerErrors() {
         return null;
     }
 
+
+
+
+
+
+
     private void handleTBuild() {
         if (currentProjectFolder == null) {
             log("[FEHLER] Bitte öffne zuerst einen Projektordner.\n", Color.RED);
@@ -978,6 +1090,12 @@ private void clearCompilerErrors() {
             }).start();
         }
     }
+
+
+
+
+
+    
 
     private void executeCommand(String command, boolean isTBuild) {
     log("> " + command + "\n", Color.GRAY);
@@ -1015,6 +1133,12 @@ private void clearCompilerErrors() {
     }).start();
 }
 
+
+
+
+
+
+
     private void openFolderDialog() {
         JFileChooser chooser = new JFileChooser(System.getProperty("user.home"));
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -1027,6 +1151,12 @@ private void clearCompilerErrors() {
             checkGitStatusOnOpen();
         }
     }
+
+
+
+
+
+    
 
     private void checkGitStatusOnOpen() {
         new Thread(() -> {
@@ -1057,11 +1187,23 @@ private void clearCompilerErrors() {
         }).start();
     }
 
+
+
+
+
+
+    
+
     private void updateFileTree(File rootFolder) {
         DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new FileNode(rootFolder));
         buildTree(rootFolder, rootNode);
         treeModel.setRoot(rootNode);
     }
+
+
+
+
+    
 
     private void buildTree(File folder, DefaultMutableTreeNode node) {
         File[] files = folder.listFiles();
@@ -1076,6 +1218,12 @@ private void clearCompilerErrors() {
             if (file.isDirectory()) buildTree(file, childNode);
         }
     }
+
+
+
+
+
+    
 
     private void openFileInEditor(File file) {
         for (int i = 0; i < editorTabs.getTabCount(); i++) {
@@ -1127,8 +1275,200 @@ textArea.setCaretColor(Color.WHITE);
             editorTabs.setSelectedComponent(sp);
             openFiles.put(sp, file);
             textArea.requestFocusInWindow();
+
+            // --- AUTOCOMPLETE SETUP ---
+            DefaultCompletionProvider provider = createCompletionProvider(textArea);
+            AutoCompletion ac = new AutoCompletion(provider);
+
+            // WICHTIG: Verhindert das sofortige Einfügen, wenn es nur einen Treffer gibt!
+            ac.setAutoCompleteSingleChoices(false);
+
+            ac.setAutoActivationEnabled(true);
+            ac.setAutoActivationDelay(100);
+            ac.install(textArea);
+
+            // --- LERN-FUNKTION (Ressourcenschonend) ---
+            // knownWords mit Standard-Keywords UND allen Wörtern aus der Datei vorbelegen
+            Set<String> knownWords = new HashSet<>();
+            String[] initialKeywords = {"public", "private", "static", "void", "class", "import", "String", "int", "boolean", "new", "return"};
+            knownWords.addAll(Arrays.asList(initialKeywords));
+            // Datei-Tokens vorbelegen (damit beim Lernen keine Duplikate entstehen)
+            String existingContent = textArea.getText();
+            if (existingContent != null) {
+                for (String t : existingContent.split("[^\\w]+")) {
+                    if (t.length() > 2) knownWords.add(t);
+                }
+            }
+
+            // Der KeyListener reagiert nur, wenn eine Taste losgelassen wird.
+            textArea.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    char c = e.getKeyChar();
+
+                    // Wir checken das Wort nur, wenn der Nutzer ein Trennzeichen tippt
+                    // (z.B. Leerzeichen, Enter, Klammer, Punkt)
+                    if (!Character.isLetterOrDigit(c) && c != KeyEvent.CHAR_UNDEFINED) {
+                        try {
+                            int caret = textArea.getCaretPosition() - 1; // Position vor dem Trennzeichen
+                            if (caret < 1) return;
+
+                            String text = textArea.getText(0, caret);
+                            int start = caret - 1;
+
+                            // Rückwärts gehen, bis wir den Anfang des Wortes finden
+                            while (start >= 0 && Character.isLetterOrDigit(text.charAt(start))) {
+                                start--;
+                            }
+                            start++; // Start-Index des fertigen Wortes
+
+                            if (start < caret) {
+                                String word = text.substring(start, caret);
+                                // Wir lernen nur Wörter ab 3 Buchstaben (spart massig RAM)
+                                if (word.length() > 2 && knownWords.add(word)) {
+                                    provider.addCompletion(new BasicCompletion(provider, word));
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+
+            // --- WÖRTER VERWALTEN (Löschen) ---
+            JButton manageWordsBtn = new JButton("Wörter");
+            manageWordsBtn.setFont(manageWordsBtn.getFont().deriveFont(10f));
+            manageWordsBtn.setForeground(new Color(180, 180, 255));
+            manageWordsBtn.setBorder(BorderFactory.createEmptyBorder(1, 5, 1, 5));
+            manageWordsBtn.setContentAreaFilled(false);
+            manageWordsBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            manageWordsBtn.setToolTipText("Gelernte Wörter verwalten / löschen");
+            manageWordsBtn.addActionListener(ev -> showWordManagerDialog(provider, knownWords));
+            tabHeader.add(manageWordsBtn);
         } catch (Exception e) { log("Öffnen fehlgeschlagen\n", Color.RED); }
     }
+
+/**
+ * Öffnet einen Dialog, in dem alle gelernten Wörter angezeigt
+ * und einzeln oder mehrfach gelöscht werden können.
+ */
+private void showWordManagerDialog(DefaultCompletionProvider provider, Set<String> knownWords) {
+    JDialog dialog = new JDialog(this, "Wörter verwalten", true);
+    dialog.setSize(400, 480);
+    dialog.setLocationRelativeTo(this);
+    dialog.setLayout(new BorderLayout(8, 8));
+    dialog.getRootPane().setBorder(new EmptyBorder(10, 10, 10, 10));
+
+    // Sortierte Liste der Wörter
+    java.util.List<String> sortedWords = new ArrayList<>(knownWords);
+    java.util.Collections.sort(sortedWords, String.CASE_INSENSITIVE_ORDER);
+    DefaultListModel<String> listModel = new DefaultListModel<>();
+    for (String w : sortedWords) listModel.addElement(w);
+
+    JList<String> wordList = new JList<>(listModel);
+    wordList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    wordList.setBackground(new Color(30, 31, 34));
+    wordList.setForeground(Color.WHITE);
+    wordList.setFont(new Font("Consolas", Font.PLAIN, 13));
+    JScrollPane scroll = new JScrollPane(wordList);
+    scroll.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(Color.DARK_GRAY), "Gelernte Wörter (" + listModel.size() + ")",
+        javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP,
+        null, Color.LIGHT_GRAY));
+
+    // Suchfeld zum Filtern
+    JTextField filterField = new JTextField();
+    filterField.setBackground(new Color(45, 47, 49));
+    filterField.setForeground(Color.WHITE);
+    filterField.setCaretColor(Color.WHITE);
+    filterField.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createMatteBorder(1, 1, 1, 1, Color.DARK_GRAY),
+        BorderFactory.createEmptyBorder(4, 6, 4, 6)));
+    filterField.setToolTipText("Filtern...");
+
+    filterField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        private void filter() {
+            String q = filterField.getText().toLowerCase();
+            listModel.clear();
+            for (String w : sortedWords) {
+                if (q.isEmpty() || w.toLowerCase().contains(q)) listModel.addElement(w);
+            }
+        }
+        public void insertUpdate(javax.swing.event.DocumentEvent e)  { filter(); }
+        public void removeUpdate(javax.swing.event.DocumentEvent e)  { filter(); }
+        public void changedUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+    });
+
+    JPanel topPanel = new JPanel(new BorderLayout(4, 4));
+    topPanel.setOpaque(false);
+    topPanel.add(new JLabel("Suchen: "), BorderLayout.WEST);
+    topPanel.add(filterField, BorderLayout.CENTER);
+
+    // Buttons
+    JButton btnDelete  = new JButton("Ausgewählte löschen");
+    JButton btnClose   = new JButton("Schließen");
+    btnDelete.setForeground(new Color(255, 100, 100));
+    btnDelete.addActionListener(e -> {
+        java.util.List<String> selected = wordList.getSelectedValuesList();
+        if (selected.isEmpty()) return;
+        for (String word : selected) {
+            knownWords.remove(word);
+            sortedWords.remove(word);
+            listModel.removeElement(word);
+        }
+        // Provider neu aufbauen (SimpleCompletion kennt keine remove-API)
+        provider.clear();
+        for (String w : knownWords) {
+            provider.addCompletion(new BasicCompletion(provider, w));
+        }
+        // Titel aktualisieren
+        scroll.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(Color.DARK_GRAY), "Gelernte Wörter (" + listModel.size() + ")",
+            javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP,
+            null, Color.LIGHT_GRAY));
+        log("[INFO] " + selected.size() + " Wort/Wörter aus Autocomplete entfernt.\n", Color.LIGHT_GRAY);
+    });
+    btnClose.addActionListener(e -> dialog.dispose());
+
+    JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+    btnPanel.setOpaque(false);
+    btnPanel.add(btnDelete);
+    btnPanel.add(btnClose);
+
+    dialog.getContentPane().setBackground(new Color(43, 45, 48));
+    dialog.add(topPanel, BorderLayout.NORTH);
+    dialog.add(scroll,   BorderLayout.CENTER);
+    dialog.add(btnPanel, BorderLayout.SOUTH);
+    dialog.setVisible(true);
+}
+
+private DefaultCompletionProvider createCompletionProvider(RSyntaxTextArea textArea) {
+    DefaultCompletionProvider provider = new DefaultCompletionProvider();
+
+    // Set verhindert, dass ein Wort doppelt hinzugefügt wird
+    Set<String> seen = new HashSet<>();
+
+    // Standard-Keywords
+    String[] keywords = {"public", "private", "static", "void", "class", "import", "String", "int", "boolean", "new", "return"};
+    for (String kw : keywords) {
+        if (seen.add(kw)) {
+            provider.addCompletion(new BasicCompletion(provider, kw));
+        }
+    }
+
+    // Alle Wörter aus dem aktuellen Dateiinhalt scannen (einmalig je Wort)
+    String content = textArea.getText();
+    if (content != null && !content.isEmpty()) {
+        String[] tokens = content.split("[^\\w]+");
+        for (String token : tokens) {
+            if (token.length() > 2 && seen.add(token)) {
+                provider.addCompletion(new BasicCompletion(provider, token));
+            }
+        }
+    }
+
+    return provider;
+}
+    
 
     private void saveCurrentFile() {
         Component tab = editorTabs.getSelectedComponent();
@@ -1148,6 +1488,10 @@ textArea.setCaretColor(Color.WHITE);
         return null;
     }
 
+
+
+    
+
     private void log(String msg, Color color) {
         SwingUtilities.invokeLater(() -> {
             StyledDocument doc = consolePane.getStyledDocument();
@@ -1160,12 +1504,26 @@ textArea.setCaretColor(Color.WHITE);
         });
     }
 
+
+
+
+
+
+
+
+
+
+    
+
     private static class FileNode {
         private File file;
         public FileNode(File file) { this.file = file; }
         public File getFile() { return file; }
         @Override public String toString() { return file.getName(); }
     }
+
+
+    
 
     private void search(boolean forward) {
         Component selectedTab = editorTabs.getSelectedComponent();
@@ -1181,6 +1539,10 @@ textArea.setCaretColor(Color.WHITE);
         SearchResult result = SearchEngine.find(textArea, context);
         if (!result.wasFound()) log("[INFO] Text nicht gefunden.\n", Color.ORANGE);
     }
+
+
+
+    
 
     private void initSearchPanel() {
         searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -1202,6 +1564,15 @@ textArea.setCaretColor(Color.WHITE);
         searchPanel.add(matchCaseCB);
         searchPanel.add(btnClose);
     }
+
+
+
+
+
+
+
+
+
 
     // ================== GIT INTEGRATION ==================
 
@@ -1318,6 +1689,11 @@ p.getOutputStream().write("protocol=https\nhost=github.com\n\n".getBytes());
         return new UsernamePasswordCredentialsProvider(c[0], c[1]);
     }
 
+
+
+
+    
+
     private void gitCommit() {
         if (currentProjectFolder == null) {
             log("[GIT] Bitte zuerst einen Projektordner öffnen.\n", Color.ORANGE);
@@ -1362,6 +1738,14 @@ p.getOutputStream().write("protocol=https\nhost=github.com\n\n".getBytes());
         }).start();
     }
 
+
+
+
+
+
+
+    
+
     private void gitPush() {
         if (currentProjectFolder == null) {
             log("[GIT] Bitte zuerst einen Projektordner öffnen.\n", Color.ORANGE);
@@ -1396,6 +1780,7 @@ p.getOutputStream().write("protocol=https\nhost=github.com\n\n".getBytes());
             }
         }).start();
     }
+    
 
     private void gitPull() {
         if (currentProjectFolder == null) {
@@ -1413,7 +1798,7 @@ p.getOutputStream().write("protocol=https\nhost=github.com\n\n".getBytes());
                     String mergeMsg = result.getMergeResult() != null
                             ? result.getMergeResult().getMergeStatus().toString()
                             : "OK";
-                    log("[GIT] ✓ Pull erfolgreich: " + mergeMsg + "\n", new Color(80, 200, 120));
+                    log("[GIT] Pull erfolgreich: " + mergeMsg + "\n", new Color(80, 200, 120));
                     // Dateibaum aktualisieren
                     SwingUtilities.invokeLater(() -> updateFileTree(currentProjectFolder));
                 } else {
