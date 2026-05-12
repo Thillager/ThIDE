@@ -44,7 +44,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class TIDE extends JFrame {
 
     // Aktuelle Version der App - bei jedem Release erhoehen
-    private static final String APP_VERSION = "2.1.0";
+    private static final String APP_VERSION = "2.2.0";
     private static final String GITHUB_REPO = "Thillager/TIDE";
 
     private JTree fileTree;
@@ -496,11 +496,38 @@ private void clearCompilerErrors() {
     }
 
 
+    // ================== NEU: JAR-Erkennung ==================
+
+    /**
+     * Erkennt ob die App als .jar laeuft (nicht als jpackage-Programm).
+     */
+    private boolean isRunningAsJar() {
+        try {
+            java.net.URI uri = TIDE.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI();
+            return uri.getPath().endsWith(".jar");
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    /**
+     * Gibt den Pfad zur laufenden JAR-Datei zurueck, oder null wenn keine JAR.
+     */
+    private File getRunningJarFile() {
+        try {
+            java.net.URI uri = TIDE.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI();
+            File f = new File(uri);
+            if (f.getName().endsWith(".jar")) return f;
+        } catch (Exception ignored) {}
+        return null;
+    }
 
 
     /**
      * Laedt den Installer herunter und startet ihn ueber ein externes Skript.
      * Das Skript wartet bis die App beendet ist, installiert dann und startet neu.
+     * Erkennt automatisch ob die App als .jar laeuft und ersetzt sich in diesem Fall selbst.
      */
     private void downloadAndInstallUpdate(String version, String releaseJson) {
         new Thread(() -> {
@@ -508,8 +535,44 @@ private void clearCompilerErrors() {
                 String os = System.getProperty("os.name", "").toLowerCase();
                 boolean isWindows = os.contains("win");
                 boolean isLinux   = !isWindows && !os.contains("mac");
+                boolean runAsJar  = isRunningAsJar();
 
-                // Richtigen Dateinamen fuer dieses OS bestimmen
+                // --- JAR-Selbstaustausch (plattformuebergreifend) ---
+                if (runAsJar) {
+                    String jarAssetName = findAssetName(releaseJson, ".jar");
+                    if (jarAssetName == null) {
+                        log("[FEHLER] Kein .jar-Asset im Release gefunden.\n", Color.RED);
+                        return;
+                    }
+                    File currentJar = getRunningJarFile();
+                    if (currentJar == null) {
+                        log("[FEHLER] Konnte den Pfad der laufenden JAR nicht bestimmen.\n", Color.RED);
+                        return;
+                    }
+                    String downloadUrl = "https://github.com/" + GITHUB_REPO
+                            + "/releases/download/v" + version + "/" + jarAssetName;
+                    log("[INFO] Lade neue JAR herunter: " + jarAssetName + "...\n", Color.CYAN);
+                    SwingUtilities.invokeLater(() ->
+                            log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
+
+                    File tempJar = new File(System.getProperty("java.io.tmpdir"), jarAssetName);
+                    HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(60000);
+                    if (conn.getResponseCode() != 200) {
+                        log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
+                        return;
+                    }
+                    try (InputStream in = conn.getInputStream()) {
+                        Files.copy(in, tempJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    log("[ERFOLG] Neue JAR heruntergeladen: " + tempJar.getAbsolutePath() + "\n", Color.GREEN);
+                    launchJarSelfReplace(tempJar, currentJar);
+                    return;
+                }
+
+                // --- Nativer Installer (jpackage) ---
                 String installerName;
                 if (isWindows) {
                     installerName = findAssetName(releaseJson, ".msi");
@@ -572,8 +635,77 @@ private void clearCompilerErrors() {
     }
 
 
+    /**
+     * Ersetzt die laufende JAR durch die neue und startet neu.
+     * Funktioniert auf Linux und Windows.
+     */
+    private void launchJarSelfReplace(File newJar, File currentJar) throws IOException {
+        String os         = System.getProperty("os.name", "").toLowerCase();
+        boolean isWindows = os.contains("win");
 
-    
+        // Java-Executable ermitteln
+        String java = System.getProperty("java.home") + File.separator + "bin" + File.separator
+                + (isWindows ? "java.exe" : "java");
+
+        if (isWindows) {
+            // .bat: warten bis TIDE beendet, dann ersetzen & neu starten
+            File bat = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.bat");
+            try (PrintWriter pw = new PrintWriter(bat)) {
+                pw.println("@echo off");
+                pw.println("echo Warte auf TIDE-Beendigung...");
+                pw.println("timeout /t 3 /nobreak > nul");
+                pw.println("echo Ersetze JAR...");
+                pw.println("copy /Y \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
+                pw.println("if %errorlevel% neq 0 (");
+                pw.println("  echo JAR-Austausch fehlgeschlagen!");
+                pw.println("  pause");
+                pw.println("  exit /b 1");
+                pw.println(")");
+                pw.println("echo Starte neue Version...");
+                pw.println("start \"\" \"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\"");
+                pw.println("del \"%~f0\"");
+            }
+            log("[INFO] Starte JAR-Update (Windows)...\n", Color.CYAN);
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(TIDE.this,
+                        "Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+                        "JAR-Update", JOptionPane.INFORMATION_MESSAGE);
+                try {
+                    new ProcessBuilder("cmd.exe", "/c", bat.getAbsolutePath()).start();
+                } catch (IOException e) {
+                    log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+                    return;
+                }
+                System.exit(0);
+            });
+        } else {
+            // .sh: warten bis TIDE beendet, dann ersetzen & neu starten
+            File sh = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.sh");
+            try (PrintWriter pw = new PrintWriter(sh)) {
+                pw.println("#!/bin/bash");
+                pw.println("sleep 2");
+                pw.println("cp -f \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
+                pw.println("chmod +x \"" + currentJar.getAbsolutePath() + "\"");
+                pw.println("\"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\" &");
+                pw.println("rm -- \"$0\"");
+            }
+            sh.setExecutable(true);
+            log("[INFO] Starte JAR-Update (Linux)...\n", Color.CYAN);
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(TIDE.this,
+                        "Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+                        "JAR-Update", JOptionPane.INFORMATION_MESSAGE);
+                try {
+                    new ProcessBuilder("bash", sh.getAbsolutePath()).start();
+                } catch (IOException e) {
+                    log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+                    return;
+                }
+                System.exit(0);
+            });
+        }
+    }
+
 
     /**
      * Erstellt eine .bat-Datei die wartet bis TIDE beendet ist,
@@ -613,30 +745,57 @@ private void clearCompilerErrors() {
         System.exit(0);
     });
 }
+
     /**
-     * Erstellt ein .sh-Skript das pkexec (grafischer Passwort-Dialog) nutzt
-     * um dpkg mit Root-Rechten auszufuehren.
+     * Erstellt ein .sh-Skript fuer das Linux-.deb-Update.
+     * Nutzt sudo direkt wenn bereits Root-Rechte vorhanden sind (z.B. "sudo tide"),
+     * faellt sonst auf pkexec (grafischer Passwort-Dialog) zurueck.
      */
     private void launchLinuxUpdate(File debFile) throws IOException {
+        // Pruefen ob sudo ohne Passwort verfuegbar ist (z.B. weil bereits als sudo gestartet)
+        boolean hasSudoNopass = false;
+        try {
+            Process p = new ProcessBuilder("sudo", "-n", "true")
+                    .redirectErrorStream(true).start();
+            hasSudoNopass = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)
+                    && p.exitValue() == 0;
+        } catch (Exception ignored) {}
+
         File shFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.sh");
 
         try (PrintWriter pw = new PrintWriter(shFile)) {
             pw.println("#!/bin/bash");
             pw.println("sleep 2");
-            pw.println("# pkexec zeigt grafischen Passwort-Dialog fuer Root-Rechte");
-            pw.println("pkexec dpkg -i " + debFile.getAbsolutePath());
-            pw.println("# App neu starten falls im PATH vorhanden");
+            if (hasSudoNopass) {
+                // Bereits mit sudo-Rechten gestartet – kein Passwort-Dialog noetig
+                pw.println("sudo dpkg -i \"" + debFile.getAbsolutePath() + "\"");
+            } else {
+                // pkexec zeigt grafischen Passwort-Dialog fuer Root-Rechte (Fallback)
+                pw.println("if command -v pkexec &>/dev/null; then");
+                pw.println("    pkexec dpkg -i \"" + debFile.getAbsolutePath() + "\"");
+                pw.println("else");
+                pw.println("    # Letzter Fallback: Terminal mit sudo");
+                pw.println("    x-terminal-emulator -e bash -c \"sudo dpkg -i '" + debFile.getAbsolutePath() + "' && echo Fertig; read\"");
+                pw.println("fi");
+            }
+            // App neu starten falls im PATH vorhanden
             pw.println("which tide && tide &");
             pw.println("rm -- \"$0\""); // Skript selbst loeschen
         }
         // Skript ausfuehrbar machen
         shFile.setExecutable(true);
 
-        log("[INFO] Starte Linux-Update-Skript...\n", Color.CYAN);
+        String sudoHint = hasSudoNopass
+                ? "Kein Passwort nötig (sudo-Rechte erkannt)."
+                : "Du wirst nach deinem Passwort gefragt.";
+
+        log("[INFO] Starte Linux-Update-Skript"
+                + (hasSudoNopass ? " (sudo, kein Passwort noetig)" : " (pkexec)") + "...\n", Color.CYAN);
+
         SwingUtilities.invokeLater(() -> {
             JOptionPane.showMessageDialog(TIDE.this,
                     "Das Update wird jetzt installiert.\n" +
-                            "Du wirst nach deinem Passwort gefragt.\n" +
+                            sudoHint + "\n" +
                             "TIDE wird sich gleich beenden.",
                     "Update wird installiert",
                     JOptionPane.INFORMATION_MESSAGE);
