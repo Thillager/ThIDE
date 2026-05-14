@@ -21,7 +21,7 @@ public class AboutDialog {
     }
 
     public void show() {
-        JDialog dialog = new JDialog(parent, "Über TIDE", true);
+        JDialog dialog = new JDialog(parent, "Über TIDE/About TIDE", true);
         dialog.setSize(420, 280);
         dialog.setLocationRelativeTo(parent);
         dialog.setLayout(new BorderLayout(10, 10));
@@ -31,7 +31,7 @@ public class AboutDialog {
         infoPanel.setBorder(new EmptyBorder(20, 30, 10, 30));
         infoPanel.setBackground(new Color(43, 45, 48));
 
-        JLabel titleLabel = new JLabel("TIDE - Leichte Java IDE");
+        JLabel titleLabel = new JLabel("TIDE - Leichte Java IDE/TIDE - lightweight java IDE");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -46,7 +46,7 @@ public class AboutDialog {
         repoLabel.setForeground(new Color(100, 150, 255));
         repoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel descLabel = new JLabel("<html><center>Einfache, leichte IDE fuer Anfaenger.<br></center></html>");
+        JLabel descLabel = new JLabel("<html><center>Einfache, leichte IDE fuer Anfaenger./Easy, lightweight IDE for beginners.<br></center></html>");
         descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         descLabel.setForeground(new Color(160, 160, 160));
         descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -62,8 +62,8 @@ public class AboutDialog {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnPanel.setBackground(new Color(43, 45, 48));
 
-        JButton btnUpdate = new JButton("Nach Updates suchen");
-        JButton btnClose  = new JButton("Schließen");
+        JButton btnUpdate = new JButton("Nach Updates suchen/Search for updates");
+        JButton btnClose  = new JButton("Schließen/Close");
 
         btnUpdate.setForeground(new Color(80, 200, 120));
         btnUpdate.addActionListener(e -> {
