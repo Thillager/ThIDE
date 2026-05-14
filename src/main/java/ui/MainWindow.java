@@ -94,20 +94,20 @@ public class MainWindow extends JFrame {
         toolBar.setBorder(new EmptyBorder(8, 10, 8, 10));
         toolBar.setBackground(new Color(43, 45, 48));
 
-        JButton btnOpen  = new JButton("Ordner öffnen/Open folder");
-        JButton btnSave  = new JButton("Speichern/Save");
+        JButton btnOpen = new JButton(LanguageManager.t("open"));
+JButton btnSave = new JButton(LanguageManager.t("save"));
+JButton btnClear = new JButton(LanguageManager.t("clear"));
+JButton btnAbout = new JButton(LanguageManager.t("about"));
 
-        modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
-        modeSelector.setMaximumSize(new Dimension(100, 30));
-
-        mainClassLabel = new JLabel(" Main-Class: ");
-        mainClassInput = new JTextField("Main", 15);
-        mainClassInput.setMaximumSize(new Dimension(200, 30));
-
-        JButton btnRun   = new JButton("▶");
-        btnTBuild        = new JButton("T-Build");
-        JButton btnClear = new JButton("Konsole leeren/Clear console");
-        JButton btnAbout = new JButton("Über/About");
+// Add language selector (new!)
+JComboBox<LanguageManager.Language> langSel = 
+    new JComboBox<>(LanguageManager.Language.values());
+langSel.addActionListener(e -> {
+    LanguageManager.set((LanguageManager.Language) langSel.getSelectedItem());
+    // Refresh buttons (you can add this later)
+});
+toolBar.add(new JLabel("Language: "));
+toolBar.add(langSel);
 
         btnRun.setForeground(new Color(80, 200, 120));
         btnRun.setFont(btnRun.getFont().deriveFont(Font.BOLD));
