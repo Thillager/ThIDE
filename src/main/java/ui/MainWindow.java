@@ -56,7 +56,7 @@ public class MainWindow extends JFrame {
     private WordManagerDialog wordManagerDialog;
 
     public MainWindow() {
-        setTitle("TIDE v" + APP_VERSION + " - Leichte IDE");
+        setTitle("TIDE v" + APP_VERSION);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -94,8 +94,8 @@ public class MainWindow extends JFrame {
         toolBar.setBorder(new EmptyBorder(8, 10, 8, 10));
         toolBar.setBackground(new Color(43, 45, 48));
 
-        JButton btnOpen  = new JButton("Ordner öffnen");
-        JButton btnSave  = new JButton("Speichern");
+        JButton btnOpen  = new JButton("Ordner öffnen/Open folder");
+        JButton btnSave  = new JButton("Speichern/Save");
 
         modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
         modeSelector.setMaximumSize(new Dimension(100, 30));
@@ -106,8 +106,8 @@ public class MainWindow extends JFrame {
 
         JButton btnRun   = new JButton("▶");
         btnTBuild        = new JButton("T-Build");
-        JButton btnClear = new JButton("Konsole leeren");
-        JButton btnAbout = new JButton("Über");
+        JButton btnClear = new JButton("Konsole leeren/Clear console");
+        JButton btnAbout = new JButton("Über/About");
 
         btnRun.setForeground(new Color(80, 200, 120));
         btnRun.setFont(btnRun.getFont().deriveFont(Font.BOLD));
@@ -145,7 +145,7 @@ public class MainWindow extends JFrame {
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
         toolBar.addSeparator(new Dimension(20, 30));
-        toolBar.add(new JLabel("Modus: "));
+        toolBar.add(new JLabel("Modus/Mode: "));
         toolBar.add(modeSelector);
         toolBar.add(mainClassLabel);
         toolBar.add(mainClassInput);
@@ -229,7 +229,7 @@ public class MainWindow extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             currentProjectFolder = chooser.getSelectedFile();
             fileTreePanel.updateFileTree(currentProjectFolder);
-            consolePanel.log("[INFO] Ordner geöffnet: " + currentProjectFolder.getName() + "\n", Color.CYAN);
+            consolePanel.log("[INFO] Ordner geöffnet/[Info] Folder opened: " + currentProjectFolder.getName() + "\n", Color.CYAN);
             loadTXml(currentProjectFolder);
             projectRunner.setCurrentProjectFolder(currentProjectFolder);
             gitManager.setCurrentProjectFolder(currentProjectFolder);
@@ -252,7 +252,7 @@ public class MainWindow extends JFrame {
     private void loadTXml(File folder) {
         File txml = new File(folder, "T.xml");
         if (!txml.exists()) {
-            consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n", Color.ORANGE);
+            consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n" + "[Attention] No T.xml found.\n", Color.ORANGE);
             setTitle("TIDE v" + APP_VERSION + " - " + folder.getName());
             return;
         }
