@@ -81,29 +81,6 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 ## Wie funktioniert TIDE?
 
-### Architektur-Übersicht
-
-```
-┌─────────────────────────────────────────┐
-│         TIDE Benutzeroberfläche         │
-│  (Editor, Menüs, Projektbaum, Konsole)  │
-└────────────────────┬────────────────────┘
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-   ┌────▼─────┐ ┌───▼────┐ ┌────▼─────┐
-   │  Editor  │ │Compiler│ │Execution │
-   │ Modul    │ │Modul   │ │Modul     │
-   └──────────┘ └────────┘ └──────────┘
-        │            │            │
-        └────────────┼────────────┘
-                     │
-          ┌──────────▼──────────┐
-          │  Java-Dateisystem   │
-          │  (.java, .class)    │
-          └─────────────────────┘
-```
-
 ### Workflow-Beispiel
 
 1. **Projekt erstellen**: Starte TIDE und erstelle ein neues Projekt über das Menü
@@ -142,10 +119,10 @@ Oder du nutzt TBuild, dass sich per TBuild knopf herunterladen und ausführen l�
 ## Beispiel: Erstes Programm mit TIDE
 
 ### Schritt 1: Neues Projekt erstellen
-Starte TIDE und gehe zu **File → New Project** → Gib dem Projekt einen Namen
+Erstelle einen neuen Ordner. Starte TIDE. Drücke den TBuild Knopf, dann Projekt initialisieren.
 
 ### Schritt 2: Neue Java-Klasse erstellen
-Gehe zu **File → New Class** und erstelle eine Klasse namens `HelloWorld`
+Öffne src/main/java/Main.java TIDE.
 
 ### Schritt 3: Code schreiben
 ```java
@@ -157,8 +134,7 @@ public class Main {
 ```
 
 ### Schritt 4: Kompilieren und Ausführen
-- Drücke **Ctrl+B** zum Kompilieren
-- Drücke **Ctrl+R** zum Ausführen oder klicke auf den **Run**-Button
+- Klicke auf den **Run**-Button
 
 ## Updates
 
