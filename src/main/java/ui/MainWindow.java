@@ -145,7 +145,7 @@ toolBar.add(langSel);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
         toolBar.addSeparator(new Dimension(20, 30));
-        toolBar.add(new JLabel("Modus/Mode: "));
+        toolBar.add(new JLabel(LanguageManager.t("mode")));
         toolBar.add(modeSelector);
         toolBar.add(mainClassLabel);
         toolBar.add(mainClassInput);
