@@ -187,7 +187,7 @@ TIDE uses the power of proven open-source libraries:
 * **[JGit](https://www.eclipse.org/jgit/)** - For integrated version control.
 * **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - For syntax highlighting in the editor.
 * **[Autocomplete]
-(https://github.com/bobbylight/Autocomplete - For auto completion.
+(https://github.com/bobbylight/Autocomplete)** - For auto completion.
 * **[FlatLaf](https://www.formdev.com/flatlaf/)** - For the modern, flat design of the user interface.
 
 ## Contributing
