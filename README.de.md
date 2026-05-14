@@ -186,6 +186,7 @@ In diesem Projekt werden dependencys genutzt. Die nötigen Lizenzen stehen in de
 TIDE nutzt die Power bewährter Open-Source-Bibliotheken:
 * **[JGit](https://www.eclipse.org/jgit/)** - Für die integrierte Versionsverwaltung.
 * **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - Für das Syntax-Highlighting im Editor.
+* **[Autocomplete](https://github.com/bobbylight/AutoComplete)** - Für automatische, intelligente Code Vervollständigung.
 * **[FlatLaf](https://www.formdev.com/flatlaf/)** - Für das moderne, flache Design der Benutzeroberfläche.
 
 ## Beitragen
