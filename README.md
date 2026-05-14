@@ -186,8 +186,7 @@ This project uses dependencies. The necessary licenses are in the THIRD_PARTY_LI
 TIDE uses the power of proven open-source libraries:
 * **[JGit](https://www.eclipse.org/jgit/)** - For integrated version control.
 * **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - For syntax highlighting in the editor.
-* **[Autocomplete]
-(https://github.com/bobbylight/Autocomplete)** - For auto completion.
+* **[Autocomplete](https://github.com/bobbylight/AutoComplete)** - For automatic intelligent code completion.
 * **[FlatLaf](https://www.formdev.com/flatlaf/)** - For the modern, flat design of the user interface.
 
 ## Contributing
