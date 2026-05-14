@@ -4,7 +4,7 @@
 [![Java](https://img.shields.io/badge/Java-100%25-orange)](https://www.java.com/)
 [![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/TIDE/releases/latest)
 
-TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development Environment)**, die speziell für Java-Entwicklung entwickelt wurde. Sie bietet alle wesentlichen Funktionen für das Schreiben, Kompilieren und Ausführen von Java-Programmen – ohne die Komplexität größerer IDEs wie Eclipse oder IntelliJ IDEA.
+TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development Environment)**, die speziell für Java-Entwicklung entwickelt wurde. Sie bietet alle wesentlichen Funktionen für das Schreiben, Kompilieren und Ausführen von Java-Programmen, jedoch auch für andere Sprachen, wie Batch oder C++, jedoch ist Java am besten unterstützt.
 
 ## Features
 
