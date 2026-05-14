@@ -81,32 +81,9 @@ TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environm
 
 ## How TIDE Works
 
-### Architecture Overview
-
-```
-┌─────────────────────────────────────────┐
-│         TIDE User Interface             │
-│  (Editor, Menus, Project Tree, Console) │
-└────────────────────┬────────────────────┘
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-   ┌────▼─────┐ ┌───▼────┐ ┌────▼─────┐
-   │  Editor  │ │Compiler│ │Execution │
-   │ Module   │ │Module  │ │Module    │
-   └──────────┘ └────────┘ └──────────┘
-        │            │            │
-        └────────────┼────────────┘
-                     │
-          ┌──────────▼──────────┐
-          │  Java File System   │
-          │  (.java, .class)    │
-          └─────────────────────┘
-```
-
 ### Workflow Example
 
-1. **Create Project**: Start TIDE and create a new project via the menu
+1. **Create Project**: Start TIDE and create a new project via the menu of TBuild
 2. **Write Code**: Write your Java classes in the integrated editor
 3. **Compile**: Use the Build button or menu to compile
 4. **Run**: Execute your program directly from TIDE
@@ -142,10 +119,10 @@ Or you can use TBuild, which can be downloaded and run via the TBuild button and
 ## Example: Your First Program with TIDE
 
 ### Step 1: Create a New Project
-Start TIDE and go to **File → New Project** → Give your project a name
+Start TIDE and go to a new folder. Then Press TBuild and in TBuild Initialize project.
 
 ### Step 2: Create a New Java Class
-Go to **File → New Class** and create a class named `HelloWorld`
+Go to src/main/java/Main.java
 
 ### Step 3: Write Code
 ```java
@@ -157,8 +134,7 @@ public class Main {
 ```
 
 ### Step 4: Compile and Run
-- Press **Ctrl+B** to compile
-- Press **Ctrl+R** to run or click the **Run** button
+- Click the **Run** button
 
 ## Updates
 
