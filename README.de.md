@@ -18,7 +18,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 ## Anforderungen
 
-- **Java Runtime Environment (JRE) 25 oder höher**
+- **Java development kit (JDK) 25 oder höher**
      - Oder die .msi/.deb Installer nutzen
 - **Mindestens 750 MB RAM**
 - **50 MB freier Festplattenspeicher**
@@ -198,6 +198,8 @@ java -jar /pfad/zu/TIDE.jar
 
 - **Java Dokumentation**: https://docs.oracle.com/en/java/
 - **GitHub Repository**: https://github.com/Thillager/TIDE
+- **TBuild**
+https://github.com/Thillager/TBuild
 
 ## Lizenz
 
