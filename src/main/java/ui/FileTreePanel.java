@@ -1,6 +1,7 @@
 package ui;
 
 import model.FileNode;
+import config.LanguageManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -34,7 +35,7 @@ public class FileTreePanel extends JScrollPane {
         this.consolePanel = consolePanel;
         this.onFileOpen   = onFileOpen;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Kein Projekt geöffnet");
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(LanguageManager.t("folder.opened"));
         treeModel = new DefaultTreeModel(root);
         fileTree  = new JTree(treeModel);
         fileTree.setBackground(new Color(30, 31, 34));
@@ -96,15 +97,15 @@ public class FileTreePanel extends JScrollPane {
         JPopupMenu popup = new JPopupMenu();
         TreePath path = fileTree.getPathForLocation(me.getX(), me.getY());
 
-        JMenuItem neuDatei      = new JMenuItem("Neue Datei");
-        JMenuItem neuOrdner     = new JMenuItem("Neuer Ordner");
-        JMenuItem umbenennen    = new JMenuItem("Umbenennen");
-        JMenuItem delete        = new JMenuItem("Löschen");
-        JMenuItem explorer      = new JMenuItem("In Explorer öffnen");
-        JMenuItem copy          = new JMenuItem("Kopieren");
-        JMenuItem cut           = new JMenuItem("Ausschneiden");
-        JMenuItem paste         = new JMenuItem("Einfügen");
-        JMenuItem aktualisieren = new JMenuItem("Aktualisieren");
+        JMenuItem neuDatei      = new JMenuItem(LanguageManager.t("neuDatei"));
+        JMenuItem neuOrdner     = new JMenuItem(LanguageManager.t("neuOrdner"));
+        JMenuItem umbenennen    = new JMenuItem(LanguageManager.t("umbenennen"));
+        JMenuItem delete        = new JMenuItem(LanguageManager.t("delete"));
+        JMenuItem explorer      = new JMenuItem(LanguageManager.t("explorer"));
+        JMenuItem copy          = new JMenuItem(LanguageManager.t("copy"));
+        JMenuItem cut           = new JMenuItem(LanguageManager.t("cut"));
+        JMenuItem paste         = new JMenuItem(LanguageManager.t("paste"));
+        JMenuItem aktualisieren = new JMenuItem(LanguageManager.t("aktualisieren"));
         aktualisieren.addActionListener(e -> {
             if (currentProjectFolder != null) updateFileTree(currentProjectFolder);
         });

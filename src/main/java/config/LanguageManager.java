@@ -24,9 +24,18 @@ public class LanguageManager {
         texts.put("DE_about", "Über");
         texts.put("DE_mode", "Modus: ");
         texts.put("DE_main", "Main-Class: ");
-        texts.put("DE_folder_opened", "Ordner geöffnet: ");
-        texts.put("DE_no_txml", "Keine T.xml im Projektordner");
-        texts.put("DE_error_txml", "T.xml konnte nicht gelesen werden");
+        texts.put("DE_folder.opened", "Ordner geöffnet: ");
+        texts.put("DE_no.txml", "Keine T.xml im Projektordner");
+        texts.put("DE_error.txml", "T.xml konnte nicht gelesen werden");
+        texts.put("DE_umbenennen", "Umbenennen");
+        texts.put("DE_neuDatei", "Neue Datei");
+        texts.put("DE_neuOrdner", "Neuer Ordner");
+        texts.put("DE_delete", "Löschen");
+        texts.put("DE_explorer", "Explorer");
+        texts.put("DE_copy", "Kopieren");
+        texts.put("DE_cut", "Ausschneiden");
+        texts.put("DE_paste", "Einfügen");
+        texts.put("DE_aktualisieren", "Aktualisieren");
         
         // English
         texts.put("EN_open", "Open folder");
@@ -35,9 +44,18 @@ public class LanguageManager {
         texts.put("EN_about", "About");
         texts.put("EN_mode", "Mode: ");
         texts.put("EN_main", "Main Class: ");
-        texts.put("EN_folder_opened", "Folder opened: ");
-        texts.put("EN_no_txml", "No T.xml in project folder");
-        texts.put("EN_error_txml", "Failed to read T.xml");
+        texts.put("EN_folder.opened", "Folder opened: ");
+        texts.put("EN_no.txml", "No T.xml in project folder");
+        texts.put("EN_error.txml", "Failed to read T.xml");
+        texts.put("EN_umbenennen", "Rename");
+        texts.put("EN_neuDatei", "New file");
+        texts.put("EN_neuOrdner", "New folder");
+        texts.put("EN_delete", "Delete");
+        texts.put("EN_explorer", "Explorer");
+        texts.put("EN_copy", "Copy");
+        texts.put("EN_cut", "Cut");
+        texts.put("EN_paste", "Paste");
+        texts.put("EN_aktualisieren", "Refresh");
     }
     
     public static void set(Language l) { lang = l; }
