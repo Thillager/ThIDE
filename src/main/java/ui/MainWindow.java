@@ -24,7 +24,7 @@ import config.LanguageManager;
 
 public class MainWindow extends JFrame {
 
-    public static final String APP_VERSION = "2.6.1";
+    public static final String APP_VERSION = "2.6.2";
     public static final String GITHUB_REPO = "Thillager/TIDE";
 
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;
