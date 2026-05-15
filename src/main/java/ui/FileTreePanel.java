@@ -169,7 +169,7 @@ public class FileTreePanel extends JScrollPane {
         if (target == null || currentProjectFolder == null) return;
         File zielOrdner = target.isDirectory() ? target : target.getParentFile();
         String name = (String) JOptionPane.showInputDialog(
-                parent, "Wie soll die neue Datei heißen?",
+                parent, (LanguageManager.t("file.name")),
                 "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
         if (name != null && !name.trim().isEmpty()) {
             try {

@@ -36,6 +36,7 @@ public class LanguageManager {
         texts.put("DE_cut", "Ausschneiden");
         texts.put("DE_paste", "Einfügen");
         texts.put("DE_aktualisieren", "Aktualisieren");
+        texts.put("DE_file.name", "Wie soll die Datei heißen?");
         
         // English
         texts.put("EN_open", "Open folder");
@@ -56,6 +57,7 @@ public class LanguageManager {
         texts.put("EN_cut", "Cut");
         texts.put("EN_paste", "Paste");
         texts.put("EN_aktualisieren", "Refresh");
+        texts.put("EN_file.name", "What shall be the name of the file?");
     }
     
     public static void set(Language l) { lang = l; }
