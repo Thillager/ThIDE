@@ -4,10 +4,6 @@ import ui.MainWindow;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Einstiegspunkt fuer TIDE.
- * Initialisiert Look & Feel und startet das Hauptfenster.
- */
 public class TIDE {
 
     public static void main(String[] args) {

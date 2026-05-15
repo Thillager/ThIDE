@@ -1,19 +1,20 @@
 package runner;
 
+import config.LanguageManager;
 import editor.CompilerErrorMarker;
 import editor.EditorManager;
 import ui.ConsolePanel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProjectRunner {
 
@@ -41,7 +42,7 @@ public class ProjectRunner {
 
     public void runProject(String mode, String mainClass) {
         if (currentProjectFolder == null) {
-            consolePanel.log("[WARNUNG] Bitte öffne zuerst einen Projektordner.\n", Color.ORANGE);
+            consolePanel.log(LanguageManager.t("no_project") + "\n", Color.ORANGE);
             return;
         }
 
@@ -53,16 +54,61 @@ public class ProjectRunner {
 
         switch (mode) {
             case MODE_JAVA:
-                if (mc.isEmpty()) { consolePanel.log("[FEHLER] Bitte gib die Main-Klasse ein.\n", Color.RED); return; }
+                if (mc.isEmpty()) { 
+                    consolePanel.log(LanguageManager.t("no_main") + "\n", Color.RED); 
+                    return; 
+                }
+                
                 File outFolder = new File(currentProjectFolder, "out");
                 if (!outFolder.exists()) outFolder.mkdirs();
-                consolePanel.log("[JAVA] Kompiliere nach /out...\n", Color.CYAN);
-                File sourceFile = findSourceFile(currentProjectFolder, mc);
-                if (sourceFile == null) { consolePanel.log("[FEHLER] Datei nicht gefunden.\n", Color.RED); return; }
+                
+                consolePanel.log(LanguageManager.t("compiling") + "\n", Color.CYAN);
+
+                // 1. Hauptdatei finden
+                File mainFile = findSourceFile(currentProjectFolder, mc);
+                if (mainFile == null) {
+                    consolePanel.log(LanguageManager.t("file_not_found") + ": " + mc + "\n", Color.RED);
+                    return;
+                }
+
+                // 2. Source-Root dynamisch berechnen
+                // Wenn mc "TIDE" ist (0 Punkte), ist die Root der Ordner von TIDE.java
+                // Wenn mc "com.test.Main" ist (2 Punkte), ist die Root 2 Ebenen über Main.java
+                File sourceRoot = calculateSourceRoot(mainFile, mc);
+
+                // 3. Alle Java-Dateien im gesamten Projekt sammeln
+                List<File> javaFiles = new ArrayList<>();
+                collectAllJavaFiles(currentProjectFolder, javaFiles);
+
+                if (javaFiles.isEmpty()) {
+                    consolePanel.log(LanguageManager.t("file_not_found") + "\n", Color.RED);
+                    return;
+                }
+
+                // 4. Argument-Datei erstellen (@sources.txt)
+                // Verhindert Probleme mit Leerzeichen und zu langen Befehlszeilen unter Windows
+                File sourcesListFile = new File(currentProjectFolder, ".sources.txt");
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+                        new FileOutputStream(sourcesListFile), StandardCharsets.UTF_8))) {
+                    for (File f : javaFiles) {
+                        writer.println(f.getAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    consolePanel.log("Error creating source list: " + e.getMessage() + "\n", Color.RED);
+                    return;
+                }
+
                 String separator = System.getProperty("path.separator");
-                String classpath  = "\"out\"" + separator + "\"libs/*\"";
-                String compileCmd = "javac -encoding UTF-8 -cp " + classpath + " -d out \"" + sourceFile.getAbsolutePath() + "\"";
-                String runCmd     = "java -cp " + classpath + " " + mc;
+                String classpath = "out" + separator + "libs/*";
+                
+                // javac Befehl mit @sources.txt und explizitem -sourcepath
+                String compileCmd = "javac -encoding UTF-8 -cp \"" + classpath + "\" " +
+                                   "-d out " +
+                                   "-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
+                                   "\"@" + sourcesListFile.getName() + "\"";
+                
+                String runCmd = "java -cp \"out" + separator + "libs/*\" " + mc;
+                
                 executeCommand(compileCmd + " && " + runCmd, false);
                 break;
 
@@ -72,55 +118,61 @@ public class ProjectRunner {
                 if (activeC != null) {
                     String compiler = mode.equals(MODE_C) ? "gcc" : "g++";
                     String exeName  = isWindows ? "program.exe" : "./program";
-                    consolePanel.log("[" + mode.toUpperCase() + "] Kompiliere " + activeC.getName() + "...\n", Color.CYAN);
+                    consolePanel.log("[" + mode.toUpperCase() + "] " + LanguageManager.t("compiling") + " " + activeC.getName() + "...\n", Color.CYAN);
                     executeCommand(compiler + " \"" + activeC.getAbsolutePath() + "\" -o program && " + exeName, false);
-                } else { consolePanel.log("[FEHLER] Keine C/C++ Datei offen.\n", Color.RED); }
+                } else { 
+                    consolePanel.log(LanguageManager.t("no_c_file") + "\n", Color.RED); 
+                }
                 break;
 
             case MODE_BATCH:
                 File activeBat = editorManager.getActiveFile();
                 if (activeBat != null) {
-                    consolePanel.log("[BATCH] Starte " + activeBat.getName() + "...\n", Color.CYAN);
+                    consolePanel.log("[BATCH] " + activeBat.getName() + "...\n", Color.CYAN);
                     executeCommand("\"" + activeBat.getAbsolutePath() + "\"", false);
-                } else { consolePanel.log("[FEHLER] Keine Batch-Datei offen.\n", Color.RED); }
+                } else { 
+                    consolePanel.log(LanguageManager.t("no_bat_file") + "\n", Color.RED); 
+                }
                 break;
         }
     }
 
-    public void handleTBuild() {
-        if (currentProjectFolder == null) {
-            consolePanel.log("[FEHLER] Bitte öffne zuerst einen Projektordner.\n", Color.RED);
-            return;
+    /**
+     * Berechnet die Wurzel der Package-Struktur.
+     * Beispiel: fqcn = "ui.MainWindow", file = ".../src/main/java/ui/MainWindow.java"
+     * Rückgabe: ".../src/main/java"
+     */
+    private File calculateSourceRoot(File sourceFile, String fqcn) {
+        int dotCount = 0;
+        for (char c : fqcn.toCharArray()) if (c == '.') dotCount++;
+        
+        File root = sourceFile.getParentFile();
+        for (int i = 0; i < dotCount; i++) {
+            if (root != null && root.getParentFile() != null) {
+                root = root.getParentFile();
+            }
         }
-        File tbuildJar = new File(currentProjectFolder, "TBuild.jar");
-        if (tbuildJar.exists()) {
-            executeCommand("java -jar TBuild.jar", true);
-        } else {
-            consolePanel.log("[INFO] TBuild.jar nicht gefunden. Lade herunter...\n", Color.YELLOW);
-            new Thread(() -> {
-                try {
-                    URL url = new URL("https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar");
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setInstanceFollowRedirects(true);
-                    try (InputStream in = connection.getInputStream()) {
-                        Files.copy(in, tbuildJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    consolePanel.log("[ERFOLG] TBuild erfolgreich heruntergeladen!\n", Color.GREEN);
-                    executeCommand("java -jar TBuild.jar", true);
-                    if (onRefreshFileTree != null)
-                        SwingUtilities.invokeLater(onRefreshFileTree);
-                } catch (Exception ex) {
-                    consolePanel.log("[FEHLER] Download fehlgeschlagen: " + ex.getMessage() + "\n", Color.RED);
-                }
-            }).start();
+        return root;
+    }
+
+    private void collectAllJavaFiles(File dir, List<File> list) {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) {
+                String name = f.getName();
+                if (name.equals(".git") || name.equals("out") || name.equals("libs") || name.equals("target")) continue;
+                collectAllJavaFiles(f, list);
+            } else if (f.getName().endsWith(".java")) {
+                list.add(f);
+            }
         }
     }
 
     public void executeCommand(String command, boolean isTBuild) {
         consolePanel.log("> " + command + "\n", Color.GRAY);
-        if (!isTBuild) {
-            SwingUtilities.invokeLater(errorMarker::clearCompilerErrors);
-        }
+        if (!isTBuild) SwingUtilities.invokeLater(errorMarker::clearCompilerErrors);
+        
         new Thread(() -> {
             try {
                 ProcessBuilder pb;
@@ -132,46 +184,42 @@ public class ProjectRunner {
                 if (currentProjectFolder != null) pb.directory(currentProjectFolder);
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
-                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+                
+                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
                 String line;
                 StringBuilder fullOutput = new StringBuilder();
                 while ((line = r.readLine()) != null) {
                     fullOutput.append(line).append("\n");
                     consolePanel.log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
                 }
+                
                 int exitCode = p.waitFor();
                 if (exitCode != 0) {
-                    consolePanel.log("[PROZESS BEENDET MIT CODE " + exitCode + "]\n", Color.RED);
-                    if (!isTBuild) {
-                        errorMarker.markCompilerErrors(fullOutput.toString());
-                    }
+                    consolePanel.log("[ERROR CODE " + exitCode + "]\n", Color.RED);
+                    if (!isTBuild) errorMarker.markCompilerErrors(fullOutput.toString());
                 }
             } catch (Exception e) {
-                consolePanel.log("[TERMINAL FEHLER] " + e.getMessage() + "\n", Color.RED);
+                consolePanel.log("[TERMINAL ERROR] " + e.getMessage() + "\n", Color.RED);
             }
         }).start();
     }
-
-    // ======= Callbacks =======
-
-    private Runnable onRefreshFileTree;
-
-    public void setOnRefreshFileTree(Runnable r) {
-        this.onRefreshFileTree = r;
-    }
-
-    // ======= Hilfsmethoden =======
 
     public File findSourceFile(File dir, String fqcn) {
         String relativePath = fqcn.replace(".", File.separator) + ".java";
         File direct = new File(dir, relativePath);
         if (direct.exists()) return direct;
-        File src = new File(dir, "src");
-        if (src.exists() && src.isDirectory()) {
-            File inSrc = new File(src, relativePath);
-            if (inSrc.exists()) return inSrc;
+        
+        // Suche in src/main/java (Standard)
+        File srcMain = new File(dir, "src" + File.separator + "main" + File.separator + "java");
+        if (srcMain.exists()) {
+            File f = new File(srcMain, relativePath);
+            if (f.exists()) return f;
         }
-        if (!fqcn.contains(".")) return searchFileRecursively(dir, fqcn + ".java");
+
+        // Suche rekursiv falls mc nur der Name ohne Package ist
+        if (!fqcn.contains(".")) {
+            return searchFileRecursively(dir, fqcn + ".java");
+        }
         return null;
     }
 
@@ -187,4 +235,28 @@ public class ProjectRunner {
         }
         return null;
     }
+
+    // handleTBuild und setOnRefreshFileTree bleiben identisch...
+    public void handleTBuild() {
+        if (currentProjectFolder == null) return;
+        File tbuildJar = new File(currentProjectFolder, "TBuild.jar");
+        if (tbuildJar.exists()) {
+            executeCommand("java -jar TBuild.jar", true);
+        } else {
+            new Thread(() -> {
+                try {
+                    URL url = new URL("https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar");
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setInstanceFollowRedirects(true);
+                    try (InputStream in = connection.getInputStream()) {
+                        Files.copy(in, tbuildJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    executeCommand("java -jar TBuild.jar", true);
+                } catch (Exception ignored) {}
+            }).start();
+        }
+    }
+
+    private Runnable onRefreshFileTree;
+    public void setOnRefreshFileTree(Runnable r) { this.onRefreshFileTree = r; }
 }

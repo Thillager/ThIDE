@@ -20,10 +20,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
+import config.LanguageManager;
 
 public class MainWindow extends JFrame {
 
-    public static final String APP_VERSION = "2.3.0";
+    public static final String APP_VERSION = "2.5.0";
     public static final String GITHUB_REPO = "Thillager/TIDE";
 
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;
@@ -41,6 +42,11 @@ public class MainWindow extends JFrame {
     private JComboBox<String> modeSelector;
     private JTextField mainClassInput;
     private JButton btnTBuild;
+    private JButton btnOpen;
+    private JButton btnSave;
+    private JButton btnClear;
+    private JButton btnAbout;
+    private JLabel modeLabel;
     private JLabel mainClassLabel;
     private SearchPanel searchPanel;
 
@@ -94,20 +100,22 @@ public class MainWindow extends JFrame {
         toolBar.setBorder(new EmptyBorder(8, 10, 8, 10));
         toolBar.setBackground(new Color(43, 45, 48));
 
-        JButton btnOpen = new JButton(LanguageManager.t("open"));
-JButton btnSave = new JButton(LanguageManager.t("save"));
-JButton btnClear = new JButton(LanguageManager.t("clear"));
-JButton btnAbout = new JButton(LanguageManager.t("about"));
+        btnOpen  = new JButton(LanguageManager.t("open"));
+        btnSave  = new JButton(LanguageManager.t("save"));
 
-// Add language selector (new!)
-JComboBox<LanguageManager.Language> langSel = 
-    new JComboBox<>(LanguageManager.Language.values());
-langSel.addActionListener(e -> {
-    LanguageManager.set((LanguageManager.Language) langSel.getSelectedItem());
-    // Refresh buttons (you can add this later)
-});
-toolBar.add(new JLabel("Language: "));
-toolBar.add(langSel);
+        modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
+        modeSelector.setPreferredSize(new Dimension(90, 28));
+        modeSelector.setMaximumSize(new Dimension(90, 28));
+
+        mainClassLabel = new JLabel(" Main-Class: ");
+        mainClassInput = new JTextField("Main", 10);
+        mainClassInput.setPreferredSize(new Dimension(130, 28));
+        mainClassInput.setMaximumSize(new Dimension(130, 28));
+
+        JButton btnRun = new JButton("▶");
+        btnTBuild      = new JButton("T-Build");
+        btnClear       = new JButton(LanguageManager.t("clear"));
+        btnAbout       = new JButton(LanguageManager.t("about"));
 
         btnRun.setForeground(new Color(80, 200, 120));
         btnRun.setFont(btnRun.getFont().deriveFont(Font.BOLD));
@@ -144,8 +152,9 @@ toolBar.add(langSel);
         toolBar.add(btnOpen);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
+        modeLabel = new JLabel("Modus/Mode: ");
         toolBar.addSeparator(new Dimension(20, 30));
-        toolBar.add(new JLabel(LanguageManager.t("mode")));
+        toolBar.add(modeLabel);
         toolBar.add(modeSelector);
         toolBar.add(mainClassLabel);
         toolBar.add(mainClassInput);
@@ -156,6 +165,25 @@ toolBar.add(langSel);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(gitMenuBar);
         toolBar.add(Box.createHorizontalGlue());
+
+        // Language selector
+        JComboBox<LanguageManager.Language> langSel = new JComboBox<>(LanguageManager.Language.values());
+        langSel.setPreferredSize(new Dimension(95, 28));
+        langSel.setMaximumSize(new Dimension(95, 28));
+        langSel.setToolTipText("Language / Sprache");
+        langSel.addActionListener(e -> {
+            LanguageManager.set((LanguageManager.Language) langSel.getSelectedItem());
+            // Update alle UI-Texte
+            btnOpen.setText(LanguageManager.t("open"));
+            btnSave.setText(LanguageManager.t("save"));
+            btnClear.setText(LanguageManager.t("clear"));
+            btnAbout.setText(LanguageManager.t("about"));
+            modeLabel.setText(LanguageManager.t("mode"));
+            mainClassLabel.setText(LanguageManager.t("main"));
+        });
+        toolBar.add(langSel);
+        toolBar.add(Box.createHorizontalStrut(10));
+
         toolBar.add(btnClear);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnAbout);

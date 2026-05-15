@@ -1,0 +1,14 @@
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\config\LanguageManager.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\editor\CompilerErrorMarker.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\editor\EditorManager.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\git\GitManager.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\model\FileNode.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\runner\ProjectRunner.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\TIDE.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\AboutDialog.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\ConsolePanel.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\FileTreePanel.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\MainWindow.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\SearchPanel.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\WordManagerDialog.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\update\UpdateManager.java
