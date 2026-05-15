@@ -160,7 +160,7 @@ public class MainWindow extends JFrame {
         toolBar.add(btnOpen);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
-        modeLabel = new JLabel("Modus/Mode: ");
+        modeLabel = new JLabel(LanguageManager.t("mode"));
         toolBar.addSeparator(new Dimension(20, 30));
         toolBar.add(modeLabel);
         toolBar.add(modeSelector);

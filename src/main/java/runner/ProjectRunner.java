@@ -113,27 +113,86 @@ public class ProjectRunner {
                 break;
 
             case MODE_C:
-            case MODE_CPP:
-                File activeC = editorManager.getActiveFile();
-                if (activeC != null) {
-                    String compiler = mode.equals(MODE_C) ? "gcc" : "g++";
-                    String exeName  = isWindows ? "program.exe" : "./program";
-                    consolePanel.log("[" + mode.toUpperCase() + "] " + LanguageManager.t("compiling") + " " + activeC.getName() + "...\n", Color.CYAN);
-                    executeCommand(compiler + " \"" + activeC.getAbsolutePath() + "\" -o program && " + exeName, false);
-                } else { 
-                    consolePanel.log(LanguageManager.t("no_c_file") + "\n", Color.RED); 
-                }
-                break;
+case MODE_CPP:
+    File activeC = editorManager.getActiveFile();
+    if (activeC != null) {
+        String fileName = activeC.getName();
 
-            case MODE_BATCH:
-                File activeBat = editorManager.getActiveFile();
-                if (activeBat != null) {
-                    consolePanel.log("[BATCH] " + activeBat.getName() + "...\n", Color.CYAN);
-                    executeCommand("\"" + activeBat.getAbsolutePath() + "\"", false);
-                } else { 
-                    consolePanel.log(LanguageManager.t("no_bat_file") + "\n", Color.RED); 
-                }
-                break;
+        // Prüfen, ob die richtige Dateiendung verwendet wird
+        if (mode.equals(MODE_C) && !fileName.endsWith(".c")) {
+            consolePanel.log(LanguageManager.t("no_c_file") + "\n", Color.RED);
+            return;
+        }
+
+        if (mode.equals(MODE_CPP)
+                && !(fileName.endsWith(".cpp")
+                  || fileName.endsWith(".cc")
+                  || fileName.endsWith(".cxx"))) {
+            consolePanel.log(LanguageManager.t("no_cpp_file") + "\n", Color.RED);
+            return;
+        }
+
+        String compiler = mode.equals(MODE_C) ? "gcc" : "g++";
+        String outputName = System.getProperty("os.name").toLowerCase().contains("win")
+                ? "program.exe"
+                : "program";
+
+        // Unter Unix muss das Programm mit ./ gestartet werden
+        String runCommand = System.getProperty("os.name").toLowerCase().contains("win")
+                ? outputName
+                : "./" + outputName;
+
+        consolePanel.log(
+                "[" + mode.toUpperCase() + "] "
+                + LanguageManager.t("compiling")
+                + " " + fileName + "...\n",
+                Color.CYAN
+        );
+
+        executeCommand(
+                compiler
+                        + " \"" + activeC.getAbsolutePath() + "\""
+                        + " -o " + outputName
+                        + " && " + runCommand,
+                false
+        );
+    } else {
+        if (mode.equals(MODE_C)) {
+            consolePanel.log(LanguageManager.t("no_c_file") + "\n", Color.RED);
+        } else {
+            consolePanel.log(LanguageManager.t("no_cpp_file") + "\n", Color.RED);
+        }
+    }
+    break;
+
+
+
+          case MODE_PYTHON:
+    		File activePy = editorManager.getActiveFile();
+    		if (activePy != null) {
+        // Prüfen, ob es sich um eine Python-Datei handelt
+        if (!activePy.getName().endsWith(".py")) {
+            consolePanel.log(LanguageManager.t("no_python_file") + "\n", Color.RED);
+            return;
+        }
+
+        // Python ausführen
+        consolePanel.log("[PYTHON] " + activePy.getName() + "...\n", Color.CYAN);
+
+        // Unter Windows und Linux/macOS funktioniert "python" oft,
+        // auf manchen Systemen ist nur "python3" vorhanden.
+        String pythonCmd = System.getProperty("os.name").toLowerCase().contains("win")
+                ? "python"
+                : "python3";
+
+        executeCommand(
+                pythonCmd + " \"" + activePy.getAbsolutePath() + "\"",
+                false
+        );
+    } else {
+        consolePanel.log(LanguageManager.t("no_python_file") + "\n", Color.RED);
+    }
+    break;
         }
     }
 
