@@ -92,13 +92,46 @@ public class UpdateManager {
     }
 
     /**
-     * Erkennt ob die App als .jar laeuft (nicht als jpackage-Programm).
+     * Erkennt ob die App direkt als .jar gestartet wurde –
+     * NICHT als jpackage-installiertes Programm.
+     *
+     * jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
+     * neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
+     * aber kein echter "Direktstart" vorliegt.
+     *
+     * Zusaetzlich kann beim jpackage-Build die System-Property
+     * -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
      */
     public boolean isRunningAsJar() {
+        // Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
+        if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
+            return false;
+        }
+
         try {
             java.net.URI uri = UpdateManager.class.getProtectionDomain()
                     .getCodeSource().getLocation().toURI();
-            return uri.getPath().endsWith(".jar");
+            String path = uri.getPath();
+
+            if (!path.endsWith(".jar")) return false;
+
+            // jpackage-Heuristik: JAR liegt in einem "app"-Verzeichnis
+            // neben dem nativen Launcher (.exe / kein .jar-Start)
+            File jarFile  = new File(uri);
+            File parentDir = jarFile.getParentFile();
+            if (parentDir != null && parentDir.getName().equalsIgnoreCase("app")) {
+                File launcherDir = parentDir.getParentFile();
+                if (launcherDir != null) {
+                    File[] exes = launcherDir.listFiles(
+                            f -> f.isFile() && f.getName().endsWith(".exe"));
+                    if (exes != null && exes.length > 0) {
+                        // Nativer jpackage-Launcher gefunden -> kein JAR-Direktstart
+                        return false;
+                    }
+                }
+            }
+            return true;
+
         } catch (Exception ignored) {}
         return false;
     }
@@ -122,7 +155,7 @@ public class UpdateManager {
     private void downloadAndInstallUpdate(String version, String releaseJson) {
         new Thread(() -> {
             try {
-                String os        = System.getProperty("os.name", "").toLowerCase();
+                String os         = System.getProperty("os.name", "").toLowerCase();
                 boolean isWindows = os.contains("win");
                 boolean isLinux   = !isWindows && !os.contains("mac");
                 boolean runAsJar  = isRunningAsJar();
