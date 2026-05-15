@@ -37,6 +37,12 @@ public class LanguageManager {
         texts.put("DE_paste", "Einfügen");
         texts.put("DE_aktualisieren", "Aktualisieren");
         texts.put("DE_file.name", "Wie soll die Datei heißen?");
+        texts.put("DE_AboutDialog.slogan", "<html><center>Einfache, leichte IDE fuer Anfaenger.<br></center></html>");
+        texts.put("DE_AboutDialog.headline", "TIDE - Leichte Java IDE");
+        texts.put("DE_AboutDialog.header", "Über TIDE");
+        texts.put("DE_searchUpdates", "Nach Updates suchen");
+        texts.put("DE_close", "Schließen");
+        texts.put("DE_oeffnen", "Oeffnen");
         
         // English
         texts.put("EN_open", "Open folder");
@@ -58,6 +64,12 @@ public class LanguageManager {
         texts.put("EN_paste", "Paste");
         texts.put("EN_aktualisieren", "Refresh");
         texts.put("EN_file.name", "What shall be the name of the file?");
+        texts.put("EN_AboutDialog.slogan", "<html><center>Easy, lightweight IDE for beginners.<br></center></html>");
+        texts.put("EN_AboutDialog.headline", "TIDE - Lightweight java IDE");
+        texts.put("EN_AboutDialog.header", "About TIDE");
+        texts.put("EN_searchUpdates", "Search for updates");
+        texts.put("EN_close", "Close");
+        texts.put("EN_open", "Open");
     }
     
     public static void set(Language l) { lang = l; }

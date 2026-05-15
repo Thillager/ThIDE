@@ -1,4 +1,5 @@
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\config\LanguageManager.java
+C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\config\TIDEProperties.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\editor\CompilerErrorMarker.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\editor\EditorManager.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\git\GitManager.java
