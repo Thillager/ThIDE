@@ -62,13 +62,17 @@ public class MainWindow extends JFrame {
     private WordManagerDialog wordManagerDialog;
 
     public MainWindow() {
-        setTitle("TIDE v" + APP_VERSION);
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        initSubsystems();
-        initUI();
-    }
+    setTitle("TIDE v" + APP_VERSION);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    initSubsystems();
+    initUI();
+
+    setSize(1600, 900);
+    setMinimumSize(new Dimension(1000, 700));
+    setExtendedState(JFrame.MAXIMIZED_BOTH);
+    setLocationRelativeTo(null);
+}
 
     private void initSubsystems() {
         consolePanel     = new ConsolePanel();
