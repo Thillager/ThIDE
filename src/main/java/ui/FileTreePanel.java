@@ -68,10 +68,20 @@ public class FileTreePanel extends JScrollPane {
     }
 
     public void updateFileTree(File rootFolder) {
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new FileNode(rootFolder));
-        buildTree(rootFolder, rootNode);
-        treeModel.setRoot(rootNode);
-    }
+    if (rootFolder == null) return;
+
+    DefaultMutableTreeNode rootNode =
+            new DefaultMutableTreeNode(new FileNode(rootFolder));
+
+    buildTree(rootFolder, rootNode);
+    treeModel.setRoot(rootNode);
+
+    fileTree.revalidate();
+    fileTree.repaint();
+
+    revalidate();
+    repaint();
+}
 
     private void buildTree(File folder, DefaultMutableTreeNode node) {
         File[] files = folder.listFiles();

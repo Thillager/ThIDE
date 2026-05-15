@@ -24,7 +24,7 @@ import config.LanguageManager;
 
 public class MainWindow extends JFrame {
 
-    public static final String APP_VERSION = "2.6.0";
+    public static final String APP_VERSION = "2.7.0";
     public static final String GITHUB_REPO = "Thillager/TIDE";
 
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;
@@ -88,7 +88,11 @@ public class MainWindow extends JFrame {
         fileTreePanel = new FileTreePanel(this, consolePanel, file -> editorManager.openFileInEditor(file));
 
         // Callbacks
-        gitManager.setOnRefreshFileTree(() -> fileTreePanel.updateFileTree(currentProjectFolder));
+        gitManager.setOnRefreshFileTree(() -> {
+    fileTreePanel.updateFileTree(currentProjectFolder);
+    revalidate();
+    repaint();
+});
         gitManager.setOnSaveCurrentFile(() -> editorManager.saveCurrentFile());
         projectRunner.setOnRefreshFileTree(() -> fileTreePanel.updateFileTree(currentProjectFolder));
     }
