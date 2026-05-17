@@ -60,7 +60,7 @@ public class MainWindow extends JFrame {
     private WordManagerDialog wordManagerDialog;
 
     public MainWindow() {
-    setTitle("TIDE v" + config.TIDEProperties.APP_VERSION);
+    setTitle("TIDE v" + TIDEProperties.APP_VERSION);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     initSubsystems();
@@ -80,8 +80,8 @@ public class MainWindow extends JFrame {
         errorMarker      = new CompilerErrorMarker(editorTabs, openFiles, consolePanel);
         projectRunner    = new ProjectRunner(consolePanel, editorManager, errorMarker);
         gitManager       = new GitManager(this, consolePanel);
-        updateManager    = new UpdateManager(this, consolePanel, config.TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO);
-        aboutDialog      = new AboutDialog(this, config.TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO, updateManager);
+        updateManager    = new UpdateManager(this, consolePanel, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO);
+        aboutDialog      = new AboutDialog(this, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO, updateManager);
 
         fileTreePanel = new FileTreePanel(this, consolePanel, file -> editorManager.openFileInEditor(file));
 
@@ -287,7 +287,7 @@ public class MainWindow extends JFrame {
         File txml = new File(folder, "T.xml");
         if (!txml.exists()) {
             consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n" + "[Attention] No T.xml found.\n", Color.ORANGE);
-            setTitle("TIDE v" + config.TIDEProperties.APP_VERSION + " - " + folder.getName());
+            setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + folder.getName());
             return;
         }
         try {
@@ -299,9 +299,9 @@ public class MainWindow extends JFrame {
             String titleAppName = (appName != null && !appName.isEmpty()) ? appName : folder.getName();
             String titleVersion = (version != null && !version.isEmpty()) ? version : "";
             if (!titleVersion.isEmpty()) {
-                setTitle("TIDE v" + config.TIDEProperties.APP_VERSION + " - " + titleAppName + " v" + titleVersion);
+                setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName + " v" + titleVersion);
             } else {
-                setTitle("TIDE v" + config.TIDEProperties.APP_VERSION + " - " + titleAppName);
+                setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName);
             }
             consolePanel.log("[INFO] T.xml geladen — Main-Class: " + mainClass + " | App: " + titleAppName + "\n", Color.GREEN);
         } catch (Exception e) {
