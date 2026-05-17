@@ -1,6 +1,7 @@
 package update;
 
 import ui.ConsolePanel;
+import config.TIDEProperties;
 
 import javax.swing.*;
 import java.awt.*;
@@ -35,8 +36,8 @@ public class UpdateManager {
                 HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
                 conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
                 conn.setRequestProperty("User-Agent", "TIDE-App");
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(8000);
+                conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+                conn.setReadTimeout(TIDEProperties.READ_TIMEOUT_MS);
 
                 if (conn.getResponseCode() != 200) {
                     consolePanel.log("[FEHLER] Konnte GitHub nicht erreichen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
@@ -181,8 +182,8 @@ public class UpdateManager {
                     File tempJar = new File(System.getProperty("java.io.tmpdir"), jarAssetName);
                     HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
                     conn.setInstanceFollowRedirects(true);
-                    conn.setConnectTimeout(15000);
-                    conn.setReadTimeout(60000);
+                    conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+                    conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
                     if (conn.getResponseCode() != 200) {
                         consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
                         return;
@@ -225,8 +226,8 @@ public class UpdateManager {
 
                 HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
                 conn.setInstanceFollowRedirects(true);
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(60000);
+                conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+			 conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
 
                 if (conn.getResponseCode() != 200) {
                     consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);

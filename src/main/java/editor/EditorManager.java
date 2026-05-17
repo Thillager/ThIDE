@@ -7,6 +7,7 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import ui.ConsolePanel;
 import ui.WordManagerDialog;
+import config.TIDEProperties;
 
 import javax.swing.*;
 import java.awt.*;
@@ -59,7 +60,7 @@ public class EditorManager {
             else textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
 
             textArea.setCodeFoldingEnabled(true);
-            textArea.setFont(new Font("Consolas", Font.PLAIN, 15));
+            textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEProperties.EDITOR_FONT_SIZE));
 
             try {
                 Theme theme = Theme.load(getClass().getResourceAsStream(
@@ -95,7 +96,7 @@ public class EditorManager {
             AutoCompletion ac = new AutoCompletion(provider);
             ac.setAutoCompleteSingleChoices(false);
             ac.setAutoActivationEnabled(true);
-            ac.setAutoActivationDelay(100);
+            ac.setAutoActivationDelay(TIDEProperties.AUTOCOMPLETE_DELAY);
             ac.install(textArea);
 
             // --- LERN-FUNKTION ---
@@ -106,7 +107,7 @@ public class EditorManager {
             String existingContent = textArea.getText();
             if (existingContent != null) {
                 for (String t : existingContent.split("[^\\w]+")) {
-                    if (t.length() > 2) knownWords.add(t);
+                    if (t.length() > TIDEProperties.AUTOCOMPLETE_MIN_LEN) knownWords.add(t);
                 }
             }
 
@@ -126,7 +127,7 @@ public class EditorManager {
                             start++;
                             if (start < caret) {
                                 String word = text.substring(start, caret);
-                                if (word.length() > 2 && knownWords.add(word)) {
+                                if (word.length() > TIDEProperties.AUTOCOMPLETE_MIN_LEN && knownWords.add(word)) {
                                     provider.addCompletion(new BasicCompletion(provider, word));
                                 }
                             }
@@ -187,7 +188,7 @@ public class EditorManager {
         if (content != null && !content.isEmpty()) {
             String[] tokens = content.split("[^\\w]+");
             for (String token : tokens) {
-                if (token.length() > 2 && seen.add(token)) {
+                if (token.length() > TIDEProperties.AUTOCOMPLETE_MIN_LEN && seen.add(token)) {
                     provider.addCompletion(new BasicCompletion(provider, token));
                 }
             }

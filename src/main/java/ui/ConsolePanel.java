@@ -6,6 +6,8 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
 
+import config.TIDEProperties;
+
 public class ConsolePanel extends JPanel {
 
     private JTextPane consolePane;
@@ -33,7 +35,7 @@ public class ConsolePanel extends JPanel {
 
         add(consoleScroll, BorderLayout.CENTER);
         add(terminalInput, BorderLayout.SOUTH);
-        setPreferredSize(new Dimension(0, 250));
+        setPreferredSize(new Dimension(0, TIDEProperties.CONSOLE_HEIGHT));
     }
 
     public JTextPane getConsolePane() {

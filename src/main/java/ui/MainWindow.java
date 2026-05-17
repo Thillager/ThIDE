@@ -25,8 +25,6 @@ import config.LanguageManager;
 
 public class MainWindow extends JFrame {
 
-    public static final String GITHUB_REPO = "Thillager/TIDE";
-
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;
     private static final String MODE_PYTHON = ProjectRunner.MODE_PYTHON;
     private static final String MODE_C      = ProjectRunner.MODE_C;
@@ -68,8 +66,8 @@ public class MainWindow extends JFrame {
     initSubsystems();
     initUI();
 
-    setSize(1600, 900);
-    setMinimumSize(new Dimension(1000, 700));
+    setSize(TIDEProperties.WINDOW_WIDTH, TIDEProperties.WINDOW_HEIGHT);
+    setMinimumSize(new Dimension(TIDEProperties.WINDOW_MIN_WIDTH, TIDEProperties.WINDOW_MIN_HEIGHT));
     setExtendedState(JFrame.MAXIMIZED_BOTH);
     setLocationRelativeTo(null);
 }
@@ -82,8 +80,8 @@ public class MainWindow extends JFrame {
         errorMarker      = new CompilerErrorMarker(editorTabs, openFiles, consolePanel);
         projectRunner    = new ProjectRunner(consolePanel, editorManager, errorMarker);
         gitManager       = new GitManager(this, consolePanel);
-        updateManager    = new UpdateManager(this, consolePanel, config.TIDEProperties.APP_VERSION, GITHUB_REPO);
-        aboutDialog      = new AboutDialog(this, config.TIDEProperties.APP_VERSION, GITHUB_REPO, updateManager);
+        updateManager    = new UpdateManager(this, consolePanel, config.TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO);
+        aboutDialog      = new AboutDialog(this, config.TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO, updateManager);
 
         fileTreePanel = new FileTreePanel(this, consolePanel, file -> editorManager.openFileInEditor(file));
 

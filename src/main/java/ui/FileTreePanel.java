@@ -2,6 +2,7 @@ package ui;
 
 import model.FileNode;
 import config.LanguageManager;
+import config.TIDEProperties;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -63,7 +64,7 @@ public class FileTreePanel extends JScrollPane {
         });
 
         setViewportView(fileTree);
-        setPreferredSize(new Dimension(250, 0));
+        setPreferredSize(new Dimension(TIDEProperties.FILETREE_WIDTH, 0));
         setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.DARK_GRAY));
     }
 
