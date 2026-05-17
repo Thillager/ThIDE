@@ -15,6 +15,7 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 - ✅ **Plattformunabhängig** - Läuft auf Windows, Linux und macOS (alle Java-unterstützenden Systeme)
 - ✅ **GUI mit Java Swing** - Native und responsive Benutzeroberfläche
 - ✅ **Update Button** - Weder nerviges neu installieren bei neuen Versionen, noch automatische updates mit eventueller malware
+- ✅ **Mehrere Sprachen** - Nicht nur eine Sprache wird unterstützt
 
 ## Anforderungen
 
