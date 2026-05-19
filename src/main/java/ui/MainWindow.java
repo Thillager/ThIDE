@@ -74,10 +74,28 @@ public class MainWindow extends JFrame {
     initSubsystems();
     initUI();
 
-    setSize(TIDEProperties.WINDOW_WIDTH, TIDEProperties.WINDOW_HEIGHT);
-    setMinimumSize(new Dimension(TIDEProperties.WINDOW_MIN_WIDTH, TIDEProperties.WINDOW_MIN_HEIGHT));
-    setExtendedState(JFrame.MAXIMIZED_BOTH);
+    // 1. Größe setzen (falls NICHT maximiert)
+    setSize(
+        TIDEPreferences.getWindowWidth(),
+        TIDEPreferences.getWindowHeight()
+    );
+
+    // 2. Position zentrieren
     setLocationRelativeTo(null);
+
+    // 3. Maximieren (entscheidend: NACH setSize!)
+    setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+    // 4. Divider erst NACH Layout setzen
+    SwingUtilities.invokeLater(() -> {
+        horizontalSplit.setDividerLocation(
+            TIDEPreferences.getDividerHProportion()
+        );
+
+        verticalSplit.setDividerLocation(
+            TIDEPreferences.getDividerVProportion()
+        );
+    });
 }
 
     private void initSubsystems() {
@@ -227,15 +245,46 @@ public class MainWindow extends JFrame {
         });
 
         // Layout
-        verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
-	   verticalSplit.setResizeWeight(0.7);
-	   verticalSplit.setDividerSize(4);
-	   verticalSplit.setBorder(null);
+        // Layout
+verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
+verticalSplit.setResizeWeight(0.7);
+verticalSplit.setDividerSize(4);
+verticalSplit.setBorder(null);
 
-	   horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, verticalSplit);
-	   horizontalSplit.setDividerSize(4);
-	   horizontalSplit.setBorder(null);
-	   add(horizontalSplit, BorderLayout.CENTER);
+verticalSplit.addPropertyChangeListener(
+    JSplitPane.DIVIDER_LOCATION_PROPERTY,
+    e -> {
+        if (verticalSplit.getHeight() > 0) {
+            TIDEPreferences.saveDividerVProportion(
+                verticalSplit.getDividerLocation()
+                    / (double) verticalSplit.getHeight()
+            );
+        }
+    }
+);
+
+horizontalSplit = new JSplitPane(
+    JSplitPane.HORIZONTAL_SPLIT,
+    fileTreePanel,
+    verticalSplit
+);
+horizontalSplit.setDividerSize(4);
+horizontalSplit.setBorder(null);
+
+horizontalSplit.addPropertyChangeListener(
+    JSplitPane.DIVIDER_LOCATION_PROPERTY,
+    e -> {
+        if (horizontalSplit.getWidth() > 0) {
+            TIDEPreferences.saveDividerHProportion(
+                horizontalSplit.getDividerLocation()
+                    / (double) horizontalSplit.getWidth()
+            );
+        }
+    }
+);
+
+// GANZ WICHTIG!
+add(horizontalSplit, BorderLayout.CENTER);
 
         // Event Listeners
         btnOpen.addActionListener(e  -> openFolderDialog());
@@ -281,9 +330,6 @@ addWindowListener(new WindowAdapter() {
     public void windowClosing(WindowEvent e) {
         TIDEPreferences.saveWindowWidth(getWidth());
         TIDEPreferences.saveWindowHeight(getHeight());
-        TIDEPreferences.saveMode((String) modeSelector.getSelectedItem());
-        TIDEPreferences.saveDividerH(horizontalSplit.getDividerLocation());
-        TIDEPreferences.saveDividerV(verticalSplit.getDividerLocation());
 
         if (currentProjectFolder != null) {
             TIDEPreferences.saveLastFolder(
@@ -314,10 +360,6 @@ if (lastFolder != null) {
 
 // Modus und Main-Class wiederherstellen
 modeSelector.setSelectedItem(TIDEPreferences.getMode());
-
-// Divider-Positionen wiederherstellen
-horizontalSplit.setDividerLocation(TIDEPreferences.getDividerH());
-verticalSplit.setDividerLocation(TIDEPreferences.getDividerV());
 
         updateDynamicUI();
     }

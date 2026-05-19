@@ -23,4 +23,21 @@ public static int getWindowHeight()    { return prefs.getInt("windowHeight", 900
 public static int getDividerH()        { return prefs.getInt("dividerH", -1); }
 public static int getDividerV()        { return prefs.getInt("dividerV", -1); }
 
+public static void saveDividerHProportion(double value) {
+    prefs.putDouble("dividerHProportion", value);
+}
+
+public static void saveDividerVProportion(double value) {
+    prefs.putDouble("dividerVProportion", value);
+}
+
+public static double getDividerHProportion() {
+    return prefs.getDouble("dividerHProportion", 0.20); // Dateibaum 20%
+}
+
+public static double getDividerVProportion() {
+    return prefs.getDouble("dividerVProportion", 0.70); // Editor 70%, Terminal 30%
+}
+
+
 }
