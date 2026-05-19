@@ -282,7 +282,6 @@ addWindowListener(new WindowAdapter() {
         TIDEPreferences.saveWindowWidth(getWidth());
         TIDEPreferences.saveWindowHeight(getHeight());
         TIDEPreferences.saveMode((String) modeSelector.getSelectedItem());
-        TIDEPreferences.saveMainClass(mainClassInput.getText());
         TIDEPreferences.saveDividerH(horizontalSplit.getDividerLocation());
         TIDEPreferences.saveDividerV(verticalSplit.getDividerLocation());
 
@@ -315,7 +314,6 @@ if (lastFolder != null) {
 
 // Modus und Main-Class wiederherstellen
 modeSelector.setSelectedItem(TIDEPreferences.getMode());
-mainClassInput.setText(TIDEPreferences.getMainClass());
 
 // Divider-Positionen wiederherstellen
 horizontalSplit.setDividerLocation(TIDEPreferences.getDividerH());
