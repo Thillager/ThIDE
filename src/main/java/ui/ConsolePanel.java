@@ -49,6 +49,11 @@ public class ConsolePanel extends JPanel {
     public void log(String msg, Color color) {
         SwingUtilities.invokeLater(() -> {
             StyledDocument doc = consolePane.getStyledDocument();
+		  if (doc.getLength() > TIDEProperties.CONSOLE_MAX_CHARS) {
+		  try {
+		  doc.remove(0, TIDEProperties.CONSOLE_TRIM_CHARS); // erste 5000 Zeichen löschen
+		  } catch (Exception ignored) {}
+		  }
             Style style = consolePane.addStyle("style", null);
             StyleConstants.setForeground(style, color);
             try {

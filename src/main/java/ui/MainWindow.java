@@ -23,6 +23,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import config.LanguageManager;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import config.TIDEPreferences;
+
 public class MainWindow extends JFrame {
 
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;
@@ -42,6 +46,7 @@ public class MainWindow extends JFrame {
     private JButton btnTBuild;
     private JButton btnOpen;
     private JButton btnSave;
+    private JButton btnTerminate;
     private JButton btnClear;
     private JButton btnAbout;
     private JLabel modeLabel;
@@ -58,6 +63,9 @@ public class MainWindow extends JFrame {
     private UpdateManager updateManager;
     private AboutDialog aboutDialog;
     private WordManagerDialog wordManagerDialog;
+
+    private JSplitPane horizontalSplit;
+    private JSplitPane verticalSplit;
 
     public MainWindow() {
     setTitle("TIDE v" + TIDEProperties.APP_VERSION);
@@ -108,6 +116,8 @@ public class MainWindow extends JFrame {
 
         btnOpen  = new JButton(LanguageManager.t("open"));
         btnSave  = new JButton(LanguageManager.t("save"));
+
+        btnTerminate = new JButton("Stop");
 
         modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
         modeSelector.setPreferredSize(new Dimension(90, 28));
@@ -167,6 +177,8 @@ public class MainWindow extends JFrame {
         toolBar.addSeparator(new Dimension(20, 30));
         toolBar.add(btnRun);
         toolBar.add(Box.createHorizontalStrut(5));
+	   toolBar.add(btnTerminate);
+	   toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnTBuild);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(gitMenuBar);
@@ -178,15 +190,23 @@ public class MainWindow extends JFrame {
         langSel.setMaximumSize(new Dimension(95, 28));
         langSel.setToolTipText("Language / Sprache");
         langSel.addActionListener(e -> {
-            LanguageManager.set((LanguageManager.Language) langSel.getSelectedItem());
-            // Update alle UI-Texte
-            btnOpen.setText(LanguageManager.t("open"));
-            btnSave.setText(LanguageManager.t("save"));
-            btnClear.setText(LanguageManager.t("clear"));
-            btnAbout.setText(LanguageManager.t("about"));
-            modeLabel.setText(LanguageManager.t("mode"));
-            mainClassLabel.setText(LanguageManager.t("main"));
-        });
+    LanguageManager.Language selected =
+            (LanguageManager.Language) langSel.getSelectedItem();
+
+    // Sprache aktivieren
+    LanguageManager.set(selected);
+
+    // Sprache dauerhaft speichern
+    TIDEPreferences.saveLanguage(selected.name());
+
+    // UI-Texte aktualisieren
+    btnOpen.setText(LanguageManager.t("open"));
+    btnSave.setText(LanguageManager.t("save"));
+    btnClear.setText(LanguageManager.t("clear"));
+    btnAbout.setText(LanguageManager.t("about"));
+    modeLabel.setText(LanguageManager.t("mode"));
+    mainClassLabel.setText(LanguageManager.t("main"));
+});
         toolBar.add(langSel);
         toolBar.add(Box.createHorizontalStrut(10));
 
@@ -207,19 +227,20 @@ public class MainWindow extends JFrame {
         });
 
         // Layout
-        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
-        verticalSplit.setResizeWeight(0.7);
-        verticalSplit.setDividerSize(4);
-        verticalSplit.setBorder(null);
+        verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
+	   verticalSplit.setResizeWeight(0.7);
+	   verticalSplit.setDividerSize(4);
+	   verticalSplit.setBorder(null);
 
-        JSplitPane horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, verticalSplit);
-        horizontalSplit.setDividerSize(4);
-        horizontalSplit.setBorder(null);
-        add(horizontalSplit, BorderLayout.CENTER);
+	   horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, verticalSplit);
+	   horizontalSplit.setDividerSize(4);
+	   horizontalSplit.setBorder(null);
+	   add(horizontalSplit, BorderLayout.CENTER);
 
         // Event Listeners
         btnOpen.addActionListener(e  -> openFolderDialog());
         btnSave.addActionListener(e  -> editorManager.saveCurrentFile());
+        btnTerminate.addActionListener(e -> projectRunner.stopRunningProcess());
         btnRun.addActionListener(e   -> projectRunner.runProject(
                 (String) modeSelector.getSelectedItem(), mainClassInput.getText().trim()));
         btnClear.addActionListener(e -> consolePanel.clear());
@@ -254,8 +275,55 @@ public class MainWindow extends JFrame {
             return false;
         });
 
+        // Fenster-Einstellungen beim Schließen speichern
+addWindowListener(new WindowAdapter() {
+    @Override
+    public void windowClosing(WindowEvent e) {
+        TIDEPreferences.saveWindowWidth(getWidth());
+        TIDEPreferences.saveWindowHeight(getHeight());
+        TIDEPreferences.saveMode((String) modeSelector.getSelectedItem());
+        TIDEPreferences.saveMainClass(mainClassInput.getText());
+        TIDEPreferences.saveDividerH(horizontalSplit.getDividerLocation());
+        TIDEPreferences.saveDividerV(verticalSplit.getDividerLocation());
+
+        if (currentProjectFolder != null) {
+            TIDEPreferences.saveLastFolder(
+                currentProjectFolder.getAbsolutePath()
+            );
+        }
+    }
+});
+
+// Sprache laden
+LanguageManager.set(
+    LanguageManager.Language.valueOf(TIDEPreferences.getLanguage())
+);
+
+langSel.setSelectedItem(
+    LanguageManager.Language.valueOf(TIDEPreferences.getLanguage())
+);
+
+// Letzten Ordner öffnen
+String lastFolder = TIDEPreferences.getLastFolder();
+if (lastFolder != null) {
+    currentProjectFolder = new File(lastFolder);
+    fileTreePanel.updateFileTree(currentProjectFolder);
+    loadTXml(currentProjectFolder);
+    projectRunner.setCurrentProjectFolder(currentProjectFolder);
+    gitManager.setCurrentProjectFolder(currentProjectFolder);
+}
+
+// Modus und Main-Class wiederherstellen
+modeSelector.setSelectedItem(TIDEPreferences.getMode());
+mainClassInput.setText(TIDEPreferences.getMainClass());
+
+// Divider-Positionen wiederherstellen
+horizontalSplit.setDividerLocation(TIDEPreferences.getDividerH());
+verticalSplit.setDividerLocation(TIDEPreferences.getDividerV());
+
         updateDynamicUI();
     }
+
 
     private void openFolderDialog() {
         JFileChooser chooser = new JFileChooser(System.getProperty("user.home"));
@@ -291,7 +359,10 @@ public class MainWindow extends JFrame {
             return;
         }
         try {
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(txml);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		  dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+		  dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+		  Document doc = dbf.newDocumentBuilder().parse(txml);
             String mainClass = getXmlTag(doc, "mainClass");
             String appName   = getXmlTag(doc, "appName");
             String version   = getXmlTag(doc, "version");

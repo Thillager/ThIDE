@@ -28,4 +28,8 @@ public class TIDEProperties {
     public static final int CONNECT_TIMEOUT_MS = 8_000;
     public static final int READ_TIMEOUT_MS    = 8_000;
     public static final int DOWNLOAD_TIMEOUT_MS = 60_000;
+
+    // 
+    public static final int CONSOLE_MAX_CHARS = 100_000;
+    public static final int CONSOLE_TRIM_CHARS = 80_000;
 }

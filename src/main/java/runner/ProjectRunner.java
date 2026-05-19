@@ -29,6 +29,8 @@ public class ProjectRunner {
     private final CompilerErrorMarker errorMarker;
     private File currentProjectFolder;
 
+    private volatile Process runningProcess;
+
     public ProjectRunner(ConsolePanel consolePanel, EditorManager editorManager,
                          CompilerErrorMarker errorMarker) {
         this.consolePanel  = consolePanel;
@@ -39,6 +41,50 @@ public class ProjectRunner {
     public void setCurrentProjectFolder(File folder) {
         this.currentProjectFolder = folder;
     }
+
+    public void stopRunningProcess() {
+    if (runningProcess != null && runningProcess.isAlive()) {
+        runningProcess.descendants().forEach(ProcessHandle::destroy); // Kindprozesse zuerst
+        runningProcess.destroyForcibly();
+        runningProcess = null;
+        consolePanel.log("[INFO] Prozess beendet.\n", Color.ORANGE);
+    } else {
+        consolePanel.log("[INFO] Kein laufender Prozess.\n", Color.GRAY);
+    }
+}
+
+private void startResourceMonitor() {
+    new Thread(() -> {
+        com.sun.management.OperatingSystemMXBean os = 
+            (com.sun.management.OperatingSystemMXBean) 
+            java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        
+        Runtime runtime = Runtime.getRuntime();
+
+        while (runningProcess != null && runningProcess.isAlive()) {
+            try {
+                Thread.sleep(1000); // jede Sekunde prüfen
+
+                double cpuLoad = os.getCpuLoad() * 100;
+                long usedRam   = runtime.totalMemory() - runtime.freeMemory();
+                long maxRam    = runtime.maxMemory();
+                double ramLoad = (double) usedRam / maxRam * 100;
+
+                if (cpuLoad >= 95 || ramLoad >= 95) {
+                    consolePanel.log("[WARNUNG] Ressourcen kritisch (CPU: " 
+                        + (int)cpuLoad + "% RAM: " + (int)ramLoad 
+                        + "%) — Prozess wird beendet.\n", Color.ORANGE);
+                    stopRunningProcess();
+                    return;
+                }
+
+            } catch (InterruptedException e) {
+                return;
+            }
+        }
+    }).start();
+}
+
 
     public void runProject(String mode, String mainClass) {
         if (currentProjectFolder == null) {
@@ -243,6 +289,8 @@ case MODE_CPP:
                 if (currentProjectFolder != null) pb.directory(currentProjectFolder);
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
+                runningProcess = p;
+                startResourceMonitor(); 
                 
                 BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
                 String line;
@@ -311,7 +359,10 @@ case MODE_CPP:
                         Files.copy(in, tbuildJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                     executeCommand("java -jar TBuild.jar", true);
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+    System.err.println("Fehler beim Herunterladen oder Ausführen von TBuild: " + e.getMessage());
+    e.printStackTrace();
+}
             }).start();
         }
     }
