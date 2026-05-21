@@ -13,5 +13,4 @@ C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\FileTreeP
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\MainWindow.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\SearchPanel.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\ui\WordManagerDialog.java
-C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\update\AdminUtils.java
 C:\Users\thies\Projekte\java\Thillagers_Anfaenger_IDE\src\main\java\update\UpdateManager.java
