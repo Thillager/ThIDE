@@ -121,7 +121,7 @@ public class MainWindow extends JFrame {
         projectRunner.setOnRefreshFileTree(() -> fileTreePanel.updateFileTree(currentProjectFolder));
     }
 
-    private void initUI() {
+private void initUI() {
         // Search Panel (muss vor editorContainer erstellt sein)
         searchPanel = new SearchPanel(editorTabs, consolePanel);
         editorTabs.setBorder(null);
@@ -135,7 +135,10 @@ public class MainWindow extends JFrame {
         btnOpen  = new JButton(LanguageManager.t("open"));
         btnSave  = new JButton(LanguageManager.t("save"));
 
-        btnTerminate = new JButton("Stop");
+	   
+	   btnTerminate = new JButton("X");
+	   btnTerminate.setForeground(new Color(230, 75, 75)); 
+	   btnTerminate.setFont(btnTerminate.getFont().deriveFont(Font.BOLD, 14f)); 
 
         modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
         modeSelector.setPreferredSize(new Dimension(90, 28));
@@ -182,7 +185,28 @@ public class MainWindow extends JFrame {
         editorContainer.add(searchPanel, BorderLayout.NORTH);
         editorContainer.add(editorTabs,  BorderLayout.CENTER);
 
-        // Toolbar befuellen
+        // Language selector
+        JComboBox<LanguageManager.Language> langSel = new JComboBox<>(LanguageManager.Language.values());
+        langSel.setPreferredSize(new Dimension(95, 28));
+        langSel.setMaximumSize(new Dimension(95, 28));
+        langSel.setToolTipText("Language / Sprache");
+        langSel.addActionListener(e -> {
+            LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
+            LanguageManager.set(selected);
+            TIDEPreferences.saveLanguage(selected.name());
+
+            // UI-Texte aktualisieren
+            btnOpen.setText(LanguageManager.t("open"));
+            btnSave.setText(LanguageManager.t("save"));
+            btnClear.setText(LanguageManager.t("clear"));
+            btnAbout.setText(LanguageManager.t("about"));
+            modeLabel.setText(LanguageManager.t("mode"));
+            mainClassLabel.setText(LanguageManager.t("main"));
+        });
+
+        // --- Toolbar befüllen ---
+        
+        // 1. LINKER BEREICH
         toolBar.add(btnOpen);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
@@ -195,46 +219,26 @@ public class MainWindow extends JFrame {
         toolBar.addSeparator(new Dimension(20, 30));
         toolBar.add(btnRun);
         toolBar.add(Box.createHorizontalStrut(5));
-	   toolBar.add(btnTerminate);
-	   toolBar.add(Box.createHorizontalStrut(5));
+        toolBar.add(btnTerminate);
+
+        // 2. DER KLICKPUNKT: Alles ab hier rutscht nach RECHTS
+        toolBar.add(Box.createHorizontalGlue());
+
+        // 3. RECHTER BEREICH
+        toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnTBuild);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(gitMenuBar);
-        toolBar.add(Box.createHorizontalGlue());
-
-        // Language selector
-        JComboBox<LanguageManager.Language> langSel = new JComboBox<>(LanguageManager.Language.values());
-        langSel.setPreferredSize(new Dimension(95, 28));
-        langSel.setMaximumSize(new Dimension(95, 28));
-        langSel.setToolTipText("Language / Sprache");
-        langSel.addActionListener(e -> {
-    LanguageManager.Language selected =
-            (LanguageManager.Language) langSel.getSelectedItem();
-
-    // Sprache aktivieren
-    LanguageManager.set(selected);
-
-    // Sprache dauerhaft speichern
-    TIDEPreferences.saveLanguage(selected.name());
-
-    // UI-Texte aktualisieren
-    btnOpen.setText(LanguageManager.t("open"));
-    btnSave.setText(LanguageManager.t("save"));
-    btnClear.setText(LanguageManager.t("clear"));
-    btnAbout.setText(LanguageManager.t("about"));
-    modeLabel.setText(LanguageManager.t("mode"));
-    mainClassLabel.setText(LanguageManager.t("main"));
-});
+        toolBar.add(Box.createHorizontalStrut(15));
         toolBar.add(langSel);
         toolBar.add(Box.createHorizontalStrut(10));
-
         toolBar.add(btnClear);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnAbout);
 
         add(toolBar, BorderLayout.NORTH);
 
-        // FileTree MouseListener für Kontextmenü (mit Projektordner-Referenz)
+        // FileTree MouseListener für Kontextmenü
         fileTreePanel.getViewport().getView().addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent me) {
                 if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
@@ -244,47 +248,39 @@ public class MainWindow extends JFrame {
             }
         });
 
-        // Layout
-        // Layout
-verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
-verticalSplit.setResizeWeight(0.7);
-verticalSplit.setDividerSize(4);
-verticalSplit.setBorder(null);
+        // Layout Splits
+        verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
+        verticalSplit.setResizeWeight(0.7);
+        verticalSplit.setDividerSize(4);
+        verticalSplit.setBorder(null);
 
-verticalSplit.addPropertyChangeListener(
-    JSplitPane.DIVIDER_LOCATION_PROPERTY,
-    e -> {
-        if (verticalSplit.getHeight() > 0) {
-            TIDEPreferences.saveDividerVProportion(
-                verticalSplit.getDividerLocation()
-                    / (double) verticalSplit.getHeight()
-            );
-        }
-    }
-);
+        verticalSplit.addPropertyChangeListener(
+            JSplitPane.DIVIDER_LOCATION_PROPERTY,
+            e -> {
+                if (verticalSplit.getHeight() > 0) {
+                    TIDEPreferences.saveDividerVProportion(
+                        verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight()
+                    );
+                }
+            }
+        );
 
-horizontalSplit = new JSplitPane(
-    JSplitPane.HORIZONTAL_SPLIT,
-    fileTreePanel,
-    verticalSplit
-);
-horizontalSplit.setDividerSize(4);
-horizontalSplit.setBorder(null);
+        horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, verticalSplit);
+        horizontalSplit.setDividerSize(4);
+        horizontalSplit.setBorder(null);
 
-horizontalSplit.addPropertyChangeListener(
-    JSplitPane.DIVIDER_LOCATION_PROPERTY,
-    e -> {
-        if (horizontalSplit.getWidth() > 0) {
-            TIDEPreferences.saveDividerHProportion(
-                horizontalSplit.getDividerLocation()
-                    / (double) horizontalSplit.getWidth()
-            );
-        }
-    }
-);
+        horizontalSplit.addPropertyChangeListener(
+            JSplitPane.DIVIDER_LOCATION_PROPERTY,
+            e -> {
+                if (horizontalSplit.getWidth() > 0) {
+                    TIDEPreferences.saveDividerHProportion(
+                        horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth()
+                    );
+                }
+            }
+        );
 
-// GANZ WICHTIG!
-add(horizontalSplit, BorderLayout.CENTER);
+        add(horizontalSplit, BorderLayout.CENTER);
 
         // Event Listeners
         btnOpen.addActionListener(e  -> openFolderDialog());
@@ -325,41 +321,38 @@ add(horizontalSplit, BorderLayout.CENTER);
         });
 
         // Fenster-Einstellungen beim Schließen speichern
-addWindowListener(new WindowAdapter() {
-    @Override
-    public void windowClosing(WindowEvent e) {
-        TIDEPreferences.saveWindowWidth(getWidth());
-        TIDEPreferences.saveWindowHeight(getHeight());
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                TIDEPreferences.saveWindowWidth(getWidth());
+                TIDEPreferences.saveWindowHeight(getHeight());
 
-        if (currentProjectFolder != null) {
-            TIDEPreferences.saveLastFolder(
-                currentProjectFolder.getAbsolutePath()
-            );
+                if (currentProjectFolder != null) {
+                    TIDEPreferences.saveLastFolder(currentProjectFolder.getAbsolutePath());
+                }
+            }
+        });
+
+        // Sprache laden
+        LanguageManager.set(LanguageManager.Language.valueOf(TIDEPreferences.getLanguage()));
+        langSel.setSelectedItem(LanguageManager.Language.valueOf(TIDEPreferences.getLanguage()));
+
+        // Letzten Ordner öffnen
+        String lastFolder = TIDEPreferences.getLastFolder();
+        if (lastFolder != null) {
+            currentProjectFolder = new File(lastFolder);
+            fileTreePanel.updateFileTree(currentProjectFolder);
+            loadTXml(currentProjectFolder);
+            projectRunner.setCurrentProjectFolder(currentProjectFolder);
+            gitManager.setCurrentProjectFolder(currentProjectFolder);
         }
-    }
-});
 
-// Sprache laden
-LanguageManager.set(
-    LanguageManager.Language.valueOf(TIDEPreferences.getLanguage())
-);
+        // Modus und Main-Class wiederherstellen
+        modeSelector.setSelectedItem(TIDEPreferences.getMode());
 
-langSel.setSelectedItem(
-    LanguageManager.Language.valueOf(TIDEPreferences.getLanguage())
-);
-
-// Letzten Ordner öffnen
-String lastFolder = TIDEPreferences.getLastFolder();
-if (lastFolder != null) {
-    currentProjectFolder = new File(lastFolder);
-    fileTreePanel.updateFileTree(currentProjectFolder);
-    loadTXml(currentProjectFolder);
-    projectRunner.setCurrentProjectFolder(currentProjectFolder);
-    gitManager.setCurrentProjectFolder(currentProjectFolder);
-}
-
-// Modus und Main-Class wiederherstellen
-modeSelector.setSelectedItem(TIDEPreferences.getMode());
+        // --- Verknüpfung & Initialisierung für den Terminate-Button ---
+        projectRunner.setTerminateButton(btnTerminate);
+        btnTerminate.setVisible(false);
 
         updateDynamicUI();
     }

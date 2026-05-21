@@ -29,6 +29,8 @@ public class ProjectRunner {
     private final CompilerErrorMarker errorMarker;
     private File currentProjectFolder;
 
+    private JButton btnTerminate;
+
     private volatile Process runningProcess;
 
     public ProjectRunner(ConsolePanel consolePanel, EditorManager editorManager,
@@ -38,16 +40,26 @@ public class ProjectRunner {
         this.errorMarker   = errorMarker;
     }
 
+    // 2. Einen einfachen Setter hinzufügen
+public void setTerminateButton(JButton btnTerminate) {
+    this.btnTerminate = btnTerminate;
+}
+
     public void setCurrentProjectFolder(File folder) {
         this.currentProjectFolder = folder;
     }
 
     public void stopRunningProcess() {
     if (runningProcess != null && runningProcess.isAlive()) {
-        runningProcess.descendants().forEach(ProcessHandle::destroy); // Kindprozesse zuerst
+        runningProcess.descendants().forEach(ProcessHandle::destroy);
         runningProcess.destroyForcibly();
         runningProcess = null;
         consolePanel.log("[INFO] Prozess beendet.\n", Color.ORANGE);
+        
+        // Button direkt ausblenden
+        if (btnTerminate != null) {
+            SwingUtilities.invokeLater(() -> btnTerminate.setVisible(false));
+        }
     } else {
         consolePanel.log("[INFO] Kein laufender Prozess.\n", Color.GRAY);
     }
@@ -275,41 +287,52 @@ case MODE_CPP:
     }
 
     public void executeCommand(String command, boolean isTBuild) {
-        consolePanel.log("> " + command + "\n", Color.GRAY);
-        if (!isTBuild) SwingUtilities.invokeLater(errorMarker::clearCompilerErrors);
-        
-        new Thread(() -> {
-            try {
-                ProcessBuilder pb;
-                if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                    pb = new ProcessBuilder("cmd.exe", "/c", command);
-                } else {
-                    pb = new ProcessBuilder("bash", "-c", command);
-                }
-                if (currentProjectFolder != null) pb.directory(currentProjectFolder);
-                pb.redirectErrorStream(true);
-                Process p = pb.start();
-                runningProcess = p;
-                startResourceMonitor(); 
-                
-                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
-                String line;
-                StringBuilder fullOutput = new StringBuilder();
-                while ((line = r.readLine()) != null) {
-                    fullOutput.append(line).append("\n");
-                    consolePanel.log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
-                }
-                
-                int exitCode = p.waitFor();
-                if (exitCode != 0) {
-                    consolePanel.log("[ERROR CODE " + exitCode + "]\n", Color.RED);
-                    if (!isTBuild) errorMarker.markCompilerErrors(fullOutput.toString());
-                }
-            } catch (Exception e) {
-                consolePanel.log("[TERMINAL ERROR] " + e.getMessage() + "\n", Color.RED);
-            }
-        }).start();
+    consolePanel.log("> " + command + "\n", Color.GRAY);
+    if (!isTBuild) SwingUtilities.invokeLater(errorMarker::clearCompilerErrors);
+    
+    // HIER: Zeige den Button sofort, wenn der Befehl abgeschickt wird
+    if (btnTerminate != null) {
+        SwingUtilities.invokeLater(() -> btnTerminate.setVisible(true));
     }
+    
+    new Thread(() -> {
+        try {
+            ProcessBuilder pb;
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                pb = new ProcessBuilder("cmd.exe", "/c", command);
+            } else {
+                pb = new ProcessBuilder("bash", "-c", command);
+            }
+            if (currentProjectFolder != null) pb.directory(currentProjectFolder);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            runningProcess = p;
+            startResourceMonitor(); 
+            
+            BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            StringBuilder fullOutput = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                fullOutput.append(line).append("\n");
+                consolePanel.log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
+            }
+            
+            int exitCode = p.waitFor();
+            if (exitCode != 0) {
+                consolePanel.log("[ERROR CODE " + exitCode + "]\n", Color.RED);
+                if (!isTBuild) errorMarker.markCompilerErrors(fullOutput.toString());
+            }
+        } catch (Exception e) {
+            consolePanel.log("[TERMINAL ERROR] " + e.getMessage() + "\n", Color.RED);
+        } finally {
+            runningProcess = null;
+            // HIER: Egal ob Fehler, Erfolg oder Crash – der Thread ist fertig, Button weg!
+            if (btnTerminate != null) {
+                SwingUtilities.invokeLater(() -> btnTerminate.setVisible(false));
+            }
+        }
+    }).start();
+}
 
     public File findSourceFile(File dir, String fqcn) {
         String relativePath = fqcn.replace(".", File.separator) + ".java";
