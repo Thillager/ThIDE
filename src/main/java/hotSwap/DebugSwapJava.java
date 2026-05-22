@@ -1,27 +1,34 @@
-package runner;
+package hotSwap;
 
 import config.LanguageManager;
 import editor.CompilerErrorMarker;
 import editor.EditorManager;
+import runner.DebugRunner;
 import ui.ConsolePanel;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.*;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DebugSwapJava implementiert Debug für Java-Programme mit Restart-Fähigkeit
+ * DebugSwapJava – startet einen Java-Prozess mit JDWP und bietet
+ * hotSwap() zum Ersetzen von Klassen zur Laufzeit (ohne Neustart).
  */
 public class DebugSwapJava implements DebugRunner.DebugStrategy {
+
+    public static final int DEBUG_PORT_START = 5005;
 
     private final ConsolePanel consolePanel;
     private final EditorManager editorManager;
     private final CompilerErrorMarker errorMarker;
     private final File currentProjectFolder;
+
+    /** Wird nach execute() gesetzt und von hotSwap() genutzt */
+    private int activeDebugPort = -1;
+    private File activeSourceRoot = null;
 
     public DebugSwapJava(ConsolePanel consolePanel, EditorManager editorManager,
                          CompilerErrorMarker errorMarker, File currentProjectFolder) {
@@ -41,103 +48,115 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
 
         consolePanel.log("[DEBUG JAVA] " + LanguageManager.t("compiling") + "...\n", Color.CYAN);
 
-        // Hauptdatei finden
         File mainFile = findSourceFile(currentProjectFolder, mc);
         if (mainFile == null) {
             consolePanel.log("[DEBUG] " + LanguageManager.t("file_not_found") + ": " + mc + "\n", Color.RED);
             return null;
         }
 
-        File sourceRoot = calculateSourceRoot(mainFile, mc);
+        activeSourceRoot = calculateSourceRoot(mainFile, mc);
+
         List<File> javaFiles = new ArrayList<>();
         collectAllJavaFiles(currentProjectFolder, javaFiles);
-
         if (javaFiles.isEmpty()) {
             consolePanel.log("[DEBUG] " + LanguageManager.t("file_not_found") + "\n", Color.RED);
             return null;
         }
 
-        // Argument-Datei erstellen
         File sourcesListFile = new File(currentProjectFolder, ".sources.txt");
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
                 new FileOutputStream(sourcesListFile), StandardCharsets.UTF_8))) {
-            for (File f : javaFiles) {
-                writer.println(f.getAbsolutePath());
-            }
+            for (File f : javaFiles) writer.println(f.getAbsolutePath());
         } catch (IOException e) {
             consolePanel.log("[DEBUG] Error creating source list: " + e.getMessage() + "\n", Color.RED);
             return null;
         }
 
-        String separator = System.getProperty("path.separator");
-        String classpath = "out" + separator + "libs/*";
+        String sep = System.getProperty("path.separator");
+        String classpath = "out" + sep + "libs/*";
 
-        // Compilation mit Debug-Info (-g Flag)
-        String compileCmd = "javac -encoding UTF-8 -g -cp \"" + classpath + "\" " +
-                "-d out " +
-                "-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
-                "\"@" + sourcesListFile.getName() + "\"";
+        String compileCmd = "javac -encoding UTF-8 -g -cp \"" + classpath + "\" "
+                + "-d out "
+                + "-sourcepath \"" + activeSourceRoot.getAbsolutePath() + "\" "
+                + "\"@" + sourcesListFile.getName() + "\"";
 
-        // Zufälligen Port wählen (5005-5050 Range)
-        int debugPort = 5005 + (int)(Math.random() * 45);
-        
-        // JVM mit JDWP für Debug - OHNE suspend (läuft direkt los)
-        String debugCmd = "java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=" 
-                + debugPort + " -cp \"out" + separator + "libs/*\" " + mc;
+        activeDebugPort = findFreePort(DEBUG_PORT_START);
+        if (activeDebugPort == -1) {
+            consolePanel.log("[DEBUG] Kein freier Debug-Port (5005–5055) gefunden.\n", Color.RED);
+            return null;
+        }
 
-        return executeDebugCommand(compileCmd + " && " + debugCmd, debugPort);
-    }
+        String debugCmd = "java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address="
+                + activeDebugPort + " -cp \"out" + sep + "libs/*\" " + mc;
 
-    /**
-     * Führt den Debug-Befehl aus und gibt den Process zurück
-     */
-    private Process executeDebugCommand(String command, int debugPort) {
-        consolePanel.log("> " + command + "\n", Color.GRAY);
-        consolePanel.log("[DEBUG] Debugger läuft auf Port " + debugPort + "\n", Color.YELLOW);
-        consolePanel.log("[DEBUG] Verbinde mit IDE (z.B. IntelliJ/Eclipse) zur Breakpoint-Verwaltung\n", Color.CYAN);
+        consolePanel.log("> " + compileCmd + " && " + debugCmd + "\n", Color.GRAY);
+        consolePanel.log("[DEBUG] JDWP-Port: " + activeDebugPort + " — Prozess läuft, kein Neustart nötig.\n", Color.YELLOW);
 
         try {
-            ProcessBuilder pb;
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                pb = new ProcessBuilder("cmd.exe", "/c", command);
-            } else {
-                pb = new ProcessBuilder("bash", "-c", command);
-            }
+            ProcessBuilder pb = isWindows()
+                    ? new ProcessBuilder("cmd.exe", "/c", compileCmd + " && " + debugCmd)
+                    : new ProcessBuilder("bash", "-c", compileCmd + " && " + debugCmd);
             pb.directory(currentProjectFolder);
             pb.redirectErrorStream(true);
             Process p = pb.start();
 
-            // Output lesen in separatem Thread
             new Thread(() -> {
                 try (BufferedReader r = new BufferedReader(
                         new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
                     String line;
-                    while ((line = r.readLine()) != null) {
+                    while ((line = r.readLine()) != null)
                         consolePanel.log(line + "\n", Color.WHITE);
-                    }
                 } catch (IOException e) {
                     consolePanel.log("[DEBUG] IO Error: " + e.getMessage() + "\n", Color.RED);
                 }
             }).start();
 
             return p;
-
         } catch (IOException e) {
             consolePanel.log("[DEBUG] Fehler: " + e.getMessage() + "\n", Color.RED);
             return null;
         }
     }
 
+    /**
+     * Echter HotSwap: kompiliert aktuelle Dateien und ersetzt Klassen im
+     * laufenden Prozess per JDI – kein Neustart.
+     */
+    public void hotSwap() {
+        if (activeDebugPort == -1 || activeSourceRoot == null) {
+            consolePanel.log("[HOTSWAP] Kein laufender Debug-Prozess.\n", Color.ORANGE);
+            return;
+        }
+
+        editorManager.saveCurrentFile();
+
+        List<File> javaFiles = new ArrayList<>();
+        collectAllJavaFiles(currentProjectFolder, javaFiles);
+
+        HotSwapEngine engine = new HotSwapEngine(consolePanel, currentProjectFolder);
+        new Thread(() -> engine.hotSwap(activeSourceRoot, javaFiles, activeDebugPort)).start();
+    }
+
+    public int getActiveDebugPort() { return activeDebugPort; }
+
+    // ---- Hilfsmethoden ----
+
+    private int findFreePort(int startPort) {
+        for (int port = startPort; port < startPort + 50; port++) {
+            try (ServerSocket s = new ServerSocket(port)) {
+                s.setReuseAddress(true);
+                return port;
+            } catch (IOException ignored) {}
+        }
+        return -1;
+    }
+
     private File calculateSourceRoot(File sourceFile, String fqcn) {
         int dotCount = 0;
         for (char c : fqcn.toCharArray()) if (c == '.') dotCount++;
-
         File root = sourceFile.getParentFile();
-        for (int i = 0; i < dotCount; i++) {
-            if (root != null && root.getParentFile() != null) {
-                root = root.getParentFile();
-            }
-        }
+        for (int i = 0; i < dotCount; i++)
+            if (root != null && root.getParentFile() != null) root = root.getParentFile();
         return root;
     }
 
@@ -156,19 +175,12 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
     }
 
     private File findSourceFile(File dir, String fqcn) {
-        String relativePath = fqcn.replace(".", File.separator) + ".java";
-        File direct = new File(dir, relativePath);
+        String rel = fqcn.replace(".", File.separator) + ".java";
+        File direct = new File(dir, rel);
         if (direct.exists()) return direct;
-
         File srcMain = new File(dir, "src" + File.separator + "main" + File.separator + "java");
-        if (srcMain.exists()) {
-            File f = new File(srcMain, relativePath);
-            if (f.exists()) return f;
-        }
-
-        if (!fqcn.contains(".")) {
-            return searchFileRecursively(dir, fqcn + ".java");
-        }
+        if (srcMain.exists()) { File f = new File(srcMain, rel); if (f.exists()) return f; }
+        if (!fqcn.contains(".")) return searchFileRecursively(dir, fqcn + ".java");
         return null;
     }
 
@@ -183,5 +195,9 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
             } else if (f.getName().equals(fileName)) return f;
         }
         return null;
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 }

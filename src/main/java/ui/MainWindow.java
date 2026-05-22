@@ -3,7 +3,6 @@ package ui;
 import editor.CompilerErrorMarker;
 import editor.EditorManager;
 import git.GitManager;
-import org.fife.ui.rtextarea.RTextScrollPane;
 import runner.ProjectRunner;
 import runner.DebugRunner;
 import update.UpdateManager;
@@ -36,6 +35,9 @@ public class MainWindow extends JFrame {
     private static final String MODE_CPP    = ProjectRunner.MODE_CPP;
     private static final String MODE_BATCH  = ProjectRunner.MODE_BATCH;
 
+    private static final String RUN_MODE_STANDARD = "Standard";
+    private static final String RUN_MODE_DEBUG     = "Debug";
+
     // ---- State ----
     private File currentProjectFolder;
     private final Map<Component, File> openFiles = new HashMap<>();
@@ -43,7 +45,7 @@ public class MainWindow extends JFrame {
     // ---- UI-Komponenten ----
     private JTabbedPane editorTabs;
     private JComboBox<String> modeSelector;
-    private JComboBox<String> debugModeSelector;
+    private JComboBox<String> runModeSelector; // "Standard" / "Debug"
     private JTextField mainClassInput;
     private JButton btnTBuild;
     private JButton btnOpen;
@@ -51,11 +53,10 @@ public class MainWindow extends JFrame {
     private JButton btnTerminate;
     private JButton btnClear;
     private JButton btnAbout;
-    private JButton btnDebugStart;
-    private JButton btnDebugRestart;
+    private JButton btnRun;
+    private JButton btnHotSwap; // erscheint nur während Java-Debug läuft
     private JLabel modeLabel;
     private JLabel mainClassLabel;
-    private JLabel debugModeLabel;
     private SearchPanel searchPanel;
 
     // ---- Subsysteme ----
@@ -80,71 +81,51 @@ public class MainWindow extends JFrame {
         initSubsystems();
         initUI();
 
-        // 1. Größe setzen (falls NICHT maximiert)
-        setSize(
-            TIDEPreferences.getWindowWidth(),
-            TIDEPreferences.getWindowHeight()
-        );
-
-        // 2. Position zentrieren
+        setSize(TIDEPreferences.getWindowWidth(), TIDEPreferences.getWindowHeight());
         setLocationRelativeTo(null);
-
-        // 3. Maximieren (entscheidend: NACH setSize!)
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-        // 4. Divider erst NACH Layout setzen
         SwingUtilities.invokeLater(() -> {
-            horizontalSplit.setDividerLocation(
-                TIDEPreferences.getDividerHProportion()
-            );
-
-            verticalSplit.setDividerLocation(
-                TIDEPreferences.getDividerVProportion()
-            );
+            horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
+            verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());
         });
     }
 
     private void initSubsystems() {
-        consolePanel     = new ConsolePanel();
-        editorTabs       = new JTabbedPane();
+        consolePanel      = new ConsolePanel();
+        editorTabs        = new JTabbedPane();
         wordManagerDialog = new WordManagerDialog(this, consolePanel);
-        editorManager    = new EditorManager(this, editorTabs, openFiles, consolePanel, wordManagerDialog);
-        errorMarker      = new CompilerErrorMarker(editorTabs, openFiles, consolePanel);
-        projectRunner    = new ProjectRunner(consolePanel, editorManager, errorMarker);
-        debugRunner      = new DebugRunner(consolePanel, editorManager, errorMarker, projectRunner);
-        gitManager       = new GitManager(this, consolePanel);
-        updateManager    = new UpdateManager(this, consolePanel, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO);
-        aboutDialog      = new AboutDialog(this, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO, updateManager);
+        editorManager     = new EditorManager(this, editorTabs, openFiles, consolePanel, wordManagerDialog);
+        errorMarker       = new CompilerErrorMarker(editorTabs, openFiles, consolePanel);
+        projectRunner     = new ProjectRunner(consolePanel, editorManager, errorMarker);
+        debugRunner       = new DebugRunner(consolePanel, editorManager, errorMarker, projectRunner);
+        gitManager        = new GitManager(this, consolePanel);
+        updateManager     = new UpdateManager(this, consolePanel, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO);
+        aboutDialog       = new AboutDialog(this, TIDEProperties.APP_VERSION, TIDEProperties.GITHUB_REPO, updateManager);
+        fileTreePanel     = new FileTreePanel(this, consolePanel, file -> editorManager.openFileInEditor(file));
 
-        fileTreePanel = new FileTreePanel(this, consolePanel, file -> editorManager.openFileInEditor(file));
-
-        // Callbacks
-        gitManager.setOnRefreshFileTree(() -> {
-            fileTreePanel.updateFileTree(currentProjectFolder);
-            revalidate();
-            repaint();
-        });
+        gitManager.setOnRefreshFileTree(() -> { fileTreePanel.updateFileTree(currentProjectFolder); revalidate(); repaint(); });
         gitManager.setOnSaveCurrentFile(() -> editorManager.saveCurrentFile());
         projectRunner.setOnRefreshFileTree(() -> fileTreePanel.updateFileTree(currentProjectFolder));
     }
 
     private void initUI() {
-        // Search Panel (muss vor editorContainer erstellt sein)
         searchPanel = new SearchPanel(editorTabs, consolePanel);
         editorTabs.setBorder(null);
 
-        // --- Toolbar ---
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setBorder(new EmptyBorder(8, 10, 8, 10));
         toolBar.setBackground(new Color(43, 45, 48));
 
+        // ---- Buttons ----
         btnOpen  = new JButton(LanguageManager.t("open"));
         btnSave  = new JButton(LanguageManager.t("save"));
 
         btnTerminate = new JButton("X");
-        btnTerminate.setForeground(new Color(230, 75, 75)); 
-        btnTerminate.setFont(btnTerminate.getFont().deriveFont(Font.BOLD, 14f)); 
+        btnTerminate.setForeground(new Color(230, 75, 75));
+        btnTerminate.setFont(btnTerminate.getFont().deriveFont(Font.BOLD, 14f));
+        btnTerminate.setVisible(false);
 
         modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
         modeSelector.setPreferredSize(new Dimension(90, 28));
@@ -155,30 +136,30 @@ public class MainWindow extends JFrame {
         mainClassInput.setPreferredSize(new Dimension(130, 28));
         mainClassInput.setMaximumSize(new Dimension(130, 28));
 
-        JButton btnRun = new JButton("▶");
-        btnTBuild      = new JButton("T-Build");
-        btnClear       = new JButton(LanguageManager.t("clear"));
-        btnAbout       = new JButton(LanguageManager.t("about"));
+        // Run-Modus Dropdown: Standard / Debug
+        runModeSelector = new JComboBox<>(new String[]{RUN_MODE_STANDARD, RUN_MODE_DEBUG});
+        runModeSelector.setPreferredSize(new Dimension(100, 28));
+        runModeSelector.setMaximumSize(new Dimension(100, 28));
+        runModeSelector.setToolTipText("Standard = normal ausführen | Debug = mit Debugger starten");
 
+        // Ein einziger Run-Button
+        btnRun = new JButton("▶");
         btnRun.setForeground(new Color(80, 200, 120));
         btnRun.setFont(btnRun.getFont().deriveFont(Font.BOLD));
+
+        // HotSwap-Button – nur sichtbar während Java-Debug läuft
+        btnHotSwap = new JButton("⚡ HotSwap");
+        btnHotSwap.setForeground(new Color(255, 220, 50));
+        btnHotSwap.setFont(btnHotSwap.getFont().deriveFont(Font.BOLD));
+        btnHotSwap.setToolTipText("Klassen im laufenden Prozess ersetzen (kein Neustart)");
+        btnHotSwap.setVisible(false);
+
+        btnTBuild = new JButton("T-Build");
+        btnClear  = new JButton(LanguageManager.t("clear"));
+        btnAbout  = new JButton(LanguageManager.t("about"));
+
         btnTBuild.setForeground(new Color(100, 150, 255));
         btnAbout.setForeground(new Color(180, 180, 180));
-
-        // ===== DEBUG COMPONENTS =====
-        debugModeLabel = new JLabel(" Debug Mode: ");
-        debugModeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON});
-        debugModeSelector.setPreferredSize(new Dimension(100, 28));
-        debugModeSelector.setMaximumSize(new Dimension(100, 28));
-
-        btnDebugStart = new JButton("🐛 Debug");
-        btnDebugStart.setForeground(new Color(255, 100, 100));
-        btnDebugStart.setFont(btnDebugStart.getFont().deriveFont(Font.BOLD));
-
-        btnDebugRestart = new JButton("⟲ Restart");
-        btnDebugRestart.setForeground(new Color(255, 150, 100));
-        btnDebugRestart.setFont(btnDebugRestart.getFont().deriveFont(Font.BOLD));
-        btnDebugRestart.setVisible(false);
 
         // Git-Dropdown
         JMenuBar gitMenuBar = new JMenuBar();
@@ -187,24 +168,14 @@ public class MainWindow extends JFrame {
         JMenu gitMenu = new JMenu("Git ▾");
         gitMenu.setForeground(new Color(255, 200, 80));
         gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
-
         JMenuItem gitCommit = new JMenuItem("Commit");
         JMenuItem gitPush   = new JMenuItem("Push");
         JMenuItem gitPull   = new JMenuItem("Pull");
-
-        gitMenu.add(gitCommit);
-        gitMenu.add(gitPush);
-        gitMenu.add(gitPull);
-
+        gitMenu.add(gitCommit); gitMenu.add(gitPush); gitMenu.add(gitPull);
         gitCommit.addActionListener(e -> gitManager.gitCommit());
         gitPush.addActionListener(e   -> gitManager.gitPush());
         gitPull.addActionListener(e   -> gitManager.gitPull());
         gitMenuBar.add(gitMenu);
-
-        // Editor Container
-        JPanel editorContainer = new JPanel(new BorderLayout());
-        editorContainer.add(searchPanel, BorderLayout.NORTH);
-        editorContainer.add(editorTabs,  BorderLayout.CENTER);
 
         // Language selector
         JComboBox<LanguageManager.Language> langSel = new JComboBox<>(LanguageManager.Language.values());
@@ -215,8 +186,6 @@ public class MainWindow extends JFrame {
             LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
             LanguageManager.set(selected);
             TIDEPreferences.saveLanguage(selected.name());
-
-            // UI-Texte aktualisieren
             btnOpen.setText(LanguageManager.t("open"));
             btnSave.setText(LanguageManager.t("save"));
             btnClear.setText(LanguageManager.t("clear"));
@@ -225,37 +194,29 @@ public class MainWindow extends JFrame {
             mainClassLabel.setText(LanguageManager.t("main"));
         });
 
-        // --- Toolbar befüllen ---
-        
-        // 1. LINKER BEREICH
+        // ---- Toolbar befüllen ----
         toolBar.add(btnOpen);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnSave);
-        modeLabel = new JLabel(LanguageManager.t("mode"));
         toolBar.addSeparator(new Dimension(20, 30));
+        modeLabel = new JLabel(LanguageManager.t("mode"));
         toolBar.add(modeLabel);
         toolBar.add(modeSelector);
         toolBar.add(mainClassLabel);
         toolBar.add(mainClassInput);
         toolBar.addSeparator(new Dimension(20, 30));
+
+        // Run-Modus Dropdown + ein Run-Button
+        toolBar.add(runModeSelector);
+        toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnRun);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnTerminate);
-        
-        // ===== DEBUG TOOLBAR SECTION =====
-        toolBar.addSeparator(new Dimension(20, 30));
-        toolBar.add(debugModeLabel);
-        toolBar.add(debugModeSelector);
         toolBar.add(Box.createHorizontalStrut(5));
-        toolBar.add(btnDebugStart);
-        toolBar.add(Box.createHorizontalStrut(5));
-        toolBar.add(btnDebugRestart);
+        toolBar.add(btnHotSwap);
 
-        // 2. DER KLICKPUNKT: Alles ab hier rutscht nach RECHTS
         toolBar.add(Box.createHorizontalGlue());
 
-        // 3. RECHTER BEREICH
-        toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(btnTBuild);
         toolBar.add(Box.createHorizontalStrut(5));
         toolBar.add(gitMenuBar);
@@ -268,7 +229,7 @@ public class MainWindow extends JFrame {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // FileTree MouseListener für Kontextmenü
+        // FileTree MouseListener
         fileTreePanel.getViewport().getView().addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent me) {
                 if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
@@ -278,68 +239,62 @@ public class MainWindow extends JFrame {
             }
         });
 
-        // Layout Splits
+        // Layout
+        JPanel editorContainer = new JPanel(new BorderLayout());
+        editorContainer.add(searchPanel, BorderLayout.NORTH);
+        editorContainer.add(editorTabs,  BorderLayout.CENTER);
+
         verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
         verticalSplit.setResizeWeight(0.7);
         verticalSplit.setDividerSize(4);
         verticalSplit.setBorder(null);
-
-        verticalSplit.addPropertyChangeListener(
-            JSplitPane.DIVIDER_LOCATION_PROPERTY,
-            e -> {
-                if (verticalSplit.getHeight() > 0) {
-                    TIDEPreferences.saveDividerVProportion(
-                        verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight()
-                    );
-                }
-            }
-        );
+        verticalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+            if (verticalSplit.getHeight() > 0)
+                TIDEPreferences.saveDividerVProportion(verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight());
+        });
 
         horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, verticalSplit);
         horizontalSplit.setDividerSize(4);
         horizontalSplit.setBorder(null);
-
-        horizontalSplit.addPropertyChangeListener(
-            JSplitPane.DIVIDER_LOCATION_PROPERTY,
-            e -> {
-                if (horizontalSplit.getWidth() > 0) {
-                    TIDEPreferences.saveDividerHProportion(
-                        horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth()
-                    );
-                }
-            }
-        );
+        horizontalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+            if (horizontalSplit.getWidth() > 0)
+                TIDEPreferences.saveDividerHProportion(horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth());
+        });
 
         add(horizontalSplit, BorderLayout.CENTER);
 
-        // Event Listeners
+        // ---- Event Listeners ----
         btnOpen.addActionListener(e  -> openFolderDialog());
         btnSave.addActionListener(e  -> editorManager.saveCurrentFile());
-        btnTerminate.addActionListener(e -> projectRunner.stopRunningProcess());
-        btnRun.addActionListener(e   -> projectRunner.runProject(
-                (String) modeSelector.getSelectedItem(), mainClassInput.getText().trim()));
         btnClear.addActionListener(e -> consolePanel.clear());
         btnTBuild.addActionListener(e -> projectRunner.handleTBuild());
         btnAbout.addActionListener(e  -> aboutDialog.show());
 
-        // ===== DEBUG EVENT LISTENERS =====
-        btnDebugStart.addActionListener(e -> {
-            String debugMode = (String) debugModeSelector.getSelectedItem();
-            String mainClass = mainClassInput.getText().trim();
-            if (mainClass.isEmpty() && debugMode.equals(MODE_JAVA)) {
-                consolePanel.log("[DEBUG] Main-Class ist erforderlich für Java Debug.\n", Color.RED);
-                return;
-            }
-            debugRunner.startDebug(debugMode, mainClass);
+        btnTerminate.addActionListener(e -> {
+            projectRunner.stopRunningProcess();
+            debugRunner.stopDebugProcess();
         });
 
-        btnDebugRestart.addActionListener(e -> debugRunner.restartDebug());
+        // Ein Run-Button – Verhalten hängt vom Dropdown ab
+        btnRun.addActionListener(e -> {
+            String mode      = (String) modeSelector.getSelectedItem();
+            String mainClass = mainClassInput.getText().trim();
+            String runMode   = (String) runModeSelector.getSelectedItem();
+
+            if (RUN_MODE_DEBUG.equals(runMode)) {
+                debugRunner.startDebug(mainClass);
+            } else {
+                projectRunner.runProject(mode, mainClass);
+            }
+        });
+
+        // HotSwap-Button: Klassen ersetzen ohne Neustart
+        btnHotSwap.addActionListener(e -> debugRunner.hotSwap());
 
         modeSelector.addActionListener(e -> updateDynamicUI());
 
         consolePanel.getTerminalInput().addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
+            @Override public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     String cmd = consolePanel.getTerminalInput().getText().trim();
                     if (!cmd.isEmpty()) {
@@ -363,16 +318,12 @@ public class MainWindow extends JFrame {
             return false;
         });
 
-        // Fenster-Einstellungen beim Schließen speichern
         addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
+            @Override public void windowClosing(WindowEvent e) {
                 TIDEPreferences.saveWindowWidth(getWidth());
                 TIDEPreferences.saveWindowHeight(getHeight());
-
-                if (currentProjectFolder != null) {
+                if (currentProjectFolder != null)
                     TIDEPreferences.saveLastFolder(currentProjectFolder.getAbsolutePath());
-                }
             }
         });
 
@@ -391,18 +342,13 @@ public class MainWindow extends JFrame {
             gitManager.setCurrentProjectFolder(currentProjectFolder);
         }
 
-        // Modus und Main-Class wiederherstellen
         modeSelector.setSelectedItem(TIDEPreferences.getMode());
 
-        // --- Verknüpfung & Initialisierung für die Buttons ---
         projectRunner.setTerminateButton(btnTerminate);
-        btnTerminate.setVisible(false);
-
-        debugRunner.setDebugRestartButton(btnDebugRestart);
+        debugRunner.setHotSwapButton(btnHotSwap);
 
         updateDynamicUI();
     }
-
 
     private void openFolderDialog() {
         JFileChooser chooser = new JFileChooser(System.getProperty("user.home"));
@@ -410,7 +356,7 @@ public class MainWindow extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             currentProjectFolder = chooser.getSelectedFile();
             fileTreePanel.updateFileTree(currentProjectFolder);
-            consolePanel.log("[INFO] Ordner geöffnet/[Info] Folder opened: " + currentProjectFolder.getName() + "\n", Color.CYAN);
+            consolePanel.log("[INFO] Ordner geöffnet: " + currentProjectFolder.getName() + "\n", Color.CYAN);
             loadTXml(currentProjectFolder);
             projectRunner.setCurrentProjectFolder(currentProjectFolder);
             debugRunner.setCurrentProjectFolder(currentProjectFolder);
@@ -420,7 +366,7 @@ public class MainWindow extends JFrame {
     }
 
     private void updateDynamicUI() {
-        String mode   = (String) modeSelector.getSelectedItem();
+        String mode = (String) modeSelector.getSelectedItem();
         boolean isJava = MODE_JAVA.equals(mode);
         btnTBuild.setVisible(isJava);
         mainClassLabel.setVisible(isJava);
@@ -429,12 +375,10 @@ public class MainWindow extends JFrame {
         repaint();
     }
 
-    // ======= T.XML =======
-
     private void loadTXml(File folder) {
         File txml = new File(folder, "T.xml");
         if (!txml.exists()) {
-            consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n" + "[Attention] No T.xml found.\n", Color.ORANGE);
+            consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n", Color.ORANGE);
             setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + folder.getName());
             return;
         }
@@ -449,11 +393,8 @@ public class MainWindow extends JFrame {
             if (mainClass != null && !mainClass.isEmpty()) mainClassInput.setText(mainClass);
             String titleAppName = (appName != null && !appName.isEmpty()) ? appName : folder.getName();
             String titleVersion = (version != null && !version.isEmpty()) ? version : "";
-            if (!titleVersion.isEmpty()) {
-                setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName + " v" + titleVersion);
-            } else {
-                setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName);
-            }
+            setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName
+                     + (titleVersion.isEmpty() ? "" : " v" + titleVersion));
             consolePanel.log("[INFO] T.xml geladen — Main-Class: " + mainClass + " | App: " + titleAppName + "\n", Color.GREEN);
         } catch (Exception e) {
             consolePanel.log("[FEHLER] T.xml konnte nicht gelesen werden: " + e.getMessage() + "\n", Color.RED);

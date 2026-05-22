@@ -18,7 +18,7 @@ public class LanguageManager {
     
     static {
         // German
-        texts.put("DE_open", "Ordner öffnen");
+        texts.put("DE_open", "Ordner oeffnen");
         texts.put("DE_save", "Speichern");
         texts.put("DE_clear", "Konsole leeren");
         texts.put("DE_about", "Über");
