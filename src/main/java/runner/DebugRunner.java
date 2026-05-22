@@ -59,18 +59,20 @@ public class DebugRunner {
         lastMainClass = mainClass;
 
         // Strategie je nach Modus auswählen
+        // In der startDebug() Methode, ändere die switch cases:
+
         switch (mode) {
             case ProjectRunner.MODE_JAVA:
-                currentStrategy = new SwapJava(consolePanel, editorManager, errorMarker, currentProjectFolder);
+                currentStrategy = new DebugSwapJava(consolePanel, editorManager, errorMarker, currentProjectFolder);
                 break;
             case ProjectRunner.MODE_PYTHON:
-                currentStrategy = new SwapPython(consolePanel, editorManager, errorMarker, currentProjectFolder);
+                currentStrategy = new DebugSwapPython(consolePanel, editorManager, errorMarker, currentProjectFolder);
                 break;
             default:
                 consolePanel.log("[DEBUG] Modus nicht unterstützt: " + mode + "\n", Color.RED);
                 return;
         }
-
+        
         executeDebug(mainClass);
     }
 
