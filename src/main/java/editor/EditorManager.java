@@ -40,117 +40,145 @@ public class EditorManager {
     }
 
     public void updateUIWithLocale(Locale neueLocale) {
-
     Locale.setDefault(neueLocale);
 
     for (int i = 0; i < editorTabs.getTabCount(); i++) {
-
         Component tab = editorTabs.getComponentAt(i);
 
         if (tab instanceof JScrollPane scrollPane) {
-
             Component view = scrollPane.getViewport().getView();
 
             if (view instanceof RSyntaxTextArea textArea) {
-
                 textArea.setLocale(neueLocale);
-
-                translatePopupMenu(textArea, neueLocale);
-
+                // SOFORT lokalisieren
+                translatePopupMenuRecursive(textArea.getPopupMenu(), neueLocale);
                 SwingUtilities.updateComponentTreeUI(textArea);
             }
         }
     }
 }
 
-private void translatePopupMenu(RSyntaxTextArea textArea, Locale locale) {
+private void installPopupLocalizationHook(RSyntaxTextArea textArea) {
+    JPopupMenu popup = textArea.getPopupMenu();
+    
+    if (popup != null) {
+        popup.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+                SwingUtilities.invokeLater(() ->
+                    translatePopupMenuRecursive(popup, Locale.getDefault())
+                );
+            }
 
-    SwingUtilities.invokeLater(() -> {
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {}
 
-        JPopupMenu popup = textArea.getPopupMenu();
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+        });
+    }
+}
 
-        if (popup == null) {
-            return;
-        }
+private void translatePopupMenuRecursive(JPopupMenu popup, Locale locale) {
+    if (popup == null) return;
 
-        boolean english =
-                locale.getLanguage().equalsIgnoreCase("en");
+    boolean english = locale.getLanguage().equalsIgnoreCase("en");
 
-        for (Component c : popup.getComponents()) {
-
-            if (c instanceof JMenuItem item) {
-
-                String txt = item.getText();
-
-                if (txt == null) {
-                    continue;
-                }
-
-                // ---------- ENGLISH ----------
-                if (english) {
-
-                    if (txt.contains("Rückgängig"))
-                        item.setText("Undo");
-
-                    if (txt.contains("Wiederherstellen")
-        			    || txt.contains("Kann nicht wiederholen"))
-                        item.setText("Redo");
-
-                    else if (txt.contains("Kann nicht rückgängig"))
-    					item.setText("Can't Undo");
-
-                    else if (txt.contains("Ausschneiden"))
-                        item.setText("Cut");
-
-                    else if (txt.contains("Kopieren"))
-                        item.setText("Copy");
-
-                    else if (txt.contains("Einfügen"))
-                        item.setText("Paste");
-
-                    else if (txt.contains("Löschen"))
-                        item.setText("Delete");
-
-                    else if (txt.contains("Alles auswählen"))
-                        item.setText("Select All");
-                }
-
-                // ---------- GERMAN ----------
-                else {
-
-                    if (txt.equalsIgnoreCase("Undo"))
-                        item.setText("Rückgängig");
-
-                    else if (txt.equalsIgnoreCase("Redo"))
-                        item.setText("Wiederherstellen");
-
-                    else if (txt.equalsIgnoreCase("Cut"))
-                        item.setText("Ausschneiden");
-
-                    else if (txt.equalsIgnoreCase("Copy"))
-                        item.setText("Kopieren");
-
-                    else if (txt.equalsIgnoreCase("Paste"))
-                        item.setText("Einfügen");
-
-                    else if (txt.equalsIgnoreCase("Delete"))
-                        item.setText("Löschen");
-
-                    else if (txt.equalsIgnoreCase("Select All"))
-                        item.setText("Alles auswählen");
-                    if (txt.equalsIgnoreCase("Can't Undo"))
-				    item.setText("Kann nicht rückgängig");
-				
-				else if (txt.equalsIgnoreCase("Can't Redo"))
-				    item.setText("Kann nicht wiederholen");
-                }
+    for (Component c : popup.getComponents()) {
+        if (c instanceof JMenu menu) {
+            // Rekursiv für Submenus
+            String txt = menu.getText();
+            if (txt != null && !txt.isEmpty()) {
+                String translated = translateMenuItem(txt, english);
+                menu.setText(translated);
+            }
+            // Submenu items auch übersetzen
+            translatePopupMenuRecursive(menu.getPopupMenu(), locale);
+        } else if (c instanceof JMenuItem item) {
+            String txt = item.getText();
+            if (txt != null && !txt.isEmpty()) {
+                String translated = translateMenuItem(txt, english);
+                item.setText(translated);
             }
         }
+    }
 
-        popup.revalidate();
-        popup.repaint();
-    });
+    popup.revalidate();
+    popup.repaint();
 }
+
+private String translateMenuItem(String text, boolean toEnglish) {
+    // Normalisieren (alle Varianten auf Englisch bringen)
+    String normalized = normalizeToEnglish(text);
+    
+    // Dann übersetzen
+    if (toEnglish) {
+        return normalized;
+    } else {
+        return translateToGerman(normalized);
+    }
+}
+
+private String normalizeToEnglish(String text) {
+    if (text == null || text.isEmpty()) return text;
+
+    // Deutsche Varianten → Englisch
+    if (text.contains("Rückgängig") && text.contains("nicht")) return "Can't Undo";
+    if (text.contains("Rückgängig")) return "Undo";
+    
+    if (text.contains("Wiederherstellen") || text.contains("Wiederholen")) return "Redo";
+    if (text.contains("nicht möglich") || text.contains("Kann nicht") && text.contains("wiederholen")) return "Can't Redo";
+    if (text.contains("Kann nicht wiederherstellen")) return "Can't Redo";
+    
+    if (text.contains("Ausschneiden")) return "Cut";
+    if (text.contains("Kopieren")) return "Copy";
+    if (text.contains("Einfügen")) return "Paste";
+    if (text.contains("Löschen")) return "Delete";
+    if (text.contains("Alles") && text.contains("auswählen")) return "Select All";
+    if (text.contains("markieren")) return "Select All";
+    
+    if (text.contains("Falten") && !text.contains("Falz")) return "Folding";
+    if (text.contains("Entfalten")) return "Unfolding";
+    
+    // Folding Submenu Items
+    if (text.contains("Falz") && text.contains("umschalten")) return "Toggle Current Fold";
+    if (text.contains("Kommentare") && text.contains("einklappen")) return "Collapse All Comments";
+    if (text.contains("Falze") && text.contains("einklappen")) return "Collapse All Folds";
+    if (text.contains("Falze") && text.contains("ausklappen")) return "Expand All Folds";
+    
+    // Englisch → Englisch
+    return text;
+}
+
+
+private String translateToGerman(String englishText) {
+    return switch (englishText) {
+        case "Undo" -> "Rückgängig";
+        case "Can't Undo" -> "Kann nicht rückgängig";
+        case "Redo" -> "Wiederherstellen";
+        case "Can't Redo" -> "Kann nicht wiederherstellen";
+        case "Cut" -> "Ausschneiden";
+        case "Copy" -> "Kopieren";
+        case "Paste" -> "Einfügen";
+        case "Delete" -> "Löschen";
+        case "Select All" -> "Alles markieren";
+        case "Folding" -> "Falten";
+        case "Unfolding" -> "Entfalten";
+        
+        // Folding Submenu Items
+        case "Toggle Current Fold" -> "Aktuellen Falz umschalten";
+        case "Collapse All Comments" -> "Alle Kommentare einklappen";
+        case "Collapse All Folds" -> "Alle Falze einklappen";
+        case "Expand All Folds" -> "Alle Falze ausklappen";
+        
+        default -> englishText;
+    };
+}
+
+
+
+
+
 
 
 
@@ -167,11 +195,10 @@ private void translatePopupMenu(RSyntaxTextArea textArea, Locale locale) {
 
             textArea.setLocale(Locale.getDefault());
 
-		textArea.setLocale(Locale.getDefault());
-
 SwingUtilities.invokeLater(() -> {
-    translatePopupMenu(textArea, Locale.getDefault());
+    installPopupLocalizationHook(textArea);
 });
+
             textArea.setText(content);
 
             String fileName = file.getName().toLowerCase();
@@ -276,6 +303,8 @@ SwingUtilities.invokeLater(() -> {
         }
     }
 
+
+    
     public void saveCurrentFile() {
         Component tab = editorTabs.getSelectedComponent();
         if (tab instanceof RTextScrollPane) {
