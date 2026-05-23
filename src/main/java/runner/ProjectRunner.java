@@ -254,11 +254,7 @@ case MODE_CPP:
         }
     }
 
-    /**
-     * Berechnet die Wurzel der Package-Struktur.
-     * Beispiel: fqcn = "ui.MainWindow", file = ".../src/main/java/ui/MainWindow.java"
-     * Rückgabe: ".../src/main/java"
-     */
+
     private File calculateSourceRoot(File sourceFile, String fqcn) {
         int dotCount = 0;
         for (char c : fqcn.toCharArray()) if (c == '.') dotCount++;
@@ -333,7 +329,6 @@ case MODE_CPP:
             consolePanel.log("[TERMINAL ERROR] " + e.getMessage() + "\n", Color.RED);
         } finally {
             runningProcess = null;
-            // HIER: Egal ob Fehler, Erfolg oder Crash – der Thread ist fertig, Button weg!
             if (btnTerminate != null) {
                 SwingUtilities.invokeLater(() -> btnTerminate.setVisible(false));
             }
@@ -353,7 +348,6 @@ case MODE_CPP:
             if (f.exists()) return f;
         }
 
-        // Suche rekursiv falls mc nur der Name ohne Package ist
         if (!fqcn.contains(".")) {
             return searchFileRecursively(dir, fqcn + ".java");
         }
@@ -373,7 +367,6 @@ case MODE_CPP:
         return null;
     }
 
-    // handleTBuild und setOnRefreshFileTree bleiben identisch...
     public void handleTBuild() {
         if (currentProjectFolder == null) return;
         File tbuildJar = new File(currentProjectFolder, "TBuild.jar");
@@ -382,7 +375,7 @@ case MODE_CPP:
         } else {
             new Thread(() -> {
                 try {
-                    URL url = new URL("https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar");
+                    URL url = java.net.URI.create("https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar").toURL();
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setInstanceFollowRedirects(true);
                     try (InputStream in = connection.getInputStream()) {

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class FileTreePanel extends JScrollPane {
 
     private JTree fileTree;

@@ -9,6 +9,7 @@ import org.fife.ui.rtextarea.SearchResult;
 import javax.swing.*;
 import java.awt.*;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class SearchPanel extends JPanel {
 
     private JTextField searchField;

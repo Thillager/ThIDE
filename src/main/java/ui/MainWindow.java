@@ -28,6 +28,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import config.TIDEPreferences;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class MainWindow extends JFrame {
 
     private static final String MODE_JAVA   = ProjectRunner.MODE_JAVA;

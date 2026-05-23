@@ -33,7 +33,7 @@ public class UpdateManager {
         new Thread(() -> {
             try {
                 String apiUrl = "https://api.github.com/repos/" + githubRepo + "/releases/latest";
-                HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
+			 HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(apiUrl).toURL().openConnection();
                 conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
                 conn.setRequestProperty("User-Agent", "TIDE-App");
                 conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
@@ -137,9 +137,7 @@ public class UpdateManager {
         return false;
     }
 
-    /**
-     * Gibt den Pfad zur laufenden JAR-Datei zurueck, oder null wenn keine JAR.
-     */
+
     public File getRunningJarFile() {
         try {
             java.net.URI uri = UpdateManager.class.getProtectionDomain()
@@ -150,9 +148,7 @@ public class UpdateManager {
         return null;
     }
 
-    /**
-     * Laedt den Installer herunter und startet ihn ueber ein externes Skript.
-     */
+
     private void downloadAndInstallUpdate(String version, String releaseJson) {
         new Thread(() -> {
             try {
@@ -180,7 +176,7 @@ public class UpdateManager {
                             consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
 
                     File tempJar = new File(System.getProperty("java.io.tmpdir"), jarAssetName);
-                    HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                    HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
                     conn.setInstanceFollowRedirects(true);
                     conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
                     conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
@@ -224,7 +220,7 @@ public class UpdateManager {
                 SwingUtilities.invokeLater(() ->
                         consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
 
-                HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+                HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
 			 conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);

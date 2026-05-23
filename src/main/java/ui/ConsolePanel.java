@@ -8,6 +8,7 @@ import java.awt.*;
 
 import config.TIDEProperties;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class ConsolePanel extends JPanel {
 
     private JTextPane consolePane;
