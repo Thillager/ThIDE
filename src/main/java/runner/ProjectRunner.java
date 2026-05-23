@@ -159,13 +159,13 @@ private void startResourceMonitor() {
                 String separator = System.getProperty("path.separator");
                 String classpath = "out" + separator + "libs/*";
                 
-                // javac Befehl mit @sources.txt und explizitem -sourcepath
-                String compileCmd = "javac -encoding UTF-8 -cp \"" + classpath + "\" " +
-                                   "-d out " +
-                                   "-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
-                                   "\"@" + sourcesListFile.getName() + "\"";
+               // -nowarn unterdrückt die verbleibenden Standard-Hinweise des Compilers
+			String compileCmd = "javac -encoding UTF-8 -nowarn -Xlint:none -cp \"" + classpath + "\" " +
+			                   "-d out " +
+			                   "-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
+			                   "\"@" + sourcesListFile.getName() + "\"";
                 
-                String runCmd = "java -cp \"out" + separator + "libs/*\" " + mc;
+                String runCmd = "java --enable-native-access=ALL-UNNAMED -cp \"out" + separator + "libs/*\" " + mc;
                 
                 executeCommand(compileCmd + " && " + runCmd, false);
                 break;
@@ -312,11 +312,18 @@ case MODE_CPP:
             BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
             String line;
             StringBuilder fullOutput = new StringBuilder();
-            while ((line = r.readLine()) != null) {
-                fullOutput.append(line).append("\n");
-                consolePanel.log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
-            }
-            
+		  while ((line = r.readLine()) != null) {
+		    	if (line.startsWith("Hinweis:") || line.startsWith("Note:")) {
+		        	if (line.contains("veraltete API") || line.contains("deprecated API") ||
+		            	line.contains("-Xlint:deprecation")) {
+		            	continue; 
+		        }
+		  }
+		
+		    fullOutput.append(line).append("\n");
+		    consolePanel.log(line + "\n", isTBuild ? Color.CYAN : Color.WHITE);
+		}
+		            
             int exitCode = p.waitFor();
             if (exitCode != 0) {
                 consolePanel.log("[ERROR CODE " + exitCode + "]\n", Color.RED);

@@ -75,10 +75,10 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
         String sep = System.getProperty("path.separator");
         String classpath = "out" + sep + "libs/*";
 
-        String compileCmd = "javac -encoding UTF-8 -g -cp \"" + classpath + "\" "
-                + "-d out "
-                + "-sourcepath \"" + activeSourceRoot.getAbsolutePath() + "\" "
-                + "\"@" + sourcesListFile.getName() + "\"";
+        String compileCmd = "javac -encoding UTF-8 -g -Xlint:all -deprecation -cp \"" + classpath + "\" "
+        + "-d out "
+        + "-sourcepath \"" + activeSourceRoot.getAbsolutePath() + "\" "
+        + "\"@" + sourcesListFile.getName() + "\"";
 
         activeDebugPort = findFreePort(DEBUG_PORT_START);
         if (activeDebugPort == -1) {
@@ -87,7 +87,7 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
         }
 
         String debugCmd = "java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address="
-                + activeDebugPort + " -cp \"out" + sep + "libs/*\" " + mc;
+        + activeDebugPort + " -cp \"out" + sep + "libs/*\" " + mc;
 
         consolePanel.log("> " + compileCmd + " && " + debugCmd + "\n", Color.GRAY);
         consolePanel.log("[DEBUG] JDWP-Port: " + activeDebugPort + " — Prozess läuft, kein Neustart nötig.\n", Color.YELLOW);
