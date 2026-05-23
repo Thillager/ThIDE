@@ -4,17 +4,16 @@ import ui.ConsolePanel;
 
 import java.awt.Color;
 import java.io.*;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.*;
 import java.util.*;
 
 /**
  * HotSwapEngine – ersetzt laufende Klassen per JDI direkt aus TIDE heraus.
  *
- * JDI wird über Reflection geladen damit TIDE nicht direkt gegen com.sun.jdi
- * kompiliert werden muss (Modul-Zugriffsrechte variieren je nach JDK).
+ * Da com.sun.tools.jdi auf Java 9+ ein internes Modul ist, das nicht ohne
+ * --add-opens zugänglich ist, wird der eigentliche JDI-Zugriff in einem
+ * separaten Kindprozess (HotSwapWorker) ausgeführt, der mit dem nötigen
+ * --add-opens-Flag gestartet wird. TIDE selbst braucht kein Flag.
  *
  * Einschränkungen der JVM:
  *   - Keine neuen Felder oder Methoden hinzufügbar
@@ -45,22 +44,8 @@ public class HotSwapEngine {
             return false;
         }
 
-        // .class-Dateien einlesen: vollständiger Klassenname -> Bytes
-        Map<String, byte[]> classBytes = new HashMap<>();
-        try {
-            collectClassBytes(outFolder, "", classBytes);
-        } catch (IOException e) {
-            consolePanel.log("[HOTSWAP] Fehler beim Lesen der .class-Dateien: " + e.getMessage() + "\n", Color.RED);
-            return false;
-        }
-
-        if (classBytes.isEmpty()) {
-            consolePanel.log("[HOTSWAP] Keine .class-Dateien gefunden.\n", Color.RED);
-            return false;
-        }
-
         consolePanel.log("[HOTSWAP] Verbinde mit Prozess auf Port " + debugPort + "...\n", Color.CYAN);
-        return redefineClasses(classBytes, debugPort);
+        return runWorker(debugPort);
     }
 
     // -------------------------------------------------------------------------
@@ -105,152 +90,89 @@ public class HotSwapEngine {
     }
 
     // -------------------------------------------------------------------------
-    // Schritt 2: .class-Bytes einsammeln
+    // Schritt 2: HotSwapWorker als eigener Prozess mit --add-opens starten
     // -------------------------------------------------------------------------
 
-    private void collectClassBytes(File dir, String pkg, Map<String, byte[]> result) throws IOException {
-        File[] files = dir.listFiles();
-        if (files == null) return;
-        for (File f : files) {
-            if (f.isDirectory()) {
-                collectClassBytes(f, pkg.isEmpty() ? f.getName() : pkg + "." + f.getName(), result);
-            } else if (f.getName().endsWith(".class") && !f.getName().contains("$")) {
-                // Innere Klassen (mit $) separat behandeln
-                String name = f.getName().replace(".class", "");
-                result.put(pkg.isEmpty() ? name : pkg + "." + name, Files.readAllBytes(f.toPath()));
-            } else if (f.getName().endsWith(".class")) {
-                // Innere Klassen auch einsammeln
-                String name = f.getName().replace(".class", "");
-                result.put(pkg.isEmpty() ? name : pkg + "." + name, Files.readAllBytes(f.toPath()));
-            }
-        }
-    }
+    /**
+     * Startet HotSwapWorker als Kindprozess mit:
+     *   java --add-opens jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED
+     *        -cp <out:libs/*:TBuild.jar>
+     *        hotSwap.HotSwapWorker <outFolder> <debugPort>
+     *
+     * Der Worker schreibt sein Ergebnis zeilenweise auf stdout:
+     *   OK <matched>/<total>
+     *   ERR <meldung>
+     *   WARN <meldung>
+     */
+    private boolean runWorker(int debugPort) {
+        // Classpath des Workers: out/ + libs/* + die laufende JAR/Klassen von TIDE selbst
+        String sep = System.getProperty("path.separator");
+        String tideClasspath = getTideClasspath();
+        String workerCp = outFolder.getAbsolutePath()
+                + sep + new File(projectFolder, "libs/*").getAbsolutePath()
+                + (tideClasspath.isEmpty() ? "" : sep + tideClasspath);
 
-    // -------------------------------------------------------------------------
-    // Schritt 3: JDI redefineClasses – direkt über Reflection in TIDE
-    // -------------------------------------------------------------------------
+        String javaExe = ProcessHandle.current().info().command().orElse("java");
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private boolean redefineClasses(Map<String, byte[]> classBytes, int debugPort) {
+        List<String> cmd = new ArrayList<>(Arrays.asList(
+                javaExe,
+                "--add-opens", "jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED",
+                "-cp", workerCp,
+                "hotSwap.HotSwapWorker",
+                outFolder.getAbsolutePath(),
+                String.valueOf(debugPort)
+        ));
+
         try {
-            // JDI ClassLoader aufbauen (tools.jar für Java 8, sonst JDK-intern)
-            ClassLoader jdiLoader = buildJdiClassLoader();
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.directory(projectFolder);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
 
-            // Bootstrap.virtualMachineManager()
-            Class<?> bootstrapClass = jdiLoader.loadClass("com.sun.jdi.Bootstrap");
-            Method vmmMethod = bootstrapClass.getMethod("virtualMachineManager");
-            Object vmm = vmmMethod.invoke(null);
-
-            // attachingConnectors() – SocketAttach finden
-            Method attachingConnectors = vmm.getClass().getMethod("attachingConnectors");
-            List<?> connectors = (List<?>) attachingConnectors.invoke(vmm);
-
-            Object socketConn = null;
-            for (Object c : connectors) {
-                Method nameMeth = c.getClass().getMethod("name");
-                String name = (String) nameMeth.invoke(c);
-                if (name.contains("SocketAttach")) { socketConn = c; break; }
-            }
-            if (socketConn == null) {
-                consolePanel.log("[HOTSWAP] Kein SocketAttach-Connector gefunden.\n", Color.RED);
-                return false;
-            }
-
-            // defaultArguments() – host und port setzen
-            Method defaultArgs = socketConn.getClass().getMethod("defaultArguments");
-            Map<String, Object> params = (Map<String, Object>) defaultArgs.invoke(socketConn);
-
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                String key = e.getKey().toLowerCase();
-                Object arg = e.getValue();
-                Method setValue = arg.getClass().getMethod("setValue", String.class);
-                if (key.equals("host") || key.equals("hostname"))
-                    setValue.invoke(arg, "127.0.0.1");
-                if (key.equals("port") || key.equals("address"))
-                    setValue.invoke(arg, String.valueOf(debugPort));
-            }
-
-            // attach(params) → VirtualMachine
-            Method attachMethod = socketConn.getClass().getMethod("attach", Map.class);
-            Object vm = attachMethod.invoke(socketConn, params);
-
-            // allClasses() → List<ReferenceType>
-            Method allClasses = vm.getClass().getMethod("allClasses");
-            List<?> allTypes = (List<?>) allClasses.invoke(vm);
-
-            // redefMap aufbauen: ReferenceType → byte[]
-            Class<?> refTypeClass   = jdiLoader.loadClass("com.sun.jdi.ReferenceType");
-            Map<Object, byte[]> redefMap = new HashMap<>();
-            int matched = 0;
-
-            for (Map.Entry<String, byte[]> entry : classBytes.entrySet()) {
-                String targetName = entry.getKey();
-                for (Object rt : allTypes) {
-                    Method nameMeth = rt.getClass().getMethod("name");
-                    String rtName = (String) nameMeth.invoke(rt);
-                    if (rtName.equals(targetName)) {
-                        redefMap.put(rt, entry.getValue());
-                        matched++;
-                        break;
+            boolean success = false;
+            try (BufferedReader r = new BufferedReader(
+                    new InputStreamReader(p.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = r.readLine()) != null) {
+                    if (line.startsWith("OK ")) {
+                        consolePanel.log("[HOTSWAP] ✓ " + line.substring(3)
+                                + " Klasse(n) live ersetzt – kein Neustart nötig.\n", Color.GREEN);
+                        success = true;
+                    } else if (line.startsWith("ERR ")) {
+                        String msg = line.substring(4);
+                        if (msg.contains("UnsupportedOperation")) {
+                            consolePanel.log("[HOTSWAP] Nicht möglich: Klassenstruktur wurde geändert "
+                                    + "(neue Methode/Feld hinzugefügt).\n"
+                                    + "[HOTSWAP] Bitte Prozess neu starten.\n", Color.ORANGE);
+                        } else {
+                            consolePanel.log("[HOTSWAP] Fehler: " + msg + "\n", Color.RED);
+                        }
+                    } else if (line.startsWith("WARN ")) {
+                        consolePanel.log("[HOTSWAP] " + line.substring(5) + "\n", Color.ORANGE);
+                    } else if (!line.isBlank()) {
+                        consolePanel.log("[HOTSWAP] " + line + "\n", Color.GRAY);
                     }
                 }
             }
-
-            if (redefMap.isEmpty()) {
-                consolePanel.log("[HOTSWAP] Keine passenden Klassen im Zielprozess gefunden.\n"
-                               + "[HOTSWAP] Stelle sicher dass der Debug-Prozess noch läuft.\n", Color.ORANGE);
-                // VM aufräumen
-                vm.getClass().getMethod("dispose").invoke(vm);
-                return false;
-            }
-
-            // redefineClasses(Map<? extends ReferenceType, byte[]>)
-            Method redefine = vm.getClass().getMethod("redefineClasses", Map.class);
-            redefine.invoke(vm, redefMap);
-
-            vm.getClass().getMethod("dispose").invoke(vm);
-
-            consolePanel.log("[HOTSWAP] ✓ " + matched + "/" + classBytes.size()
-                           + " Klasse(n) live ersetzt – kein Neustart nötig.\n", Color.GREEN);
-            return true;
-
+            p.waitFor();
+            return success;
         } catch (Exception e) {
-            String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-            // UnsupportedOperationException = Klassenstruktur geändert (neue Methode/Feld)
-            if (msg != null && msg.contains("UnsupportedOperation")) {
-                consolePanel.log("[HOTSWAP] Nicht möglich: Klassenstruktur wurde geändert "
-                               + "(neue Methode/Feld hinzugefügt).\n"
-                               + "[HOTSWAP] Bitte Prozess neu starten.\n", Color.ORANGE);
-            } else {
-                consolePanel.log("[HOTSWAP] Fehler: " + msg + "\n", Color.RED);
-            }
+            consolePanel.log("[HOTSWAP] Worker-Fehler: " + e.getMessage() + "\n", Color.RED);
             return false;
         }
     }
 
     /**
-     * Baut einen ClassLoader der JDI enthält.
-     * Java 8:  tools.jar muss geladen werden
-     * Java 9+: JDI ist in jdk.jdi eingebaut, Standard-ClassLoader reicht
+     * Ermittelt den Classpath unter dem TIDE selbst läuft,
+     * damit HotSwapWorker (der in TIDE's out/ liegt) gefunden wird.
      */
-    private ClassLoader buildJdiClassLoader() throws IOException {
-        File toolsJar = new File(System.getProperty("java.home"), "../lib/tools.jar");
-        if (toolsJar.exists()) {
-            // Java 8
-            return new URLClassLoader(
-                    new URL[]{toolsJar.getCanonicalFile().toURI().toURL()},
-                    getClass().getClassLoader());
-        }
-        // Java 9+ – JDI ist über den Platform ClassLoader erreichbar
-        // (das Modul jdk.jdi ist standardmäßig geladen wenn JDWP aktiv ist)
-        ClassLoader platformLoader = ClassLoader.getPlatformClassLoader();
-        try {
-            platformLoader.loadClass("com.sun.jdi.Bootstrap");
-            return platformLoader;
-        } catch (ClassNotFoundException e) {
-            // Letzter Versuch: System ClassLoader
-            return ClassLoader.getSystemClassLoader();
-        }
+    private String getTideClasspath() {
+        // Aus der laufenden JVM den Classpath holen
+        String cp = System.getProperty("java.class.path", "");
+        if (!cp.isEmpty()) return cp;
+        // Fallback: TBuild.jar im Projektordner
+        File jar = new File(projectFolder, "TBuild.jar");
+        return jar.exists() ? jar.getAbsolutePath() : "";
     }
 
     private static boolean isWindows() {
