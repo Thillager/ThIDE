@@ -77,7 +77,19 @@ public class MainWindow extends JFrame {
     private JSplitPane verticalSplit;
 
     public MainWindow() {
-        setTitle("TIDE v" + TIDEProperties.APP_VERSION);
+
+    LanguageManager.Language lang =
+        LanguageManager.Language.valueOf(TIDEPreferences.getLanguage());
+
+    Locale locale =
+        lang == LanguageManager.Language.DE
+            ? Locale.GERMAN
+            : Locale.ENGLISH;
+
+    Locale.setDefault(locale);
+    JComponent.setDefaultLocale(locale);
+
+    setTitle("TIDE v" + TIDEProperties.APP_VERSION);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         initSubsystems();
@@ -206,7 +218,7 @@ public class MainWindow extends JFrame {
     modeLabel.setText(LanguageManager.t("mode"));
     mainClassLabel.setText(LanguageManager.t("main"));
      
-    // UI neu ausrichten und zeichnen ohne Komponenten zu zerstören
+
     revalidate();
     repaint();
 });
