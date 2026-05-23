@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale;
 
 public class EditorManager {
 
@@ -37,6 +38,79 @@ public class EditorManager {
         this.consolePanel      = consolePanel;
         this.wordManagerDialog = wordManagerDialog;
     }
+
+    public void updateUIWithLocale(Locale neueLocale) {
+    try {
+        boolean isEnglish = neueLocale.getLanguage().equalsIgnoreCase("en");
+
+        for (int i = 0; i < editorTabs.getTabCount(); i++) {
+            Component tab = editorTabs.getComponentAt(i);
+            
+            if (tab instanceof JScrollPane) {
+                Component view = ((JScrollPane) tab).getViewport().getView();
+                
+                if (view instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea) {
+                    org.fife.ui.rsyntaxtextarea.RSyntaxTextArea textArea = 
+                        (org.fife.ui.rsyntaxtextarea.RSyntaxTextArea) view;
+                    
+                    // 1. Locale setzen (wichtig, falls das Menü noch nie offen war)
+                    textArea.setLocale(neueLocale);
+                    
+                    // 2. Bestehendes Menü live übersetzen (falls es schon im Speicher existiert)
+                    JPopupMenu popup = textArea.getPopupMenu();
+                    if (popup != null) {
+                        for (Component comp : popup.getComponents()) {
+                            if (comp instanceof JMenuItem) {
+                                JMenuItem item = (JMenuItem) comp;
+                                String text = item.getText();
+                                
+                                if (text != null) {
+                                    // .contains() fängt auch deine manuellen oder modifizierten Einträge ab
+                                    if (isEnglish) {
+                                        if (text.contains("R\u00FCckg\u00E4ngig") || text.contains("Rückgängig")) item.setText("Undo");
+                                        if (text.contains("Wiederherstellen")) item.setText("Redo");
+                                        if (text.contains("Ausschneiden")) item.setText("Cut");
+                                        if (text.contains("Kopieren")) item.setText("Copy");
+                                        if (text.contains("Einf\u00FCgen") || text.contains("Einfügen")) item.setText("Paste");
+                                        if (text.contains("L\u00F6schen") || text.contains("Löschen")) item.setText("Delete");
+                                        if (text.contains("Alles ausw\u00E4hlen") || text.contains("Alles auswählen")) item.setText("Select All");
+                                    } else {
+                                        if (text.equalsIgnoreCase("Undo")) item.setText("R\u00FCckg\u00E4ngig");
+                                        if (text.equalsIgnoreCase("Redo")) item.setText("Wiederherstellen");
+                                        if (text.equalsIgnoreCase("Cut")) item.setText("Ausschneiden");
+                                        if (text.equalsIgnoreCase("Copy")) item.setText("Kopieren");
+                                        if (text.equalsIgnoreCase("Paste")) item.setText("Einf\u00FCgen");
+                                        if (text.equalsIgnoreCase("Delete")) item.setText("L\u00F6schen");
+                                        if (text.equalsIgnoreCase("Select All")) item.setText("Alles ausw\u00E4hlen");
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. ActionMap aktualisieren für Shortcuts und interne Funktionen
+                    ActionMap am = textArea.getActionMap();
+                    if (am != null && am.allKeys() != null) {
+                        for (Object key : am.allKeys()) {
+                            if (key == null) continue;
+                            String keyStr = key.toString().toLowerCase();
+                            Action a = am.get(key);
+                            if (a == null) continue;
+
+                            if (keyStr.contains("undo")) {
+                                a.putValue(Action.NAME, isEnglish ? "Undo" : "R\u00FCckg\u00E4ngig");
+                            } else if (keyStr.contains("redo")) {
+                                a.putValue(Action.NAME, isEnglish ? "Redo" : "Wiederherstellen");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        System.err.println("Fehler beim Live-Sprachwechsel im Editor: " + e.getMessage());
+    }
+}
 
     public void openFileInEditor(File file) {
         for (int i = 0; i < editorTabs.getTabCount(); i++) {

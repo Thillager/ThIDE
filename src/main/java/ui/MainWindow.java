@@ -7,6 +7,7 @@ import runner.ProjectRunner;
 import runner.DebugRunner;
 import update.UpdateManager;
 import config.TIDEProperties;
+import config.LanguageManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
-import config.LanguageManager;
+import java.util.Locale;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -183,16 +184,31 @@ public class MainWindow extends JFrame {
         langSel.setMaximumSize(new Dimension(95, 28));
         langSel.setToolTipText("Language / Sprache");
         langSel.addActionListener(e -> {
-            LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
-            LanguageManager.set(selected);
-            TIDEPreferences.saveLanguage(selected.name());
-            btnOpen.setText(LanguageManager.t("open"));
-            btnSave.setText(LanguageManager.t("save"));
-            btnClear.setText(LanguageManager.t("clear"));
-            btnAbout.setText(LanguageManager.t("about"));
-            modeLabel.setText(LanguageManager.t("mode"));
-            mainClassLabel.setText(LanguageManager.t("main"));
-        });
+    LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
+    LanguageManager.set(selected);
+    TIDEPreferences.saveLanguage(selected.name());
+
+    Locale neueLocale = selected.name().equalsIgnoreCase("DE") ? Locale.GERMAN : Locale.ENGLISH;
+    Locale.setDefault(neueLocale);
+    JComponent.setDefaultLocale(neueLocale); 
+
+    // Bestehende Editoren updaten
+    if (editorManager != null) {
+        editorManager.updateUIWithLocale(neueLocale);
+    }
+    
+    // Texte der Hauptkomponenten updaten
+    btnOpen.setText(LanguageManager.t("open"));
+    btnSave.setText(LanguageManager.t("save"));
+    btnClear.setText(LanguageManager.t("clear"));
+    btnAbout.setText(LanguageManager.t("about"));
+    modeLabel.setText(LanguageManager.t("mode"));
+    mainClassLabel.setText(LanguageManager.t("main"));
+     
+    // UI neu ausrichten und zeichnen ohne Komponenten zu zerstören
+    revalidate();
+    repaint();
+});
 
         // ---- Toolbar befüllen ----
         toolBar.add(btnOpen);
@@ -374,6 +390,7 @@ public class MainWindow extends JFrame {
         revalidate();
         repaint();
     }
+
 
     private void loadTXml(File folder) {
         File txml = new File(folder, "T.xml");
