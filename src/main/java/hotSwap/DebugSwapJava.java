@@ -13,10 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DebugSwapJava – startet einen Java-Prozess mit JDWP und bietet
- * hotSwap() zum Ersetzen von Klassen zur Laufzeit (ohne Neustart).
- */
 public class DebugSwapJava implements DebugRunner.DebugStrategy {
 
     public static final int DEBUG_PORT_START = 5005;
@@ -118,10 +114,6 @@ public class DebugSwapJava implements DebugRunner.DebugStrategy {
         }
     }
 
-    /**
-     * Echter HotSwap: kompiliert aktuelle Dateien und ersetzt Klassen im
-     * laufenden Prozess per JDI – kein Neustart.
-     */
     public void hotSwap() {
         if (activeDebugPort == -1 || activeSourceRoot == null) {
             consolePanel.log("[HOTSWAP] Kein laufender Debug-Prozess.\n", Color.ORANGE);
