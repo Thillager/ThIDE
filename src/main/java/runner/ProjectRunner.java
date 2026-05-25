@@ -67,36 +67,31 @@ public void setTerminateButton(JButton btnTerminate) {
 
 private void startResourceMonitor() {
     new Thread(() -> {
-        com.sun.management.OperatingSystemMXBean os = 
-            (com.sun.management.OperatingSystemMXBean) 
+        com.sun.management.OperatingSystemMXBean os =
+            (com.sun.management.OperatingSystemMXBean)
             java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-        
-        Runtime runtime = Runtime.getRuntime();
 
         while (runningProcess != null && runningProcess.isAlive()) {
             try {
-                Thread.sleep(1000); // jede Sekunde prüfen
+                Thread.sleep(1000);
 
                 double cpuLoad = os.getCpuLoad() * 100;
-                long usedRam   = runtime.totalMemory() - runtime.freeMemory();
-                long maxRam    = runtime.maxMemory();
-                double ramLoad = (double) usedRam / maxRam * 100;
+                double ramLoad = (double)(os.getTotalMemorySize() - os.getFreeMemorySize())
+                                 / os.getTotalMemorySize() * 100;
 
                 if (cpuLoad >= 95 || ramLoad >= 95) {
-                    consolePanel.log("[WARNUNG] Ressourcen kritisch (CPU: " 
-                        + (int)cpuLoad + "% RAM: " + (int)ramLoad 
+                    consolePanel.log("[WARNUNG] Ressourcen kritisch (CPU: "
+                        + (int)cpuLoad + "% RAM: " + (int)ramLoad
                         + "%) — Prozess wird beendet.\n", Color.ORANGE);
                     stopRunningProcess();
                     return;
                 }
-
             } catch (InterruptedException e) {
                 return;
             }
         }
-    }).start();
+    }, "TideResourceMonitor").start();
 }
-
 
     public void runProject(String mode, String mainClass) {
         if (currentProjectFolder == null) {
