@@ -5,21 +5,7 @@ import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.util.*;
 
-/**
- * HotSwapWorker – wird von HotSwapEngine als eigener Prozess gestartet:
- *
- *   java --add-opens jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED
- *        -cp <classpath>
- *        hotSwap.HotSwapWorker <outFolder> <debugPort>
- *
- * Gibt auf stdout aus:
- *   OK <matched>/<total>   – Erfolg
- *   ERR <meldung>          – Fehler
- *   WARN <meldung>         – Warnung
- *
- * Alle Reflection-Aufrufe gehen ausschließlich über die öffentlichen
- * com.sun.jdi / com.sun.jdi.connect Interfaces, nie über interne Impl-Klassen.
- */
+
 public class HotSwapWorker {
 
     public static void main(String[] args) {
@@ -57,13 +43,8 @@ public class HotSwapWorker {
     @SuppressWarnings({"unchecked"})
     private static void redefineClasses(Map<String, byte[]> classBytes, int debugPort) {
         try {
-            // Alle JDI-Klassen über den PlatformClassLoader laden.
-            // Dank --add-opens jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED darf
-            // Bootstrap intern VirtualMachineManagerImpl erzeugen.
             ClassLoader jdi = ClassLoader.getPlatformClassLoader();
 
-            // Öffentliche Interfaces – alle Methodenaufrufe nur darüber,
-            // nie über getClass() (das würde interne Impl-Klassen liefern)
             Class<?> argIface       = jdi.loadClass("com.sun.jdi.connect.Connector$Argument");
             Class<?> refTypeIface   = jdi.loadClass("com.sun.jdi.ReferenceType");
             Class<?> connectorIface = jdi.loadClass("com.sun.jdi.connect.AttachingConnector");
