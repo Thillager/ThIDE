@@ -20,10 +20,6 @@ public class WordManagerDialog {
         this.consolePanel = consolePanel;
     }
 
-    /**
-     * Öffnet einen Dialog, in dem alle gelernten Wörter angezeigt
-     * und einzeln oder mehrfach gelöscht werden können.
-     */
     public void show(DefaultCompletionProvider provider, Set<String> knownWords) {
         JDialog dialog = new JDialog(parent, "Wörter verwalten", true);
         dialog.setSize(400, 480);
