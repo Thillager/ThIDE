@@ -45,9 +45,7 @@ public class GitManager {
 
     // ======= Credentials =======
 
-    /** Laedt Credentials aus ~/.git-credentials */
     public String[] loadGitCredentials() {
-        // 1. ~/.git-credentials
         File credFile = new File(System.getProperty("user.home"), ".git-credentials");
         if (credFile.exists()) {
             try {
@@ -72,7 +70,6 @@ public class GitManager {
             } catch (IOException ignored) {}
         }
 
-        // 2. git credential fill
         try {
             ProcessBuilder pb = new ProcessBuilder("git", "credential", "fill");
             pb.redirectErrorStream(false);
@@ -98,7 +95,6 @@ public class GitManager {
             }
         } catch (Exception ignored) {}
 
-        // 3. Windows Credential Manager direkt via cmdkey
         if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
             try {
                 Process p = new ProcessBuilder("cmdkey", "/list:git:https://github.com")
@@ -133,7 +129,7 @@ public class GitManager {
         return null;
     }
 
-    /** Oeffnet das Git-Repo im aktuellen Projektordner */
+    // Oeffnet das Git-Repo im aktuellen Projektordner
     private Git openRepo() throws IOException {
         if (currentProjectFolder == null) throw new IOException("Kein Projektordner geöffnet.");
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
@@ -141,7 +137,6 @@ public class GitManager {
         return new Git(repo);
     }
 
-    /** Gibt CredentialsProvider zurueck oder null */
     private UsernamePasswordCredentialsProvider getCredentials() {
         String[] c = loadGitCredentials();
         if (c == null || c[1] == null || c[1].isEmpty()) return null;
