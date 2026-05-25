@@ -25,9 +25,8 @@ public class UpdateManager {
         this.githubRepo   = githubRepo;
     }
 
-    /**
-     * Prueft auf GitHub ob eine neuere Version verfuegbar ist.
-     */
+     // Prueft auf GitHub ob eine neuere Version verfuegbar ist
+     
     public void checkForUpdates() {
         consolePanel.log("[INFO] Suche nach Updates...\n", Color.CYAN);
         new Thread(() -> {
@@ -93,7 +92,7 @@ public class UpdateManager {
     }
 
     /**
-     * Erkennt ob die App direkt als .jar gestartet wurde –
+     * Erkennt ob die App direkt als .jar gestartet wurde,
      * NICHT als jpackage-installiertes Programm.
      *
      * jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
@@ -126,7 +125,6 @@ public class UpdateManager {
                     File[] exes = launcherDir.listFiles(
                             f -> f.isFile() && f.getName().endsWith(".exe"));
                     if (exes != null && exes.length > 0) {
-                        // Nativer jpackage-Launcher gefunden -> kein JAR-Direktstart
                         return false;
                     }
                 }
@@ -251,9 +249,6 @@ public class UpdateManager {
         }).start();
     }
 
-    /**
-     * Ersetzt die laufende JAR durch die neue und startet neu.
-     */
     private void launchJarSelfReplace(File newJar, File currentJar) throws IOException {
         String os         = System.getProperty("os.name", "").toLowerCase();
         boolean isWindows = os.contains("win");
@@ -317,9 +312,9 @@ public class UpdateManager {
         }
     }
 
-    /**
-     * Erstellt eine .bat-Datei fuer das Windows-MSI-Update.
-     */
+    
+     // Erstellt eine .bat-Datei fuer das Windows-MSI-Update
+     
     private void launchWindowsUpdate(File msiFile) throws IOException {
         File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
         try (PrintWriter pw = new PrintWriter(batFile)) {
@@ -353,9 +348,8 @@ public class UpdateManager {
         });
     }
 
-    /**
-     * Erstellt ein .sh-Skript fuer das Linux-.deb-Update.
-     */
+	 // Erstellt ein .sh skript für das Linux-.deb-Update
+	
     private void launchLinuxUpdate(File debFile) throws IOException {
         boolean hasSudoNopass = false;
         try {
