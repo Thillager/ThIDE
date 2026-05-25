@@ -165,6 +165,22 @@ private void startResourceMonitor() {
                 executeCommand(compileCmd + " && " + runCmd, false);
                 break;
 
+				case MODE_BATCH:
+    File activeBat = editorManager.getActiveFile();
+    if (activeBat == null ||
+            !(activeBat.getName().endsWith(".bat") ||
+              activeBat.getName().endsWith(".cmd"))) {
+        consolePanel.log(LanguageManager.t("no_batch_file") + "\n", Color.RED);
+        return;
+    }
+    consolePanel.log("[BATCH] " + activeBat.getName() + "...\n", Color.CYAN);
+    if (isWindows) {
+        executeCommand("cmd /c \"" + activeBat.getAbsolutePath() + "\"", false);
+    } else {
+        consolePanel.log("[BATCH] Batch-Dateien laufen nur unter Windows.\n", Color.RED);
+    }
+    break;
+
             case MODE_C:
 case MODE_CPP:
     File activeC = editorManager.getActiveFile();
