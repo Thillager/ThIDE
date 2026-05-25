@@ -4,7 +4,7 @@
 [![Java](https://img.shields.io/badge/Java-100%25-orange)](https://www.java.com/)
 [![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/TIDE/releases/latest)
 
-TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environment)** developed specifically for Java development. It provides all essential features for Java programming, but also for other languages, like batch or c++, but java is the best supportet one.
+TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environment)** developed specifically for Java development. It provides all essential features for Java programming, but also for other languages, like batch, python, c or c++, but java is the best supported one.
 
 ## Features
 
@@ -15,12 +15,12 @@ TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environm
 - ✅ **Platform Independent** - Runs on Windows, Linux and macOS (all Java-supporting systems)
 - ✅ **GUI with Java Swing** - Native and responsive user interface
 - ✅ **Update Button** - No annoying reinstalls for new versions, no automatic updates with potential malware
-- ✅ **Multiple languages** - Not only one language supportet
+- ✅ **Multiple languages** - Not only one language supported
 
 ## Requirements
 
 - **Java development kit (JDK) 25 or higher**
-     - Or use the .msi/.deb installers
+     - Or use the .msi/.deb installers, then the jdk version is irrelevant
 - **At least 750 MB RAM**
 - **50 MB free disk space**
 
@@ -56,29 +56,6 @@ TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environm
    ```
 
 3. The TIDE IDE will open and be ready to use.
-
-### Option 3: Compile from Source Code
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Thillager/TIDE.git
-   cd TIDE
-   ```
-
-2. Compile the source code:
-   ```bash
-   javac -d bin src/main/java/**/*.java
-   ```
-
-3. Create an executable JAR file (optional):
-   ```bash
-   jar cvfe TIDE.jar TIDE -C bin .
-   ```
-
-4. Run the compiled version:
-   ```bash
-   java -cp bin TIDE
-   ```
 
 ## How TIDE Works
 
