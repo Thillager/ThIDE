@@ -10,11 +10,6 @@ import java.awt.Color;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
-/**
- * DebugSwapPython – startet Python mit pdb (interaktiver Debugger).
- * HotSwap existiert für Python nicht (Interpreter-Sprache), daher
- * wird bei "HotSwap" der Prozess einfach neu gestartet.
- */
 public class DebugSwapPython implements DebugRunner.DebugStrategy {
 
     private final ConsolePanel consolePanel;
