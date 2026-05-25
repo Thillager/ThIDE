@@ -7,19 +7,6 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/**
- * HotSwapEngine – ersetzt laufende Klassen per JDI direkt aus TIDE heraus.
- *
- * Da com.sun.tools.jdi auf Java 9+ ein internes Modul ist, das nicht ohne
- * --add-opens zugänglich ist, wird der eigentliche JDI-Zugriff in einem
- * separaten Kindprozess (HotSwapWorker) ausgeführt, der mit dem nötigen
- * --add-opens-Flag gestartet wird. TIDE selbst braucht kein Flag.
- *
- * Einschränkungen der JVM:
- *   - Keine neuen Felder oder Methoden hinzufügbar
- *   - Keine Änderung der Klassenhierarchie
- *   - Methodenkörper / Logik kann frei geändert werden
- */
 public class HotSwapEngine {
 
     private final ConsolePanel consolePanel;
@@ -32,10 +19,6 @@ public class HotSwapEngine {
         this.outFolder = new File(projectFolder, "out");
     }
 
-    /**
-     * Kompiliert alle Java-Dateien neu und ersetzt die Klassen per JDI
-     * im laufenden Debug-Prozess. Kein Neustart.
-     */
     public boolean hotSwap(File sourceRoot, List<File> javaFiles, int debugPort) {
         consolePanel.log("[HOTSWAP] Kompiliere...\n", Color.CYAN);
 
@@ -93,19 +76,7 @@ public class HotSwapEngine {
     // Schritt 2: HotSwapWorker als eigener Prozess mit --add-opens starten
     // -------------------------------------------------------------------------
 
-    /**
-     * Startet HotSwapWorker als Kindprozess mit:
-     *   java --add-opens jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED
-     *        -cp <out:libs/*:TBuild.jar>
-     *        hotSwap.HotSwapWorker <outFolder> <debugPort>
-     *
-     * Der Worker schreibt sein Ergebnis zeilenweise auf stdout:
-     *   OK <matched>/<total>
-     *   ERR <meldung>
-     *   WARN <meldung>
-     */
     private boolean runWorker(int debugPort) {
-        // Classpath des Workers: out/ + libs/* + die laufende JAR/Klassen von TIDE selbst
         String sep = System.getProperty("path.separator");
         String tideClasspath = getTideClasspath();
         String workerCp = outFolder.getAbsolutePath()
@@ -162,15 +133,9 @@ public class HotSwapEngine {
         }
     }
 
-    /**
-     * Ermittelt den Classpath unter dem TIDE selbst läuft,
-     * damit HotSwapWorker (der in TIDE's out/ liegt) gefunden wird.
-     */
     private String getTideClasspath() {
-        // Aus der laufenden JVM den Classpath holen
         String cp = System.getProperty("java.class.path", "");
         if (!cp.isEmpty()) return cp;
-        // Fallback: TBuild.jar im Projektordner
         File jar = new File(projectFolder, "TBuild.jar");
         return jar.exists() ? jar.getAbsolutePath() : "";
     }
