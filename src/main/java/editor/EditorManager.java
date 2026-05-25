@@ -108,10 +108,8 @@ private void translatePopupMenuRecursive(JPopupMenu popup, Locale locale) {
 }
 
 private String translateMenuItem(String text, boolean toEnglish) {
-    // Normalisieren (alle Varianten auf Englisch bringen)
     String normalized = normalizeToEnglish(text);
     
-    // Dann übersetzen
     if (toEnglish) {
         return normalized;
     } else {
@@ -122,7 +120,6 @@ private String translateMenuItem(String text, boolean toEnglish) {
 private String normalizeToEnglish(String text) {
     if (text == null || text.isEmpty()) return text;
 
-    // Deutsche Varianten → Englisch
     if (text.contains("Rückgängig") && text.contains("nicht")) return "Can't Undo";
     if (text.contains("Rückgängig")) return "Undo";
     
@@ -140,13 +137,11 @@ private String normalizeToEnglish(String text) {
     if (text.contains("Falten") && !text.contains("Falz")) return "Folding";
     if (text.contains("Entfalten")) return "Unfolding";
     
-    // Folding Submenu Items
     if (text.contains("Falz") && text.contains("umschalten")) return "Toggle Current Fold";
     if (text.contains("Kommentare") && text.contains("einklappen")) return "Collapse All Comments";
     if (text.contains("Falze") && text.contains("einklappen")) return "Collapse All Folds";
     if (text.contains("Falze") && text.contains("ausklappen")) return "Expand All Folds";
     
-    // Englisch → Englisch
     return text;
 }
 
@@ -165,7 +160,6 @@ private String translateToGerman(String englishText) {
         case "Folding" -> "Falten";
         case "Unfolding" -> "Entfalten";
         
-        // Folding Submenu Items
         case "Toggle Current Fold" -> "Aktuellen Falz umschalten";
         case "Collapse All Comments" -> "Alle Kommentare einklappen";
         case "Collapse All Folds" -> "Alle Falze einklappen";
