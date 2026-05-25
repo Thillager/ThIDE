@@ -30,11 +30,11 @@ public class FileTreePanel extends JScrollPane {
     private ConsolePanel consolePanel;
     private JFrame parent;
 
-    /** null  = leer; wenn gesetzt + isCut=true → beim Einfügen verschieben */
+    // null  = leer; wenn gesetzt + isCut=true → beim Einfügen verschieben 
     private File clipboard = null;
     private boolean isCut  = false;
 
-    /** Callback: Datei wurde doppelt angeklickt */
+    // Callback: Datei wurde doppelt angeklickt
     private Consumer<File> onFileOpen;
 
     public FileTreePanel(JFrame parent, ConsolePanel consolePanel, Consumer<File> onFileOpen) {
@@ -48,7 +48,6 @@ public class FileTreePanel extends JScrollPane {
         fileTree.setBackground(new Color(30, 31, 34));
         fileTree.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // NUR Doppelklick hier – kein eigenes Popup mehr!
         // Das Kontextmenü wird ausschließlich über showFileTreePopup() aus MainWindow gesteuert.
         fileTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -91,7 +90,7 @@ public class FileTreePanel extends JScrollPane {
         repaint();
     }
 
-    /** Sammelt alle aktuell aufgeklappten Pfade als absolute Pfad-Strings. */
+    // Sammelt alle aktuell aufgeklappten Pfade als absolute Pfad-Strings
     private Set<String> getExpandedPaths() {
         Set<String> paths = new HashSet<>();
         int rowCount = fileTree.getRowCount();
@@ -109,7 +108,7 @@ public class FileTreePanel extends JScrollPane {
         return paths;
     }
 
-    /** Klappt alle Nodes auf, deren Dateipfad in expandedPaths enthalten ist. */
+    // Klappt alle Nodes auf, deren Dateipfad in expandedPaths enthalten ist
     private void restoreExpandedPaths(DefaultMutableTreeNode root, Set<String> expandedPaths) {
         if (expandedPaths.isEmpty()) return;
         Enumeration<?> e = root.depthFirstEnumeration();
@@ -270,7 +269,7 @@ public class FileTreePanel extends JScrollPane {
         }
     }
 
-    /** Kopiert einen Ordner rekursiv. */
+    // Kopiert einen Ordner rekursiv
     private void copyDirectoryRecursive(File src, File dest) throws IOException {
         if (src.isDirectory()) {
             dest.mkdirs();
