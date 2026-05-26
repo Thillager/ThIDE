@@ -62,9 +62,9 @@ public class EditorManager {
 	}
 
 
-public void setOutlinePanel(OutlinePanel outlinePanel) {
-    this.outlinePanel = outlinePanel;
-}
+	public void setOutlinePanel(OutlinePanel outlinePanel) {
+		this.outlinePanel = outlinePanel;
+	}
 
 	private void installPopupLocalizationHook(RSyntaxTextArea textArea) {
 		JPopupMenu popup = textArea.getPopupMenu();
@@ -245,9 +245,9 @@ public void setOutlinePanel(OutlinePanel outlinePanel) {
 			textArea.requestFocusInWindow();
 
 			// Outline aktualisieren
-if (outlinePanel != null) {
-    outlinePanel.refresh(textArea, file.getName());
-}
+			if (outlinePanel != null) {
+				outlinePanel.refresh(textArea, file.getName());
+			}
 
 			// --- AUTOCOMPLETE SETUP ---
 			DefaultCompletionProvider provider = createCompletionProvider(textArea);

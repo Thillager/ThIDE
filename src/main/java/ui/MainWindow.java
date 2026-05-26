@@ -103,12 +103,12 @@ public class MainWindow extends JFrame {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 		SwingUtilities.invokeLater(() -> {
-    horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
-    verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());
-    editorOutlineSplit.setDividerLocation(
-        editorOutlineSplit.getWidth() - TIDEPreferences.getOutlineWidth()
-    );
-});
+				horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
+				verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());
+				editorOutlineSplit.setDividerLocation(
+					editorOutlineSplit.getWidth() - TIDEPreferences.getOutlineWidth()
+				);
+			});
 	}
 
 	private void initSubsystems() {
@@ -290,45 +290,45 @@ public class MainWindow extends JFrame {
 		editorContainer.add(editorTabs,  BorderLayout.CENTER);
 
 		verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorContainer, consolePanel);
-verticalSplit.setResizeWeight(0.7);
-verticalSplit.setDividerSize(4);
-verticalSplit.setBorder(null);
-verticalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
-    if (verticalSplit.getHeight() > 0)
-        TIDEPreferences.saveDividerVProportion(
-            verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight());
-});
+		verticalSplit.setResizeWeight(0.7);
+		verticalSplit.setDividerSize(4);
+		verticalSplit.setBorder(null);
+		verticalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+				if (verticalSplit.getHeight() > 0)
+				TIDEPreferences.saveDividerVProportion(
+					verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight());
+			});
 
-// ← NEU: Editor+Console | Outline
-editorOutlineSplit = new JSplitPane(
-    JSplitPane.HORIZONTAL_SPLIT, verticalSplit, outlinePanel);
-editorOutlineSplit.setResizeWeight(1.0);   // Editor bekommt den Extra-Platz
-editorOutlineSplit.setDividerSize(4);
-editorOutlineSplit.setBorder(null);
-editorOutlineSplit.setDividerLocation(0.8);  // 80% Editor, 20% Outline
+		// ← NEU: Editor+Console | Outline
+		editorOutlineSplit = new JSplitPane(
+			JSplitPane.HORIZONTAL_SPLIT, verticalSplit, outlinePanel);
+		editorOutlineSplit.setResizeWeight(1.0);   // Editor bekommt den Extra-Platz
+		editorOutlineSplit.setDividerSize(4);
+		editorOutlineSplit.setBorder(null);
+		editorOutlineSplit.setDividerLocation(0.8);  // 80% Editor, 20% Outline
 
-editorOutlineSplit.setOpaque(false);
-editorOutlineSplit.setBackground(new Color(0, 0, 0, 0));
+		editorOutlineSplit.setOpaque(false);
+		editorOutlineSplit.setBackground(new Color(0, 0, 0, 0));
 
-horizontalSplit = new JSplitPane(
-    JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, editorOutlineSplit);  // ← editorOutlineSplit statt verticalSplit
-horizontalSplit.setDividerSize(4);
-horizontalSplit.setBorder(null);
-horizontalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
-    if (horizontalSplit.getWidth() > 0)
-        TIDEPreferences.saveDividerHProportion(
-            horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth());
-});
+		horizontalSplit = new JSplitPane(
+			JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, editorOutlineSplit);  // ← editorOutlineSplit statt verticalSplit
+		horizontalSplit.setDividerSize(4);
+		horizontalSplit.setBorder(null);
+		horizontalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+				if (horizontalSplit.getWidth() > 0)
+				TIDEPreferences.saveDividerHProportion(
+					horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth());
+			});
 
-editorOutlineSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
-    int total = editorOutlineSplit.getWidth();
-    int divider = editorOutlineSplit.getDividerLocation();
-    if (total > 0 && divider > 0) {
-        TIDEPreferences.saveOutlineWidth(total - divider);
-    }
-});
+		editorOutlineSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+				int total = editorOutlineSplit.getWidth();
+				int divider = editorOutlineSplit.getDividerLocation();
+				if (total > 0 && divider > 0) {
+					TIDEPreferences.saveOutlineWidth(total - divider);
+				}
+			});
 
-add(horizontalSplit, BorderLayout.CENTER);
+		add(horizontalSplit, BorderLayout.CENTER);
 
 		// ---- Event Listeners ----
 		btnOpen.addActionListener(e  -> openFolderDialog());
@@ -418,18 +418,18 @@ add(horizontalSplit, BorderLayout.CENTER);
 		updateDynamicUI();
 
 		// Outline bei Tab-Wechsel aktualisieren
-editorTabs.addChangeListener(e -> {
-    Component tab = editorTabs.getSelectedComponent();
-    if (tab instanceof org.fife.ui.rtextarea.RTextScrollPane sp) {
-        Component view = sp.getViewport().getView();
-        if (view instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea textArea) {
-            File f = openFiles.get(tab);
-            outlinePanel.refresh(textArea, f != null ? f.getName() : null);
-        }
-    } else {
-        outlinePanel.refresh(null, null);
-    }
-});
+		editorTabs.addChangeListener(e -> {
+				Component tab = editorTabs.getSelectedComponent();
+				if (tab instanceof org.fife.ui.rtextarea.RTextScrollPane sp) {
+					Component view = sp.getViewport().getView();
+					if (view instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea textArea) {
+						File f = openFiles.get(tab);
+						outlinePanel.refresh(textArea, f != null ? f.getName() : null);
+					}
+				} else {
+					outlinePanel.refresh(null, null);
+				}
+			});
 	}
 
 	private void openFolderDialog() {

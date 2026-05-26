@@ -40,11 +40,11 @@ public class TIDEPreferences {
 	}
 
 	public static int getOutlineWidth() {
-    return prefs.getInt("outlineWidth", 200);
-}
+		return prefs.getInt("outlineWidth", 200);
+	}
 
-public static void saveOutlineWidth(int width) {
-    prefs.putInt("outlineWidth", width);
-}
+	public static void saveOutlineWidth(int width) {
+		prefs.putInt("outlineWidth", width);
+	}
 
 }
