@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Locale;
 
+import ui.OutlinePanel;
+
 public class EditorManager {
 
 	private final JFrame parent;
@@ -29,6 +31,7 @@ public class EditorManager {
 	private final Map<Component, File> openFiles;
 	private final ConsolePanel consolePanel;
 	private final WordManagerDialog wordManagerDialog;
+	private OutlinePanel outlinePanel;
 
 	public EditorManager(JFrame parent, JTabbedPane editorTabs, Map<Component, File> openFiles,
 		ConsolePanel consolePanel, WordManagerDialog wordManagerDialog) {
@@ -57,6 +60,11 @@ public class EditorManager {
 			}
 		}
 	}
+
+
+public void setOutlinePanel(OutlinePanel outlinePanel) {
+    this.outlinePanel = outlinePanel;
+}
 
 	private void installPopupLocalizationHook(RSyntaxTextArea textArea) {
 		JPopupMenu popup = textArea.getPopupMenu();
@@ -235,6 +243,11 @@ public class EditorManager {
 			editorTabs.setSelectedComponent(sp);
 			openFiles.put(sp, file);
 			textArea.requestFocusInWindow();
+
+			// Outline aktualisieren
+if (outlinePanel != null) {
+    outlinePanel.refresh(textArea, file.getName());
+}
 
 			// --- AUTOCOMPLETE SETUP ---
 			DefaultCompletionProvider provider = createCompletionProvider(textArea);

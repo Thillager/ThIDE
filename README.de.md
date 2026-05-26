@@ -16,6 +16,8 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 - ✅ **GUI mit Java Swing** - Native und responsive Benutzeroberfläche
 - ✅ **Update Button** - Weder nerviges neu installieren bei neuen Versionen, noch automatische Updates mit eventueller Malware
 - ✅ **Mehrere Sprachen** - Nicht nur eine Sprache wird unterstützt
+- ✅ **Formatierung** - Es kann deine Dateien per Knopfdruck formatieren
+- ✅ **Outline** - Auf der rechten seite hast du eine Liste mit allen Klassen und Methoden
 
 ## Anforderungen
 

@@ -39,5 +39,12 @@ public class TIDEPreferences {
 		return prefs.getDouble("dividerVProportion", 0.70); // Editor 70%, Terminal 30%
 	}
 
+	public static int getOutlineWidth() {
+    return prefs.getInt("outlineWidth", 200);
+}
+
+public static void saveOutlineWidth(int width) {
+    prefs.putInt("outlineWidth", width);
+}
 
 }
