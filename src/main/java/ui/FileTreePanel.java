@@ -25,298 +25,298 @@ import java.util.function.Consumer;
 @SuppressWarnings({"serial", "this-escape"})
 public class FileTreePanel extends JScrollPane {
 
-    private JTree fileTree;
-    private DefaultTreeModel treeModel;
-    private ConsolePanel consolePanel;
-    private JFrame parent;
+	private JTree fileTree;
+	private DefaultTreeModel treeModel;
+	private ConsolePanel consolePanel;
+	private JFrame parent;
 
-    // null  = leer; wenn gesetzt + isCut=true → beim Einfügen verschieben 
-    private File clipboard = null;
-    private boolean isCut  = false;
+	// null  = leer; wenn gesetzt + isCut=true → beim Einfügen verschieben 
+	private File clipboard = null;
+	private boolean isCut  = false;
 
-    // Callback: Datei wurde doppelt angeklickt
-    private Consumer<File> onFileOpen;
+	// Callback: Datei wurde doppelt angeklickt
+	private Consumer<File> onFileOpen;
 
-    public FileTreePanel(JFrame parent, ConsolePanel consolePanel, Consumer<File> onFileOpen) {
-        this.parent       = parent;
-        this.consolePanel = consolePanel;
-        this.onFileOpen   = onFileOpen;
+	public FileTreePanel(JFrame parent, ConsolePanel consolePanel, Consumer<File> onFileOpen) {
+		this.parent       = parent;
+		this.consolePanel = consolePanel;
+		this.onFileOpen   = onFileOpen;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(LanguageManager.t("folder.opened"));
-        treeModel = new DefaultTreeModel(root);
-        fileTree  = new JTree(treeModel);
-        fileTree.setBackground(new Color(30, 31, 34));
-        fileTree.setBorder(new EmptyBorder(10, 10, 10, 10));
+		DefaultMutableTreeNode root = new DefaultMutableTreeNode(LanguageManager.t("folder.opened"));
+		treeModel = new DefaultTreeModel(root);
+		fileTree  = new JTree(treeModel);
+		fileTree.setBackground(new Color(30, 31, 34));
+		fileTree.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Das Kontextmenü wird ausschließlich über showFileTreePopup() aus MainWindow gesteuert.
-        fileTree.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent me) {
-                if (me.getClickCount() == 2) {
-                    DefaultMutableTreeNode node =
-                            (DefaultMutableTreeNode) fileTree.getLastSelectedPathComponent();
-                    if (node != null && node.getUserObject() instanceof FileNode) {
-                        File selectedFile = ((FileNode) node.getUserObject()).getFile();
-                        if (selectedFile.isFile()) onFileOpen.accept(selectedFile);
-                    }
-                }
-            }
-        });
+		// Das Kontextmenü wird ausschließlich über showFileTreePopup() aus MainWindow gesteuert.
+		fileTree.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent me) {
+					if (me.getClickCount() == 2) {
+						DefaultMutableTreeNode node =
+						(DefaultMutableTreeNode) fileTree.getLastSelectedPathComponent();
+						if (node != null && node.getUserObject() instanceof FileNode) {
+							File selectedFile = ((FileNode) node.getUserObject()).getFile();
+							if (selectedFile.isFile()) onFileOpen.accept(selectedFile);
+						}
+					}
+				}
+			});
 
-        setViewportView(fileTree);
-        setPreferredSize(new Dimension(TIDEProperties.FILETREE_WIDTH, 0));
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.DARK_GRAY));
-    }
+		setViewportView(fileTree);
+		setPreferredSize(new Dimension(TIDEProperties.FILETREE_WIDTH, 0));
+		setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.DARK_GRAY));
+	}
 
-    // ======= Baum aktualisieren (mit Expand-State-Erhalt) =======
+	// ======= Baum aktualisieren (mit Expand-State-Erhalt) =======
 
-    public void updateFileTree(File rootFolder) {
-        if (rootFolder == null) return;
+	public void updateFileTree(File rootFolder) {
+		if (rootFolder == null) return;
 
-        // 1. Aktuell geöffnete Pfade merken (als absolute Pfad-Strings)
-        Set<String> expandedPaths = getExpandedPaths();
+		// 1. Aktuell geöffnete Pfade merken (als absolute Pfad-Strings)
+		Set<String> expandedPaths = getExpandedPaths();
 
-        // 2. Baum neu aufbauen
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new FileNode(rootFolder));
-        buildTree(rootFolder, rootNode);
-        treeModel.setRoot(rootNode);
+		// 2. Baum neu aufbauen
+		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new FileNode(rootFolder));
+		buildTree(rootFolder, rootNode);
+		treeModel.setRoot(rootNode);
 
-        // 3. Zuvor geöffnete Ordner wieder aufklappen
-        restoreExpandedPaths(rootNode, expandedPaths);
+		// 3. Zuvor geöffnete Ordner wieder aufklappen
+		restoreExpandedPaths(rootNode, expandedPaths);
 
-        fileTree.revalidate();
-        fileTree.repaint();
-        revalidate();
-        repaint();
-    }
+		fileTree.revalidate();
+		fileTree.repaint();
+		revalidate();
+		repaint();
+	}
 
-    // Sammelt alle aktuell aufgeklappten Pfade als absolute Pfad-Strings
-    private Set<String> getExpandedPaths() {
-        Set<String> paths = new HashSet<>();
-        int rowCount = fileTree.getRowCount();
-        for (int i = 0; i < rowCount; i++) {
-            if (fileTree.isExpanded(i)) {
-                TreePath tp = fileTree.getPathForRow(i);
-                if (tp != null) {
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();
-                    if (node.getUserObject() instanceof FileNode fn) {
-                        paths.add(fn.getFile().getAbsolutePath());
-                    }
-                }
-            }
-        }
-        return paths;
-    }
+	// Sammelt alle aktuell aufgeklappten Pfade als absolute Pfad-Strings
+	private Set<String> getExpandedPaths() {
+		Set<String> paths = new HashSet<>();
+		int rowCount = fileTree.getRowCount();
+		for (int i = 0; i < rowCount; i++) {
+			if (fileTree.isExpanded(i)) {
+				TreePath tp = fileTree.getPathForRow(i);
+				if (tp != null) {
+					DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();
+					if (node.getUserObject() instanceof FileNode fn) {
+						paths.add(fn.getFile().getAbsolutePath());
+					}
+				}
+			}
+		}
+		return paths;
+	}
 
-    // Klappt alle Nodes auf, deren Dateipfad in expandedPaths enthalten ist
-    private void restoreExpandedPaths(DefaultMutableTreeNode root, Set<String> expandedPaths) {
-        if (expandedPaths.isEmpty()) return;
-        Enumeration<?> e = root.depthFirstEnumeration();
-        while (e.hasMoreElements()) {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
-            if (node.getUserObject() instanceof FileNode fn) {
-                if (expandedPaths.contains(fn.getFile().getAbsolutePath())) {
-                    fileTree.expandPath(new TreePath(node.getPath()));
-                }
-            }
-        }
-    }
+	// Klappt alle Nodes auf, deren Dateipfad in expandedPaths enthalten ist
+	private void restoreExpandedPaths(DefaultMutableTreeNode root, Set<String> expandedPaths) {
+		if (expandedPaths.isEmpty()) return;
+		Enumeration<?> e = root.depthFirstEnumeration();
+		while (e.hasMoreElements()) {
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+			if (node.getUserObject() instanceof FileNode fn) {
+				if (expandedPaths.contains(fn.getFile().getAbsolutePath())) {
+					fileTree.expandPath(new TreePath(node.getPath()));
+				}
+			}
+		}
+	}
 
-    private void buildTree(File folder, DefaultMutableTreeNode node) {
-        File[] files = folder.listFiles();
-        if (files == null) return;
-        Arrays.sort(files, (a, b) -> a.isDirectory() == b.isDirectory()
-                ? a.getName().compareToIgnoreCase(b.getName())
-                : a.isDirectory() ? -1 : 1);
-        for (File file : files) {
-            if (file.getName().startsWith(".") || file.getName().equals("out")) continue;
-            DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(new FileNode(file));
-            node.add(childNode);
-            if (file.isDirectory()) buildTree(file, childNode);
-        }
-    }
+	private void buildTree(File folder, DefaultMutableTreeNode node) {
+		File[] files = folder.listFiles();
+		if (files == null) return;
+		Arrays.sort(files, (a, b) -> a.isDirectory() == b.isDirectory()
+			? a.getName().compareToIgnoreCase(b.getName())
+			: a.isDirectory() ? -1 : 1);
+		for (File file : files) {
+			if (file.getName().startsWith(".") || file.getName().equals("out")) continue;
+			DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(new FileNode(file));
+			node.add(childNode);
+			if (file.isDirectory()) buildTree(file, childNode);
+		}
+	}
 
-    // ======= Kontextmenü (wird aus MainWindow aufgerufen) =======
+	// ======= Kontextmenü (wird aus MainWindow aufgerufen) =======
 
-    public void showFileTreePopup(MouseEvent me, File currentProjectFolder, Runnable refreshCallback) {
-        JPopupMenu popup = new JPopupMenu();
-        TreePath path = fileTree.getPathForLocation(me.getX(), me.getY());
+	public void showFileTreePopup(MouseEvent me, File currentProjectFolder, Runnable refreshCallback) {
+		JPopupMenu popup = new JPopupMenu();
+		TreePath path = fileTree.getPathForLocation(me.getX(), me.getY());
 
-        JMenuItem neuDatei      = new JMenuItem(LanguageManager.t("neuDatei"));
-        JMenuItem neuOrdner     = new JMenuItem(LanguageManager.t("neuOrdner"));
-        JMenuItem umbenennen    = new JMenuItem(LanguageManager.t("umbenennen"));
-        JMenuItem delete        = new JMenuItem(LanguageManager.t("delete"));
-        JMenuItem explorer      = new JMenuItem(LanguageManager.t("explorer"));
-        JMenuItem copy          = new JMenuItem(LanguageManager.t("copy"));
-        JMenuItem cut           = new JMenuItem(LanguageManager.t("cut"));
-        JMenuItem paste         = new JMenuItem(LanguageManager.t("paste"));
-        JMenuItem aktualisieren = new JMenuItem(LanguageManager.t("aktualisieren"));
+		JMenuItem neuDatei      = new JMenuItem(LanguageManager.t("neuDatei"));
+		JMenuItem neuOrdner     = new JMenuItem(LanguageManager.t("neuOrdner"));
+		JMenuItem umbenennen    = new JMenuItem(LanguageManager.t("umbenennen"));
+		JMenuItem delete        = new JMenuItem(LanguageManager.t("delete"));
+		JMenuItem explorer      = new JMenuItem(LanguageManager.t("explorer"));
+		JMenuItem copy          = new JMenuItem(LanguageManager.t("copy"));
+		JMenuItem cut           = new JMenuItem(LanguageManager.t("cut"));
+		JMenuItem paste         = new JMenuItem(LanguageManager.t("paste"));
+		JMenuItem aktualisieren = new JMenuItem(LanguageManager.t("aktualisieren"));
 
-        aktualisieren.addActionListener(e -> {
-            if (currentProjectFolder != null) updateFileTree(currentProjectFolder);
-        });
+		aktualisieren.addActionListener(e -> {
+				if (currentProjectFolder != null) updateFileTree(currentProjectFolder);
+			});
 
-        if (path != null) {
-            fileTree.setSelectionPath(path);
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-            File clickedFile = null;
-            if (node.getUserObject() instanceof FileNode fn) {
-                clickedFile = fn.getFile();
-            }
-            final File finalClickedFile = clickedFile;
+		if (path != null) {
+			fileTree.setSelectionPath(path);
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+			File clickedFile = null;
+			if (node.getUserObject() instanceof FileNode fn) {
+				clickedFile = fn.getFile();
+			}
+			final File finalClickedFile = clickedFile;
 
-            neuDatei.addActionListener(e   -> createNewFile(finalClickedFile, currentProjectFolder));
-            neuOrdner.addActionListener(e  -> createNewFolder(finalClickedFile, currentProjectFolder));
-            copy.addActionListener(e       -> { clipboard = finalClickedFile; isCut = false;
-                consolePanel.log("[INFO] Kopiert: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY); });
-            cut.addActionListener(e        -> { clipboard = finalClickedFile; isCut = true;
-                consolePanel.log("[INFO] Ausgeschnitten: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY); });
-            paste.addActionListener(e      -> pasteFile(finalClickedFile, currentProjectFolder));
-            delete.addActionListener(e     -> deleteFile(finalClickedFile, currentProjectFolder));
-            umbenennen.addActionListener(e -> renameFile(finalClickedFile, currentProjectFolder));
-            explorer.addActionListener(e   -> openExplorer(finalClickedFile));
+			neuDatei.addActionListener(e   -> createNewFile(finalClickedFile, currentProjectFolder));
+			neuOrdner.addActionListener(e  -> createNewFolder(finalClickedFile, currentProjectFolder));
+			copy.addActionListener(e       -> { clipboard = finalClickedFile; isCut = false;
+					consolePanel.log("[INFO] Kopiert: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY); });
+			cut.addActionListener(e        -> { clipboard = finalClickedFile; isCut = true;
+					consolePanel.log("[INFO] Ausgeschnitten: " + finalClickedFile.getName() + "\n", Color.LIGHT_GRAY); });
+			paste.addActionListener(e      -> pasteFile(finalClickedFile, currentProjectFolder));
+			delete.addActionListener(e     -> deleteFile(finalClickedFile, currentProjectFolder));
+			umbenennen.addActionListener(e -> renameFile(finalClickedFile, currentProjectFolder));
+			explorer.addActionListener(e   -> openExplorer(finalClickedFile));
 
-            // Paste nur aktivieren wenn Clipboard gefüllt
-            paste.setEnabled(clipboard != null);
+			// Paste nur aktivieren wenn Clipboard gefüllt
+			paste.setEnabled(clipboard != null);
 
-            popup.add(neuDatei);
-            popup.add(neuOrdner);
-            popup.addSeparator();
-            popup.add(umbenennen);
-            popup.add(delete);
-            popup.addSeparator();
-            popup.add(explorer);
-            popup.addSeparator();
-            popup.add(copy);
-            popup.add(cut);
-            popup.add(paste);
-            popup.addSeparator();
-            popup.add(aktualisieren);
-        } else {
-            // Klick ins Leere: nur neue Datei/Ordner + Aktualisieren
-            neuDatei.addActionListener(e  -> createNewFile(currentProjectFolder, currentProjectFolder));
-            neuOrdner.addActionListener(e -> createNewFolder(currentProjectFolder, currentProjectFolder));
-            paste.addActionListener(e     -> pasteFile(currentProjectFolder, currentProjectFolder));
-            paste.setEnabled(clipboard != null);
+			popup.add(neuDatei);
+			popup.add(neuOrdner);
+			popup.addSeparator();
+			popup.add(umbenennen);
+			popup.add(delete);
+			popup.addSeparator();
+			popup.add(explorer);
+			popup.addSeparator();
+			popup.add(copy);
+			popup.add(cut);
+			popup.add(paste);
+			popup.addSeparator();
+			popup.add(aktualisieren);
+		} else {
+			// Klick ins Leere: nur neue Datei/Ordner + Aktualisieren
+			neuDatei.addActionListener(e  -> createNewFile(currentProjectFolder, currentProjectFolder));
+			neuOrdner.addActionListener(e -> createNewFolder(currentProjectFolder, currentProjectFolder));
+			paste.addActionListener(e     -> pasteFile(currentProjectFolder, currentProjectFolder));
+			paste.setEnabled(clipboard != null);
 
-            popup.add(neuDatei);
-            popup.add(neuOrdner);
-            popup.addSeparator();
-            popup.add(paste);
-            popup.addSeparator();
-            popup.add(aktualisieren);
-        }
+			popup.add(neuDatei);
+			popup.add(neuOrdner);
+			popup.addSeparator();
+			popup.add(paste);
+			popup.addSeparator();
+			popup.add(aktualisieren);
+		}
 
-        popup.show(fileTree, me.getX(), me.getY());
-    }
+		popup.show(fileTree, me.getX(), me.getY());
+	}
 
-    // ======= Dateioperationen =======
+	// ======= Dateioperationen =======
 
-    public void createNewFile(File target, File currentProjectFolder) {
-        if (target == null || currentProjectFolder == null) return;
-        File zielOrdner = target.isDirectory() ? target : target.getParentFile();
-        String name = (String) JOptionPane.showInputDialog(
-                parent, LanguageManager.t("file.name"),
-                "Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
-        if (name != null && !name.trim().isEmpty()) {
-            try {
-                new File(zielOrdner, name.trim()).createNewFile();
-                updateFileTree(currentProjectFolder);
-            } catch (IOException ex) {
-                consolePanel.log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
-            }
-        }
-    }
+	public void createNewFile(File target, File currentProjectFolder) {
+		if (target == null || currentProjectFolder == null) return;
+		File zielOrdner = target.isDirectory() ? target : target.getParentFile();
+		String name = (String) JOptionPane.showInputDialog(
+			parent, LanguageManager.t("file.name"),
+			"Neue Datei", JOptionPane.PLAIN_MESSAGE, null, null, "");
+		if (name != null && !name.trim().isEmpty()) {
+			try {
+				new File(zielOrdner, name.trim()).createNewFile();
+				updateFileTree(currentProjectFolder);
+			} catch (IOException ex) {
+				consolePanel.log("[FEHLER] Datei konnte nicht erstellt werden.\n", Color.RED);
+			}
+		}
+	}
 
-    public void createNewFolder(File target, File currentProjectFolder) {
-        if (target == null || currentProjectFolder == null) return;
-        File zielOrdner = target.isDirectory() ? target : target.getParentFile();
-        String name = (String) JOptionPane.showInputDialog(
-                parent, "Wie soll der neue Ordner heißen?",
-                "Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
-        if (name != null && !name.trim().isEmpty()) {
-            new File(zielOrdner, name.trim()).mkdirs();
-            updateFileTree(currentProjectFolder);
-        }
-    }
+	public void createNewFolder(File target, File currentProjectFolder) {
+		if (target == null || currentProjectFolder == null) return;
+		File zielOrdner = target.isDirectory() ? target : target.getParentFile();
+		String name = (String) JOptionPane.showInputDialog(
+			parent, "Wie soll der neue Ordner heißen?",
+			"Neuer Ordner", JOptionPane.PLAIN_MESSAGE, null, null, "");
+		if (name != null && !name.trim().isEmpty()) {
+			new File(zielOrdner, name.trim()).mkdirs();
+			updateFileTree(currentProjectFolder);
+		}
+	}
 
-    private void pasteFile(File target, File currentProjectFolder) {
-        if (clipboard == null || currentProjectFolder == null) return;
-        File zielOrdner = (target != null && target.isDirectory()) ? target
-                        : (target != null ? target.getParentFile() : currentProjectFolder);
-        File dest = new File(zielOrdner, clipboard.getName());
+	private void pasteFile(File target, File currentProjectFolder) {
+		if (clipboard == null || currentProjectFolder == null) return;
+		File zielOrdner = (target != null && target.isDirectory()) ? target
+		: (target != null ? target.getParentFile() : currentProjectFolder);
+		File dest = new File(zielOrdner, clipboard.getName());
 
-        try {
-            if (clipboard.isDirectory()) {
-                copyDirectoryRecursive(clipboard, dest);
-            } else {
-                Files.copy(clipboard.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+		try {
+			if (clipboard.isDirectory()) {
+				copyDirectoryRecursive(clipboard, dest);
+			} else {
+				Files.copy(clipboard.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
 
-            if (isCut) {
-                // Original löschen
-                Files.walk(clipboard.toPath())
-                        .sorted(java.util.Comparator.reverseOrder())
-                        .map(java.nio.file.Path::toFile)
-                        .forEach(File::delete);
-                clipboard = null;
-                isCut     = false;
-            }
-            updateFileTree(currentProjectFolder);
-            consolePanel.log("[INFO] Eingefügt: " + dest.getName() + "\n", Color.GREEN);
-        } catch (IOException ex) {
-            consolePanel.log("[FEHLER] Einfügen fehlgeschlagen: " + ex.getMessage() + "\n", Color.RED);
-        }
-    }
+			if (isCut) {
+				// Original löschen
+				Files.walk(clipboard.toPath())
+				.sorted(java.util.Comparator.reverseOrder())
+				.map(java.nio.file.Path::toFile)
+				.forEach(File::delete);
+				clipboard = null;
+				isCut     = false;
+			}
+			updateFileTree(currentProjectFolder);
+			consolePanel.log("[INFO] Eingefügt: " + dest.getName() + "\n", Color.GREEN);
+		} catch (IOException ex) {
+			consolePanel.log("[FEHLER] Einfügen fehlgeschlagen: " + ex.getMessage() + "\n", Color.RED);
+		}
+	}
 
-    // Kopiert einen Ordner rekursiv
-    private void copyDirectoryRecursive(File src, File dest) throws IOException {
-        if (src.isDirectory()) {
-            dest.mkdirs();
-            for (File child : src.listFiles()) {
-                copyDirectoryRecursive(child, new File(dest, child.getName()));
-            }
-        } else {
-            Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
+	// Kopiert einen Ordner rekursiv
+	private void copyDirectoryRecursive(File src, File dest) throws IOException {
+		if (src.isDirectory()) {
+			dest.mkdirs();
+			for (File child : src.listFiles()) {
+				copyDirectoryRecursive(child, new File(dest, child.getName()));
+			}
+		} else {
+			Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
 
-    private void deleteFile(File file, File currentProjectFolder) {
-        if (file == null) return;
-        int confirm = JOptionPane.showConfirmDialog(
-                parent, "'" + file.getName() + "' wirklich löschen?",
-                "Löschen bestätigen", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                Files.walk(file.toPath())
-                        .sorted(java.util.Comparator.reverseOrder())
-                        .map(java.nio.file.Path::toFile)
-                        .forEach(File::delete);
-                updateFileTree(currentProjectFolder);
-                consolePanel.log("[INFO] Gelöscht: " + file.getName() + "\n", Color.LIGHT_GRAY);
-            } catch (IOException ex) {
-                consolePanel.log("[FEHLER] Löschen fehlgeschlagen.\n", Color.RED);
-            }
-        }
-    }
+	private void deleteFile(File file, File currentProjectFolder) {
+		if (file == null) return;
+		int confirm = JOptionPane.showConfirmDialog(
+			parent, "'" + file.getName() + "' wirklich löschen?",
+			"Löschen bestätigen", JOptionPane.YES_NO_OPTION);
+		if (confirm == JOptionPane.YES_OPTION) {
+			try {
+				Files.walk(file.toPath())
+				.sorted(java.util.Comparator.reverseOrder())
+				.map(java.nio.file.Path::toFile)
+				.forEach(File::delete);
+				updateFileTree(currentProjectFolder);
+				consolePanel.log("[INFO] Gelöscht: " + file.getName() + "\n", Color.LIGHT_GRAY);
+			} catch (IOException ex) {
+				consolePanel.log("[FEHLER] Löschen fehlgeschlagen.\n", Color.RED);
+			}
+		}
+	}
 
-    private void renameFile(File file, File currentProjectFolder) {
-        if (file == null) return;
-        String name = (String) JOptionPane.showInputDialog(
-                parent, "Neuer Name:", "Umbenennen",
-                JOptionPane.PLAIN_MESSAGE, null, null, file.getName());
-        if (name != null && !name.trim().isEmpty()) {
-            file.renameTo(new File(file.getParentFile(), name.trim()));
-            updateFileTree(currentProjectFolder);
-        }
-    }
+	private void renameFile(File file, File currentProjectFolder) {
+		if (file == null) return;
+		String name = (String) JOptionPane.showInputDialog(
+			parent, "Neuer Name:", "Umbenennen",
+			JOptionPane.PLAIN_MESSAGE, null, null, file.getName());
+		if (name != null && !name.trim().isEmpty()) {
+			file.renameTo(new File(file.getParentFile(), name.trim()));
+			updateFileTree(currentProjectFolder);
+		}
+	}
 
-    private void openExplorer(File file) {
-        try {
-            File ordner = file.isDirectory() ? file : file.getParentFile();
-            Desktop.getDesktop().open(ordner);
-        } catch (IOException ex) {
-            consolePanel.log("[FEHLER] Explorer konnte nicht geöffnet werden.\n", Color.RED);
-        }
-    }
+	private void openExplorer(File file) {
+		try {
+			File ordner = file.isDirectory() ? file : file.getParentFile();
+			Desktop.getDesktop().open(ordner);
+		} catch (IOException ex) {
+			consolePanel.log("[FEHLER] Explorer konnte nicht geöffnet werden.\n", Color.RED);
+		}
+	}
 }

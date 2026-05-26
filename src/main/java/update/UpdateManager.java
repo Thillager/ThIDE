@@ -13,434 +13,434 @@ import java.nio.file.StandardCopyOption;
 
 public class UpdateManager {
 
-    private final JFrame parent;
-    private final ConsolePanel consolePanel;
-    private final String appVersion;
-    private final String githubRepo;
+	private final JFrame parent;
+	private final ConsolePanel consolePanel;
+	private final String appVersion;
+	private final String githubRepo;
 
-    public UpdateManager(JFrame parent, ConsolePanel consolePanel, String appVersion, String githubRepo) {
-        this.parent       = parent;
-        this.consolePanel = consolePanel;
-        this.appVersion   = appVersion;
-        this.githubRepo   = githubRepo;
-    }
+	public UpdateManager(JFrame parent, ConsolePanel consolePanel, String appVersion, String githubRepo) {
+		this.parent       = parent;
+		this.consolePanel = consolePanel;
+		this.appVersion   = appVersion;
+		this.githubRepo   = githubRepo;
+	}
 
-     // Prueft auf GitHub ob eine neuere Version verfuegbar ist
-     
-    public void checkForUpdates() {
-        consolePanel.log("[INFO] Suche nach Updates...\n", Color.CYAN);
-        new Thread(() -> {
-            try {
-                String apiUrl = "https://api.github.com/repos/" + githubRepo + "/releases/latest";
-			 HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(apiUrl).toURL().openConnection();
-                conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-                conn.setRequestProperty("User-Agent", "TIDE-App");
-                conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
-                conn.setReadTimeout(TIDEProperties.READ_TIMEOUT_MS);
+	// Prueft auf GitHub ob eine neuere Version verfuegbar ist
 
-                if (conn.getResponseCode() != 200) {
-                    consolePanel.log("[FEHLER] Konnte GitHub nicht erreichen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
-                    return;
-                }
+	public void checkForUpdates() {
+		consolePanel.log("[INFO] Suche nach Updates...\n", Color.CYAN);
+		new Thread(() -> {
+				try {
+					String apiUrl = "https://api.github.com/repos/" + githubRepo + "/releases/latest";
+					HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(apiUrl).toURL().openConnection();
+					conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
+					conn.setRequestProperty("User-Agent", "TIDE-App");
+					conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+					conn.setReadTimeout(TIDEProperties.READ_TIMEOUT_MS);
 
-                StringBuilder sb = new StringBuilder();
-                try (BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String line;
-                    while ((line = r.readLine()) != null) sb.append(line);
-                }
-                String json = sb.toString();
+					if (conn.getResponseCode() != 200) {
+						consolePanel.log("[FEHLER] Konnte GitHub nicht erreichen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
+						return;
+					}
 
-                String latestVersion = extractJsonValue(json, "tag_name");
-                if (latestVersion == null) {
-                    consolePanel.log("[FEHLER] Konnte Version nicht aus GitHub-Antwort lesen.\n", Color.RED);
-                    return;
-                }
-                latestVersion = latestVersion.replaceAll("^v", "");
+					StringBuilder sb = new StringBuilder();
+					try (BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+						String line;
+						while ((line = r.readLine()) != null) sb.append(line);
+					}
+					String json = sb.toString();
 
-                String finalLatestVersion = latestVersion;
-                SwingUtilities.invokeLater(() -> {
-                    if (isNewerVersion(finalLatestVersion, appVersion)) {
-                        int result = JOptionPane.showConfirmDialog(
-                                parent,
-                                "Neue Version verfuegbar: " + finalLatestVersion + "\n" +
-                                        "Aktuelle Version: " + appVersion + "\n\n" +
-                                        "Jetzt updaten?",
-                                "Update verfuegbar",
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.INFORMATION_MESSAGE);
-                        if (result == JOptionPane.YES_OPTION) {
-                            downloadAndInstallUpdate(finalLatestVersion, json);
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(
-                                parent,
-                                "Du hast bereits die aktuellste Version (" + appVersion + ").",
-                                "Kein Update noetig",
-                                JOptionPane.INFORMATION_MESSAGE);
-                        consolePanel.log("[INFO] Keine Updates verfuegbar. Version " + appVersion + " ist aktuell.\n", Color.GREEN);
-                    }
-                });
+					String latestVersion = extractJsonValue(json, "tag_name");
+					if (latestVersion == null) {
+						consolePanel.log("[FEHLER] Konnte Version nicht aus GitHub-Antwort lesen.\n", Color.RED);
+						return;
+					}
+					latestVersion = latestVersion.replaceAll("^v", "");
 
-            } catch (Exception e) {
-                consolePanel.log("[FEHLER] Update-Pruefung fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
-                SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(parent,
-                                "Update-Pruefung fehlgeschlagen:\n" + e.getMessage(),
-                                "Fehler", JOptionPane.ERROR_MESSAGE));
-            }
-        }).start();
-    }
+					String finalLatestVersion = latestVersion;
+					SwingUtilities.invokeLater(() -> {
+							if (isNewerVersion(finalLatestVersion, appVersion)) {
+								int result = JOptionPane.showConfirmDialog(
+									parent,
+									"Neue Version verfuegbar: " + finalLatestVersion + "\n" +
+									"Aktuelle Version: " + appVersion + "\n\n" +
+									"Jetzt updaten?",
+									"Update verfuegbar",
+									JOptionPane.YES_NO_OPTION,
+									JOptionPane.INFORMATION_MESSAGE);
+								if (result == JOptionPane.YES_OPTION) {
+									downloadAndInstallUpdate(finalLatestVersion, json);
+								}
+							} else {
+								JOptionPane.showMessageDialog(
+									parent,
+									"Du hast bereits die aktuellste Version (" + appVersion + ").",
+									"Kein Update noetig",
+									JOptionPane.INFORMATION_MESSAGE);
+								consolePanel.log("[INFO] Keine Updates verfuegbar. Version " + appVersion + " ist aktuell.\n", Color.GREEN);
+							}
+						});
 
-    /**
-     * Erkennt ob die App direkt als .jar gestartet wurde,
-     * NICHT als jpackage-installiertes Programm.
-     *
-     * jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
-     * neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
-     * aber kein echter "Direktstart" vorliegt.
-     *
-     * Zusaetzlich kann beim jpackage-Build die System-Property
-     * -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
-     */
-    public boolean isRunningAsJar() {
-        // Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
-        if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
-            return false;
-        }
+				} catch (Exception e) {
+					consolePanel.log("[FEHLER] Update-Pruefung fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
+					SwingUtilities.invokeLater(() ->
+						JOptionPane.showMessageDialog(parent,
+							"Update-Pruefung fehlgeschlagen:\n" + e.getMessage(),
+							"Fehler", JOptionPane.ERROR_MESSAGE));
+				}
+			}).start();
+	}
 
-        try {
-            java.net.URI uri = UpdateManager.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI();
-            String path = uri.getPath();
+	/**
+	* Erkennt ob die App direkt als .jar gestartet wurde,
+	* NICHT als jpackage-installiertes Programm.
+	*
+	* jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
+	* neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
+	* aber kein echter "Direktstart" vorliegt.
+	*
+	* Zusaetzlich kann beim jpackage-Build die System-Property
+	* -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
+	*/
+	public boolean isRunningAsJar() {
+		// Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
+		if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
+			return false;
+		}
 
-            if (!path.endsWith(".jar")) return false;
+		try {
+			java.net.URI uri = UpdateManager.class.getProtectionDomain()
+			.getCodeSource().getLocation().toURI();
+			String path = uri.getPath();
 
-            // jpackage-Heuristik: JAR liegt in einem "app"-Verzeichnis
-            // neben dem nativen Launcher (.exe / kein .jar-Start)
-            File jarFile  = new File(uri);
-            File parentDir = jarFile.getParentFile();
-            if (parentDir != null && parentDir.getName().equalsIgnoreCase("app")) {
-                File launcherDir = parentDir.getParentFile();
-                if (launcherDir != null) {
-                    File[] exes = launcherDir.listFiles(
-                            f -> f.isFile() && f.getName().endsWith(".exe"));
-                    if (exes != null && exes.length > 0) {
-                        return false;
-                    }
-                }
-            }
-            return true;
+			if (!path.endsWith(".jar")) return false;
 
-        } catch (Exception ignored) {}
-        return false;
-    }
+			// jpackage-Heuristik: JAR liegt in einem "app"-Verzeichnis
+			// neben dem nativen Launcher (.exe / kein .jar-Start)
+			File jarFile  = new File(uri);
+			File parentDir = jarFile.getParentFile();
+			if (parentDir != null && parentDir.getName().equalsIgnoreCase("app")) {
+				File launcherDir = parentDir.getParentFile();
+				if (launcherDir != null) {
+					File[] exes = launcherDir.listFiles(
+						f -> f.isFile() && f.getName().endsWith(".exe"));
+					if (exes != null && exes.length > 0) {
+						return false;
+					}
+				}
+			}
+			return true;
 
-
-    public File getRunningJarFile() {
-        try {
-            java.net.URI uri = UpdateManager.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI();
-            File f = new File(uri);
-            if (f.getName().endsWith(".jar")) return f;
-        } catch (Exception ignored) {}
-        return null;
-    }
+		} catch (Exception ignored) {}
+		return false;
+	}
 
 
-    private void downloadAndInstallUpdate(String version, String releaseJson) {
-        new Thread(() -> {
-            try {
-                String os         = System.getProperty("os.name", "").toLowerCase();
-                boolean isWindows = os.contains("win");
-                boolean isLinux   = !isWindows && !os.contains("mac");
-                boolean runAsJar  = isRunningAsJar();
+	public File getRunningJarFile() {
+		try {
+			java.net.URI uri = UpdateManager.class.getProtectionDomain()
+			.getCodeSource().getLocation().toURI();
+			File f = new File(uri);
+			if (f.getName().endsWith(".jar")) return f;
+		} catch (Exception ignored) {}
+		return null;
+	}
 
-                // --- JAR-Selbstaustausch ---
-                if (runAsJar) {
-                    String jarAssetName = findAssetName(releaseJson, ".jar");
-                    if (jarAssetName == null) {
-                        consolePanel.log("[FEHLER] Kein .jar-Asset im Release gefunden.\n", Color.RED);
-                        return;
-                    }
-                    File currentJar = getRunningJarFile();
-                    if (currentJar == null) {
-                        consolePanel.log("[FEHLER] Konnte den Pfad der laufenden JAR nicht bestimmen.\n", Color.RED);
-                        return;
-                    }
-                    String downloadUrl = "https://github.com/" + githubRepo
-                            + "/releases/download/v" + version + "/" + jarAssetName;
-                    consolePanel.log("[INFO] Lade neue JAR herunter: " + jarAssetName + "...\n", Color.CYAN);
-                    SwingUtilities.invokeLater(() ->
-                            consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
 
-                    File tempJar = new File(System.getProperty("java.io.tmpdir"), jarAssetName);
-                    HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
-                    conn.setInstanceFollowRedirects(true);
-                    conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
-                    conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
-                    if (conn.getResponseCode() != 200) {
-                        consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
-                        return;
-                    }
-                    try (InputStream in = conn.getInputStream()) {
-                        Files.copy(in, tempJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    consolePanel.log("[ERFOLG] Neue JAR heruntergeladen: " + tempJar.getAbsolutePath() + "\n", Color.GREEN);
-                    launchJarSelfReplace(tempJar, currentJar);
-                    return;
-                }
+	private void downloadAndInstallUpdate(String version, String releaseJson) {
+		new Thread(() -> {
+				try {
+					String os         = System.getProperty("os.name", "").toLowerCase();
+					boolean isWindows = os.contains("win");
+					boolean isLinux   = !isWindows && !os.contains("mac");
+					boolean runAsJar  = isRunningAsJar();
 
-                // --- Nativer Installer ---
-                String installerName;
-                if (isWindows) {
-                    installerName = findAssetName(releaseJson, ".msi");
-                } else if (isLinux) {
-                    installerName = findAssetName(releaseJson, ".deb");
-                } else {
-                    SwingUtilities.invokeLater(() ->
-                            JOptionPane.showMessageDialog(parent,
-                                    "Auto-Update wird auf macOS noch nicht unterstuetzt.\n" +
-                                            "Bitte manuell von github.com/" + githubRepo + " herunterladen.",
-                                    "Nicht unterstuetzt", JOptionPane.WARNING_MESSAGE));
-                    return;
-                }
+					// --- JAR-Selbstaustausch ---
+					if (runAsJar) {
+						String jarAssetName = findAssetName(releaseJson, ".jar");
+						if (jarAssetName == null) {
+							consolePanel.log("[FEHLER] Kein .jar-Asset im Release gefunden.\n", Color.RED);
+							return;
+						}
+						File currentJar = getRunningJarFile();
+						if (currentJar == null) {
+							consolePanel.log("[FEHLER] Konnte den Pfad der laufenden JAR nicht bestimmen.\n", Color.RED);
+							return;
+						}
+						String downloadUrl = "https://github.com/" + githubRepo
+						+ "/releases/download/v" + version + "/" + jarAssetName;
+						consolePanel.log("[INFO] Lade neue JAR herunter: " + jarAssetName + "...\n", Color.CYAN);
+						SwingUtilities.invokeLater(() ->
+							consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
 
-                if (installerName == null) {
-                    consolePanel.log("[FEHLER] Kein passender Installer fuer dieses OS gefunden.\n", Color.RED);
-                    return;
-                }
+						File tempJar = new File(System.getProperty("java.io.tmpdir"), jarAssetName);
+						HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
+						conn.setInstanceFollowRedirects(true);
+						conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+						conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
+						if (conn.getResponseCode() != 200) {
+							consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
+							return;
+						}
+						try (InputStream in = conn.getInputStream()) {
+							Files.copy(in, tempJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+						}
+						consolePanel.log("[ERFOLG] Neue JAR heruntergeladen: " + tempJar.getAbsolutePath() + "\n", Color.GREEN);
+						launchJarSelfReplace(tempJar, currentJar);
+						return;
+					}
 
-                String downloadUrl = "https://github.com/" + githubRepo + "/releases/download/v" + version + "/" + installerName;
-                File tempDir   = new File(System.getProperty("java.io.tmpdir"));
-                File installer = new File(tempDir, installerName);
+					// --- Nativer Installer ---
+					String installerName;
+					if (isWindows) {
+						installerName = findAssetName(releaseJson, ".msi");
+					} else if (isLinux) {
+						installerName = findAssetName(releaseJson, ".deb");
+					} else {
+						SwingUtilities.invokeLater(() ->
+							JOptionPane.showMessageDialog(parent,
+								"Auto-Update wird auf macOS noch nicht unterstuetzt.\n" +
+								"Bitte manuell von github.com/" + githubRepo + " herunterladen.",
+								"Nicht unterstuetzt", JOptionPane.WARNING_MESSAGE));
+						return;
+					}
 
-                consolePanel.log("[INFO] Lade Installer herunter: " + installerName + "...\n", Color.CYAN);
-                SwingUtilities.invokeLater(() ->
-                        consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
+					if (installerName == null) {
+						consolePanel.log("[FEHLER] Kein passender Installer fuer dieses OS gefunden.\n", Color.RED);
+						return;
+					}
 
-                HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
-                conn.setInstanceFollowRedirects(true);
-                conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
-			 conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
+					String downloadUrl = "https://github.com/" + githubRepo + "/releases/download/v" + version + "/" + installerName;
+					File tempDir   = new File(System.getProperty("java.io.tmpdir"));
+					File installer = new File(tempDir, installerName);
 
-                if (conn.getResponseCode() != 200) {
-                    consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
-                    return;
-                }
+					consolePanel.log("[INFO] Lade Installer herunter: " + installerName + "...\n", Color.CYAN);
+					SwingUtilities.invokeLater(() ->
+						consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
 
-                try (InputStream in = conn.getInputStream()) {
-                    Files.copy(in, installer.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-                consolePanel.log("[ERFOLG] Installer heruntergeladen: " + installer.getAbsolutePath() + "\n", Color.GREEN);
+					HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(downloadUrl).toURL().openConnection();
+					conn.setInstanceFollowRedirects(true);
+					conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
+					conn.setReadTimeout(TIDEProperties.DOWNLOAD_TIMEOUT_MS);
 
-                if (isWindows) {
-                    launchWindowsUpdate(installer);
-                } else {
-                    launchLinuxUpdate(installer);
-                }
+					if (conn.getResponseCode() != 200) {
+						consolePanel.log("[FEHLER] Download fehlgeschlagen (HTTP " + conn.getResponseCode() + ").\n", Color.RED);
+						return;
+					}
 
-            } catch (Exception e) {
-                consolePanel.log("[FEHLER] Update fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
-                SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(parent,
-                                "Update fehlgeschlagen:\n" + e.getMessage(),
-                                "Fehler", JOptionPane.ERROR_MESSAGE));
-            }
-        }).start();
-    }
+					try (InputStream in = conn.getInputStream()) {
+						Files.copy(in, installer.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					}
+					consolePanel.log("[ERFOLG] Installer heruntergeladen: " + installer.getAbsolutePath() + "\n", Color.GREEN);
 
-    private void launchJarSelfReplace(File newJar, File currentJar) throws IOException {
-        String os         = System.getProperty("os.name", "").toLowerCase();
-        boolean isWindows = os.contains("win");
-        String java = System.getProperty("java.home") + File.separator + "bin" + File.separator
-                + (isWindows ? "java.exe" : "java");
+					if (isWindows) {
+						launchWindowsUpdate(installer);
+					} else {
+						launchLinuxUpdate(installer);
+					}
 
-        if (isWindows) {
-            File bat = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.bat");
-            try (PrintWriter pw = new PrintWriter(bat)) {
-                pw.println("@echo off");
-                pw.println("echo Warte auf TIDE-Beendigung...");
-                pw.println("timeout /t 3 /nobreak > nul");
-                pw.println("echo Ersetze JAR...");
-                pw.println("copy /Y \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
-                pw.println("if %errorlevel% neq 0 (");
-                pw.println("  echo JAR-Austausch fehlgeschlagen!");
-                pw.println("  pause");
-                pw.println("  exit /b 1");
-                pw.println(")");
-                pw.println("echo Starte neue Version...");
-                pw.println("start \"\" \"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\"");
-                pw.println("del \"%~f0\"");
-            }
-            consolePanel.log("[INFO] Starte JAR-Update (Windows)...\n", Color.CYAN);
-            SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(parent,
-                        "Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
-                        "JAR-Update", JOptionPane.INFORMATION_MESSAGE);
-                try {
-                    new ProcessBuilder("cmd.exe", "/c", bat.getAbsolutePath()).start();
-                } catch (IOException e) {
-                    consolePanel.log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
-                    return;
-                }
-                System.exit(0);
-            });
-        } else {
-            File sh = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.sh");
-            try (PrintWriter pw = new PrintWriter(sh)) {
-                pw.println("#!/bin/bash");
-                pw.println("sleep 2");
-                pw.println("cp -f \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
-                pw.println("chmod +x \"" + currentJar.getAbsolutePath() + "\"");
-                pw.println("\"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\" &");
-                pw.println("rm -- \"$0\"");
-            }
-            sh.setExecutable(true);
-            consolePanel.log("[INFO] Starte JAR-Update (Linux)...\n", Color.CYAN);
-            SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(parent,
-                        "Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
-                        "JAR-Update", JOptionPane.INFORMATION_MESSAGE);
-                try {
-                    new ProcessBuilder("bash", sh.getAbsolutePath()).start();
-                } catch (IOException e) {
-                    consolePanel.log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
-                    return;
-                }
-                System.exit(0);
-            });
-        }
-    }
+				} catch (Exception e) {
+					consolePanel.log("[FEHLER] Update fehlgeschlagen: " + e.getMessage() + "\n", Color.RED);
+					SwingUtilities.invokeLater(() ->
+						JOptionPane.showMessageDialog(parent,
+							"Update fehlgeschlagen:\n" + e.getMessage(),
+							"Fehler", JOptionPane.ERROR_MESSAGE));
+				}
+			}).start();
+	}
 
-    
-     // Erstellt eine .bat-Datei fuer das Windows-MSI-Update
-     
-    private void launchWindowsUpdate(File msiFile) throws IOException {
-        File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
-        try (PrintWriter pw = new PrintWriter(batFile)) {
-            pw.println("@echo off");
-            pw.println("echo Warte auf TIDE-Beendigung...");
-            pw.println("timeout /t 5 /nobreak > nul");
-            pw.println("echo Installiere Update...");
-            pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
-            pw.println("if %errorlevel% neq 0 (");
-            pw.println("  echo Installation fehlgeschlagen!");
-            pw.println("  pause");
-            pw.println("  exit /b 1");
-            pw.println(")");
-            pw.println("echo Update erfolgreich installiert.");
-            pw.println("del \"%~f0\"");
-        }
-        consolePanel.log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(parent,
-                    "Das Update wird jetzt installiert.\n" +
-                            "TIDE wird sich gleich beenden.",
-                    "Update wird installiert",
-                    JOptionPane.INFORMATION_MESSAGE);
-            try {
-                new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath()).start();
-            } catch (IOException e) {
-                consolePanel.log("[FEHLER] Konnte Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
-                return;
-            }
-            System.exit(0);
-        });
-    }
+	private void launchJarSelfReplace(File newJar, File currentJar) throws IOException {
+		String os         = System.getProperty("os.name", "").toLowerCase();
+		boolean isWindows = os.contains("win");
+		String java = System.getProperty("java.home") + File.separator + "bin" + File.separator
+		+ (isWindows ? "java.exe" : "java");
 
-	 // Erstellt ein .sh skript für das Linux-.deb-Update
-	
-    private void launchLinuxUpdate(File debFile) throws IOException {
-        boolean hasSudoNopass = false;
-        try {
-            Process p = new ProcessBuilder("sudo", "-n", "true")
-                    .redirectErrorStream(true).start();
-            hasSudoNopass = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)
-                    && p.exitValue() == 0;
-        } catch (Exception ignored) {}
+		if (isWindows) {
+			File bat = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.bat");
+			try (PrintWriter pw = new PrintWriter(bat)) {
+				pw.println("@echo off");
+				pw.println("echo Warte auf TIDE-Beendigung...");
+				pw.println("timeout /t 3 /nobreak > nul");
+				pw.println("echo Ersetze JAR...");
+				pw.println("copy /Y \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
+				pw.println("if %errorlevel% neq 0 (");
+					pw.println("  echo JAR-Austausch fehlgeschlagen!");
+					pw.println("  pause");
+					pw.println("  exit /b 1");
+					pw.println(")");
+				pw.println("echo Starte neue Version...");
+				pw.println("start \"\" \"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\"");
+				pw.println("del \"%~f0\"");
+			}
+			consolePanel.log("[INFO] Starte JAR-Update (Windows)...\n", Color.CYAN);
+			SwingUtilities.invokeLater(() -> {
+					JOptionPane.showMessageDialog(parent,
+						"Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+						"JAR-Update", JOptionPane.INFORMATION_MESSAGE);
+					try {
+						new ProcessBuilder("cmd.exe", "/c", bat.getAbsolutePath()).start();
+					} catch (IOException e) {
+						consolePanel.log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+						return;
+					}
+					System.exit(0);
+				});
+		} else {
+			File sh = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.sh");
+			try (PrintWriter pw = new PrintWriter(sh)) {
+				pw.println("#!/bin/bash");
+				pw.println("sleep 2");
+				pw.println("cp -f \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
+				pw.println("chmod +x \"" + currentJar.getAbsolutePath() + "\"");
+				pw.println("\"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\" &");
+				pw.println("rm -- \"$0\"");
+			}
+			sh.setExecutable(true);
+			consolePanel.log("[INFO] Starte JAR-Update (Linux)...\n", Color.CYAN);
+			SwingUtilities.invokeLater(() -> {
+					JOptionPane.showMessageDialog(parent,
+						"Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+						"JAR-Update", JOptionPane.INFORMATION_MESSAGE);
+					try {
+						new ProcessBuilder("bash", sh.getAbsolutePath()).start();
+					} catch (IOException e) {
+						consolePanel.log("[FEHLER] Konnte JAR-Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+						return;
+					}
+					System.exit(0);
+				});
+		}
+	}
 
-        File shFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.sh");
-        try (PrintWriter pw = new PrintWriter(shFile)) {
-            pw.println("#!/bin/bash");
-            pw.println("sleep 2");
-            if (hasSudoNopass) {
-                pw.println("sudo dpkg -i \"" + debFile.getAbsolutePath() + "\"");
-            } else {
-                pw.println("if command -v pkexec &>/dev/null; then");
-                pw.println("    pkexec dpkg -i \"" + debFile.getAbsolutePath() + "\"");
-                pw.println("else");
-                pw.println("    x-terminal-emulator -e bash -c \"sudo dpkg -i '" + debFile.getAbsolutePath() + "' && echo Fertig; read\"");
-                pw.println("fi");
-            }
-            pw.println("which tide && tide &");
-            pw.println("rm -- \"$0\"");
-        }
-        shFile.setExecutable(true);
 
-        String sudoHint = hasSudoNopass
-                ? "Kein Passwort nötig (sudo-Rechte erkannt)."
-                : "Du wirst nach deinem Passwort gefragt.";
+	// Erstellt eine .bat-Datei fuer das Windows-MSI-Update
 
-        consolePanel.log("[INFO] Starte Linux-Update-Skript"
-                + (hasSudoNopass ? " (sudo, kein Passwort noetig)" : " (pkexec)") + "...\n", Color.CYAN);
+	private void launchWindowsUpdate(File msiFile) throws IOException {
+		File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
+		try (PrintWriter pw = new PrintWriter(batFile)) {
+			pw.println("@echo off");
+			pw.println("echo Warte auf TIDE-Beendigung...");
+			pw.println("timeout /t 5 /nobreak > nul");
+			pw.println("echo Installiere Update...");
+			pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
+			pw.println("if %errorlevel% neq 0 (");
+				pw.println("  echo Installation fehlgeschlagen!");
+				pw.println("  pause");
+				pw.println("  exit /b 1");
+				pw.println(")");
+			pw.println("echo Update erfolgreich installiert.");
+			pw.println("del \"%~f0\"");
+		}
+		consolePanel.log("[INFO] Starte Windows-Update-Skript...\n", Color.CYAN);
+		SwingUtilities.invokeLater(() -> {
+				JOptionPane.showMessageDialog(parent,
+					"Das Update wird jetzt installiert.\n" +
+					"TIDE wird sich gleich beenden.",
+					"Update wird installiert",
+					JOptionPane.INFORMATION_MESSAGE);
+				try {
+					new ProcessBuilder("cmd.exe", "/c", batFile.getAbsolutePath()).start();
+				} catch (IOException e) {
+					consolePanel.log("[FEHLER] Konnte Update-Skript nicht starten: " + e.getMessage() + "\n", Color.RED);
+					return;
+				}
+				System.exit(0);
+			});
+	}
 
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(parent,
-                    "Das Update wird jetzt installiert.\n" +
-                            sudoHint + "\n" +
-                            "TIDE wird sich gleich beenden.",
-                    "Update wird installiert",
-                    JOptionPane.INFORMATION_MESSAGE);
-            try {
-                new ProcessBuilder("bash", shFile.getAbsolutePath()).start();
-            } catch (IOException e) {
-                consolePanel.log("[FEHLER] Konnte Update-Skript nicht starten.\n", Color.RED);
-                return;
-            }
-            System.exit(0);
-        });
-    }
+	// Erstellt ein .sh skript für das Linux-.deb-Update
 
-    // ======= JSON / Version Hilfsmethoden =======
+	private void launchLinuxUpdate(File debFile) throws IOException {
+		boolean hasSudoNopass = false;
+		try {
+			Process p = new ProcessBuilder("sudo", "-n", "true")
+			.redirectErrorStream(true).start();
+			hasSudoNopass = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)
+			&& p.exitValue() == 0;
+		} catch (Exception ignored) {}
 
-    private String extractJsonValue(String json, String key) {
-        String search = "\"" + key + "\":\"";
-        int start = json.indexOf(search);
-        if (start == -1) return null;
-        start += search.length();
-        int end = json.indexOf("\"", start);
-        if (end == -1) return null;
-        return json.substring(start, end);
-    }
+		File shFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.sh");
+		try (PrintWriter pw = new PrintWriter(shFile)) {
+			pw.println("#!/bin/bash");
+			pw.println("sleep 2");
+			if (hasSudoNopass) {
+				pw.println("sudo dpkg -i \"" + debFile.getAbsolutePath() + "\"");
+			} else {
+				pw.println("if command -v pkexec &>/dev/null; then");
+				pw.println("    pkexec dpkg -i \"" + debFile.getAbsolutePath() + "\"");
+				pw.println("else");
+				pw.println("    x-terminal-emulator -e bash -c \"sudo dpkg -i '" + debFile.getAbsolutePath() + "' && echo Fertig; read\"");
+				pw.println("fi");
+			}
+			pw.println("which tide && tide &");
+			pw.println("rm -- \"$0\"");
+		}
+		shFile.setExecutable(true);
 
-    private String findAssetName(String releaseJson, String extension) {
-        int searchFrom = 0;
-        while (true) {
-            int idx = releaseJson.indexOf("\"name\":\"", searchFrom);
-            if (idx == -1) return null;
-            int start = idx + 8;
-            int end   = releaseJson.indexOf("\"", start);
-            if (end == -1) return null;
-            String name = releaseJson.substring(start, end);
-            if (name.endsWith(extension)) return name;
-            searchFrom = end;
-        }
-    }
+		String sudoHint = hasSudoNopass
+		? "Kein Passwort nötig (sudo-Rechte erkannt)."
+		: "Du wirst nach deinem Passwort gefragt.";
 
-    private boolean isNewerVersion(String newVersion, String currentVersion) {
-        try {
-            String[] newParts     = newVersion.split("\\.");
-            String[] currentParts = currentVersion.split("\\.");
-            int length = Math.max(newParts.length, currentParts.length);
-            for (int i = 0; i < length; i++) {
-                int newPart     = i < newParts.length     ? Integer.parseInt(newParts[i].trim())     : 0;
-                int currentPart = i < currentParts.length ? Integer.parseInt(currentParts[i].trim()) : 0;
-                if (newPart > currentPart) return true;
-                if (newPart < currentPart) return false;
-            }
-            return false;
-        } catch (NumberFormatException e) {
-            return !newVersion.equals(currentVersion);
-        }
-    }
+		consolePanel.log("[INFO] Starte Linux-Update-Skript"
+			+ (hasSudoNopass ? " (sudo, kein Passwort noetig)" : " (pkexec)") + "...\n", Color.CYAN);
+
+		SwingUtilities.invokeLater(() -> {
+				JOptionPane.showMessageDialog(parent,
+					"Das Update wird jetzt installiert.\n" +
+					sudoHint + "\n" +
+					"TIDE wird sich gleich beenden.",
+					"Update wird installiert",
+					JOptionPane.INFORMATION_MESSAGE);
+				try {
+					new ProcessBuilder("bash", shFile.getAbsolutePath()).start();
+				} catch (IOException e) {
+					consolePanel.log("[FEHLER] Konnte Update-Skript nicht starten.\n", Color.RED);
+					return;
+				}
+				System.exit(0);
+			});
+	}
+
+	// ======= JSON / Version Hilfsmethoden =======
+
+	private String extractJsonValue(String json, String key) {
+		String search = "\"" + key + "\":\"";
+		int start = json.indexOf(search);
+		if (start == -1) return null;
+		start += search.length();
+		int end = json.indexOf("\"", start);
+		if (end == -1) return null;
+		return json.substring(start, end);
+	}
+
+	private String findAssetName(String releaseJson, String extension) {
+		int searchFrom = 0;
+		while (true) {
+			int idx = releaseJson.indexOf("\"name\":\"", searchFrom);
+			if (idx == -1) return null;
+			int start = idx + 8;
+			int end   = releaseJson.indexOf("\"", start);
+			if (end == -1) return null;
+			String name = releaseJson.substring(start, end);
+			if (name.endsWith(extension)) return name;
+			searchFrom = end;
+		}
+	}
+
+	private boolean isNewerVersion(String newVersion, String currentVersion) {
+		try {
+			String[] newParts     = newVersion.split("\\.");
+			String[] currentParts = currentVersion.split("\\.");
+			int length = Math.max(newParts.length, currentParts.length);
+			for (int i = 0; i < length; i++) {
+				int newPart     = i < newParts.length     ? Integer.parseInt(newParts[i].trim())     : 0;
+				int currentPart = i < currentParts.length ? Integer.parseInt(currentParts[i].trim()) : 0;
+				if (newPart > currentPart) return true;
+				if (newPart < currentPart) return false;
+			}
+			return false;
+		} catch (NumberFormatException e) {
+			return !newVersion.equals(currentVersion);
+		}
+	}
 }
