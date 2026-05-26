@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.regex.*;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class OutlinePanel extends JPanel {
 
 	private static final Pattern CLASS_PATTERN = Pattern.compile(

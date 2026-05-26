@@ -23,6 +23,7 @@ import java.util.Map;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import java.util.Locale;
+import javax.swing.border.*;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -173,7 +174,6 @@ public class MainWindow extends JFrame {
 		btnFormat = new JButton(LanguageManager.t("format"));
 		btnFormat.setForeground(new Color(255, 200, 80));
 
-
 		// HotSwap-Button – nur sichtbar während Java-Debug läuft
 		btnHotSwap = new JButton("⚡ HotSwap");
 		btnHotSwap.setForeground(new Color(255, 220, 50));
@@ -188,6 +188,40 @@ public class MainWindow extends JFrame {
 		btnTBuild.setForeground(new Color(100, 150, 255));
 		btnAbout.setForeground(new Color(180, 180, 180));
 
+
+		// Outlines der Buttons
+		Border outline = new LineBorder(Color.DARK_GRAY, 2); 
+		Border padding = BorderFactory.createEmptyBorder(5, 10, 5, 10); 
+		Border compoundBorder = BorderFactory.createCompoundBorder(outline, padding);
+
+		Color dezentHintergrund = new Color(55, 58, 62); 
+		Color hoverHintergrund   = new Color(75, 78, 82); 
+
+		JButton[] borderButtons = {btnFormat, btnOpen, btnSave, btnTBuild, btnAbout};
+		for (JButton btn : borderButtons) {
+			btn.setBorder(compoundBorder);
+
+			// Hintergrundfarbe zuweisen
+			btn.setBackground(dezentHintergrund);
+			btn.setContentAreaFilled(true);
+			btn.setOpaque(true);
+
+			// Hover-Effekt hinzufügen
+			btn.addMouseListener(new java.awt.event.MouseAdapter() {
+					@Override
+					public void mouseEntered(java.awt.event.MouseEvent e) {
+						btn.setBackground(hoverHintergrund);
+					}
+
+					@Override
+					public void mouseExited(java.awt.event.MouseEvent e) {
+						btn.setBackground(dezentHintergrund);
+					}
+				});
+		}
+
+
+
 		// Git-Dropdown
 		JMenuBar gitMenuBar = new JMenuBar();
 		gitMenuBar.setOpaque(false);
@@ -195,6 +229,7 @@ public class MainWindow extends JFrame {
 		JMenu gitMenu = new JMenu("Git ▾");
 		gitMenu.setForeground(new Color(255, 200, 80));
 		gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
+		gitMenu.setBackground(new Color(43, 45, 48));
 		JMenuItem gitCommit = new JMenuItem("Commit");
 		JMenuItem gitPush   = new JMenuItem("Push");
 		JMenuItem gitPull   = new JMenuItem("Pull");
@@ -245,6 +280,7 @@ public class MainWindow extends JFrame {
 		modeLabel = new JLabel(LanguageManager.t("mode"));
 		toolBar.add(modeLabel);
 		toolBar.add(modeSelector);
+		toolBar.add(Box.createHorizontalStrut(5));
 		toolBar.add(mainClassLabel);
 		toolBar.add(mainClassInput);
 		toolBar.addSeparator(new Dimension(20, 30));
