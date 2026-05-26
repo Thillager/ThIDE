@@ -23,6 +23,7 @@ public class TIDE {
 			System.err.println("Konnte FlatLaf nicht laden.");
 		}
 
+
 		SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
 	}
 }
