@@ -24,6 +24,7 @@ public class DebugRunner {
 	private String lastDetectedMode;
 	private File currentProjectFolder;
 	private JButton btnHotSwap;
+	private JButton btnTerminate;
 
 	public DebugRunner(ConsolePanel consolePanel, EditorManager editorManager,
 		CompilerErrorMarker errorMarker, ProjectRunner projectRunner) {
@@ -33,6 +34,10 @@ public class DebugRunner {
 		this.projectRunner = projectRunner;
 	}
 
+	
+
+	// Setter
+	public void setTerminateButton(JButton btnTerminate) {this.btnTerminate = btnTerminate;}
 	public void setHotSwapButton(JButton btn) { this.btnHotSwap = btn; }
 	public void setCurrentProjectFolder(File folder) { this.currentProjectFolder = folder; }
 
@@ -62,73 +67,76 @@ public class DebugRunner {
 			consolePanel.log("[DEBUG] Sprache '" + detectedMode + "' unterstützt kein Debug – starte normal.\n", Color.ORANGE);
 			projectRunner.runProject(detectedMode, mainClass);
 		}
+}
+
+
+public void hotSwap() {
+	if (javaStrategy != null && javaStrategy.getActiveDebugPort() != -1) {
+		javaStrategy.hotSwap();
+	} else if (ProjectRunner.MODE_PYTHON.equals(lastDetectedMode)) {
+		consolePanel.log("[HOTSWAP] Python ist eine Interpreter-Sprache – kein HotSwap möglich.\n"
+			+ "[HOTSWAP] Nutze den ⟲ Restart-Button um neu zu starten.\n", Color.ORANGE);
+	} else {
+		consolePanel.log("[HOTSWAP] Kein laufender Debug-Prozess.\n", Color.ORANGE);
 	}
+}
 
-
-	public void hotSwap() {
-		if (javaStrategy != null && javaStrategy.getActiveDebugPort() != -1) {
-			javaStrategy.hotSwap();
-		} else if (ProjectRunner.MODE_PYTHON.equals(lastDetectedMode)) {
-			consolePanel.log("[HOTSWAP] Python ist eine Interpreter-Sprache – kein HotSwap möglich.\n"
-				+ "[HOTSWAP] Nutze den ⟲ Restart-Button um neu zu starten.\n", Color.ORANGE);
-		} else {
-			consolePanel.log("[HOTSWAP] Kein laufender Debug-Prozess.\n", Color.ORANGE);
-		}
+public void stopDebugProcess() {
+	if (debugProcess != null && debugProcess.isAlive()) {
+		debugProcess.descendants().forEach(ProcessHandle::destroy);
+		debugProcess.destroyForcibly();
+		debugProcess = null;
+		consolePanel.log("[DEBUG] Prozess beendet.\n", Color.ORANGE);
 	}
+	javaStrategy = null;
+	setHotSwapButtonVisible(false);
+	
+}
 
-	public void stopDebugProcess() {
-		if (debugProcess != null && debugProcess.isAlive()) {
-			debugProcess.descendants().forEach(ProcessHandle::destroy);
-			debugProcess.destroyForcibly();
-			debugProcess = null;
-			consolePanel.log("[DEBUG] Prozess beendet.\n", Color.ORANGE);
-		}
-		javaStrategy = null;
-		setHotSwapButtonVisible(false);
-	}
+// ---- intern ----
 
-	// ---- intern ----
+private void executeDebug(DebugStrategy strategy, String mainClass) {
+	editorManager.saveCurrentFile();
+	setHotSwapButtonVisible(false);
 
-	private void executeDebug(DebugStrategy strategy, String mainClass) {
-		editorManager.saveCurrentFile();
-		setHotSwapButtonVisible(false);
 
-		new Thread(() -> {
-				try {
-					debugProcess = strategy.execute(mainClass);
-					if (debugProcess != null) {
-						if (javaStrategy != null) setHotSwapButtonVisible(true);
-						debugProcess.waitFor();
-					}
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				} finally {
-					debugProcess = null;
-					javaStrategy = null;
-					setHotSwapButtonVisible(false);
+	new Thread(() -> {
+			try {
+				debugProcess = strategy.execute(mainClass);
+				if (debugProcess != null) {
+					if (javaStrategy != null) setHotSwapButtonVisible(true);
+					debugProcess.waitFor();
 				}
-			}).start();
-	}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			} finally {
+				debugProcess = null;
+				javaStrategy = null;
+				setHotSwapButtonVisible(false);
+			}
+		}).start();
+}
 
-	private String detectMode(File activeFile, String mainClass) {
-		if (activeFile != null) {
-			String name = activeFile.getName().toLowerCase();
-			if (name.endsWith(".py"))  return ProjectRunner.MODE_PYTHON;
-			if (name.endsWith(".c"))   return ProjectRunner.MODE_C;
-			if (name.endsWith(".cpp") || name.endsWith(".cc") || name.endsWith(".cxx"))
-			return ProjectRunner.MODE_CPP;
-			if (name.endsWith(".bat") || name.endsWith(".cmd"))
-			return ProjectRunner.MODE_BATCH;
-		}
-		return ProjectRunner.MODE_JAVA;
+private String detectMode(File activeFile, String mainClass) {
+	if (activeFile != null) {
+		String name = activeFile.getName().toLowerCase();
+		if (name.endsWith(".py"))  return ProjectRunner.MODE_PYTHON;
+		if (name.endsWith(".c"))   return ProjectRunner.MODE_C;
+		if (name.endsWith(".cpp") || name.endsWith(".cc") || name.endsWith(".cxx"))
+		return ProjectRunner.MODE_CPP;
+		if (name.endsWith(".bat") || name.endsWith(".cmd"))
+		return ProjectRunner.MODE_BATCH;
 	}
+	return ProjectRunner.MODE_JAVA;
+}
 
-	private void setHotSwapButtonVisible(boolean visible) {
-		if (btnHotSwap != null)
-		SwingUtilities.invokeLater(() -> btnHotSwap.setVisible(visible));
-	}
+private void setHotSwapButtonVisible(boolean visible) {
+	if (btnHotSwap != null)
+	SwingUtilities.invokeLater(() -> btnHotSwap.setVisible(visible));
+	SwingUtilities.invokeLater(() -> btnTerminate.setVisible(visible));
+}
 
-	public interface DebugStrategy {
-		Process execute(String mainClass) throws InterruptedException;
-	}
+public interface DebugStrategy {
+	Process execute(String mainClass) throws InterruptedException;
+}
 }

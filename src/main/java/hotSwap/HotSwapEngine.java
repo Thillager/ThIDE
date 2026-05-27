@@ -78,15 +78,26 @@ public class HotSwapEngine {
 
 	private boolean runWorker(int debugPort) {
 		String sep = System.getProperty("path.separator");
-		String tideClasspath = getTideClasspath();
-		String workerCp = outFolder.getAbsolutePath()
-		+ sep + new File(projectFolder, "libs/*").getAbsolutePath()
-		+ (tideClasspath.isEmpty() ? "" : sep + tideClasspath);
 
-		String javaExe = ProcessHandle.current().info().command().orElse("java");
+		String workerCp = outFolder.getAbsolutePath()
+		+ sep + new File(projectFolder, "libs/*").getAbsolutePath();
+
+		String javaExe = "java";
+		String currentCmd = ProcessHandle.current().info().command().orElse("");
+		if (!currentCmd.isEmpty()) {
+			File currentExe = new File(currentCmd);
+			File runtimeBinJava = new File(currentExe.getParentFile(), isWindows() ? "java.exe" : "java");
+			File appRuntimeJava = new File(currentExe.getParentFile(), "runtime/bin/" + (isWindows() ? "java.exe" : "java"));
+
+			if (runtimeBinJava.exists()) {
+				javaExe = runtimeBinJava.getAbsolutePath();
+			} else if (appRuntimeJava.exists()) {
+				javaExe = appRuntimeJava.getAbsolutePath();
+			}
+		}
 
 		List<String> cmd = new ArrayList<>(Arrays.asList(
-				javaExe,
+				javaExe, 
 				"--add-opens", "jdk.jdi/com.sun.tools.jdi=ALL-UNNAMED",
 				"-cp", workerCp,
 				"hotSwap.HotSwapWorker",

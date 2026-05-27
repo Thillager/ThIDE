@@ -42,6 +42,19 @@ public class EditorManager {
 		this.wordManagerDialog = wordManagerDialog;
 	}
 
+
+	public void applyFontSizeToAllEditors(int size) {
+		for (int i = 0; i < editorTabs.getTabCount(); i++) {
+			Component tab = editorTabs.getComponentAt(i);
+			if (tab instanceof RTextScrollPane sp) {
+				Component view = sp.getViewport().getView();
+				if (view instanceof RSyntaxTextArea textArea) {
+					textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, size));
+				}
+			}
+		}
+	}
+
 	public void updateUIWithLocale(Locale neueLocale) {
 		Locale.setDefault(neueLocale);
 
@@ -53,7 +66,6 @@ public class EditorManager {
 
 				if (view instanceof RSyntaxTextArea textArea) {
 					textArea.setLocale(neueLocale);
-					// SOFORT lokalisieren
 					translatePopupMenuRecursive(textArea.getPopupMenu(), neueLocale);
 					SwingUtilities.updateComponentTreeUI(textArea);
 				}

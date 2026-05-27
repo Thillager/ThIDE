@@ -23,6 +23,15 @@ public class TIDEPreferences {
 	public static int getDividerH()        { return prefs.getInt("dividerH", -1); }
 	public static int getDividerV()        { return prefs.getInt("dividerV", -1); }
 
+	public static int    getEditorFontSize()          { return prefs.getInt("editorFontSize", TIDEProperties.EDITOR_FONT_SIZE); }
+	public static void   saveEditorFontSize(int size) { prefs.putInt("editorFontSize", size); }
+
+	public static int    getAutocompleteDelay()           { return prefs.getInt("autocompleteDelay", TIDEProperties.AUTOCOMPLETE_DELAY); }
+	public static void   saveAutocompleteDelay(int delay) { prefs.putInt("autocompleteDelay", delay); }
+
+	public static boolean getConsoleAutoScroll()             { return prefs.getBoolean("consoleAutoScroll", true); }
+	public static void    saveConsoleAutoScroll(boolean val) { prefs.putBoolean("consoleAutoScroll", val); }
+
 	public static void saveDividerHProportion(double value) {
 		prefs.putDouble("dividerHProportion", value);
 	}

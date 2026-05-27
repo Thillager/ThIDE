@@ -22,6 +22,8 @@ public class ConsolePanel extends JPanel {
 		consolePane.setFont(new Font("Consolas", Font.PLAIN, 14));
 		consolePane.setEditable(false);
 
+		((javax.swing.text.DefaultCaret) consolePane.getCaret()).setUpdatePolicy(javax.swing.text.DefaultCaret.NEVER_UPDATE);
+
 		JScrollPane consoleScroll = new JScrollPane(consolePane);
 		consoleScroll.setBorder(null);
 
@@ -59,7 +61,9 @@ public class ConsolePanel extends JPanel {
 				StyleConstants.setForeground(style, color);
 				try {
 					doc.insertString(doc.getLength(), msg, style);
-					consolePane.setCaretPosition(doc.getLength());
+					if (config.TIDEPreferences.getConsoleAutoScroll()) {
+                        consolePane.setCaretPosition(doc.getLength());
+                    }
 				} catch (Exception ignored) {}
 			});
 	}

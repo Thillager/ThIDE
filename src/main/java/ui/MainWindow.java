@@ -8,6 +8,8 @@ import runner.DebugRunner;
 import update.UpdateManager;
 import config.TIDEProperties;
 import config.LanguageManager;
+import config.TIDEPreferences;
+import ui.SettingsDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -27,7 +29,10 @@ import javax.swing.border.*;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import config.TIDEPreferences;
+import java.awt.event.KeyEvent;
+
+
+
 
 @SuppressWarnings({"serial", "this-escape"})
 public class MainWindow extends JFrame {
@@ -62,6 +67,7 @@ public class MainWindow extends JFrame {
 	private JLabel modeLabel;
 	private JLabel mainClassLabel;
 	private SearchPanel searchPanel;
+	private GlobalSearchPanel globalSearchPanel; // ← HIER
 
 	// ---- Subsysteme ----
 	private ConsolePanel consolePanel;
@@ -74,6 +80,7 @@ public class MainWindow extends JFrame {
 	private UpdateManager updateManager;
 	private AboutDialog aboutDialog;
 	private WordManagerDialog wordManagerDialog;
+	private SettingsDialog settingsDialog;
 
 	private JSplitPane horizontalSplit;
 	private JSplitPane verticalSplit;
@@ -130,6 +137,19 @@ public class MainWindow extends JFrame {
 		projectRunner.setOnRefreshFileTree(() -> fileTreePanel.updateFileTree(currentProjectFolder));
 		outlinePanel = new OutlinePanel();
 		editorManager.setOutlinePanel(outlinePanel);
+
+		settingsDialog    = new SettingsDialog(this, editorManager, () -> {
+				// Das sorgt dafür, dass sich die Texte im Hauptfenster direkt anpassen
+				btnOpen.setText(LanguageManager.t("open"));
+				btnSave.setText(LanguageManager.t("save"));
+				btnClear.setText(LanguageManager.t("clear"));
+				btnAbout.setText(LanguageManager.t("about"));
+				modeLabel.setText(LanguageManager.t("mode"));
+				mainClassLabel.setText(LanguageManager.t("main"));
+				btnFormat.setText(LanguageManager.t("format"));
+				revalidate();
+				repaint();
+			});
 	}
 
 	private void initUI() {
@@ -175,7 +195,7 @@ public class MainWindow extends JFrame {
 		btnFormat.setForeground(new Color(255, 200, 80));
 
 		// HotSwap-Button – nur sichtbar während Java-Debug läuft
-		btnHotSwap = new JButton("⚡ HotSwap");
+		btnHotSwap = new JButton("HotSwap");
 		btnHotSwap.setForeground(new Color(255, 220, 50));
 		btnHotSwap.setFont(btnHotSwap.getFont().deriveFont(Font.BOLD));
 		btnHotSwap.setToolTipText("Klassen im laufenden Prozess ersetzen (kein Neustart)");
@@ -188,6 +208,9 @@ public class MainWindow extends JFrame {
 		btnTBuild.setForeground(new Color(100, 150, 255));
 		btnAbout.setForeground(new Color(180, 180, 180));
 
+		JButton btnSettings = new JButton("⚙");
+		btnSettings.addActionListener(e -> settingsDialog.show());
+
 
 		// Outlines der Buttons
 		Border outline = new LineBorder(Color.DARK_GRAY, 2); 
@@ -197,7 +220,7 @@ public class MainWindow extends JFrame {
 		Color dezentHintergrund = new Color(55, 58, 62); 
 		Color hoverHintergrund   = new Color(75, 78, 82); 
 
-		JButton[] borderButtons = {btnFormat, btnOpen, btnSave, btnTBuild, btnAbout};
+		JButton[] borderButtons = {btnFormat, btnOpen, btnSave, btnTBuild, btnAbout, btnSettings, btnHotSwap, btnClear};
 		for (JButton btn : borderButtons) {
 			btn.setBorder(compoundBorder);
 
@@ -307,6 +330,8 @@ public class MainWindow extends JFrame {
 		toolBar.add(btnClear);
 		toolBar.add(Box.createHorizontalStrut(5));
 		toolBar.add(btnAbout);
+		toolBar.add(Box.createHorizontalStrut(5));
+		toolBar.add(btnSettings);
 
 		add(toolBar, BorderLayout.NORTH);
 
@@ -322,6 +347,8 @@ public class MainWindow extends JFrame {
 
 		// Layout
 		JPanel editorContainer = new JPanel(new BorderLayout());
+		globalSearchPanel = new GlobalSearchPanel(editorManager, editorTabs);
+		editorContainer.add(globalSearchPanel, BorderLayout.SOUTH);
 		editorContainer.add(searchPanel, BorderLayout.NORTH);
 		editorContainer.add(editorTabs,  BorderLayout.CENTER);
 
@@ -338,7 +365,7 @@ public class MainWindow extends JFrame {
 		// ← NEU: Editor+Console | Outline
 		editorOutlineSplit = new JSplitPane(
 			JSplitPane.HORIZONTAL_SPLIT, verticalSplit, outlinePanel);
-		editorOutlineSplit.setResizeWeight(1.0);   // Editor bekommt den Extra-Platz
+		editorOutlineSplit.setResizeWeight(1.0); 
 		editorOutlineSplit.setDividerSize(4);
 		editorOutlineSplit.setBorder(null);
 		editorOutlineSplit.setDividerLocation(0.8);  // 80% Editor, 20% Outline
@@ -347,7 +374,7 @@ public class MainWindow extends JFrame {
 		editorOutlineSplit.setBackground(new Color(0, 0, 0, 0));
 
 		horizontalSplit = new JSplitPane(
-			JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, editorOutlineSplit);  // ← editorOutlineSplit statt verticalSplit
+			JSplitPane.HORIZONTAL_SPLIT, fileTreePanel, editorOutlineSplit); 
 		horizontalSplit.setDividerSize(4);
 		horizontalSplit.setBorder(null);
 		horizontalSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
@@ -409,18 +436,59 @@ public class MainWindow extends JFrame {
 				}
 			});
 
+
+
+		// Globaler Shortcut-Manager für das gesamte Fenster
 		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
 				if (e.getID() == KeyEvent.KEY_PRESSED && e.isControlDown()) {
-					if (e.getKeyCode() == KeyEvent.VK_S) { editorManager.saveCurrentFile(); return true; }
+
+					// 1. Speichern: Strg + S
+					if (e.getKeyCode() == KeyEvent.VK_S) { 
+						editorManager.saveCurrentFile(); 
+						return true; 
+					}
+
+					// 2. Suchen: Strg + F (lokal) oder Strg + Shift + F (global)
 					if (e.getKeyCode() == KeyEvent.VK_F) {
-						searchPanel.setVisible(!searchPanel.isVisible());
-						if (searchPanel.isVisible()) searchPanel.getSearchField().requestFocusInWindow();
+						if (e.isShiftDown()) {
+							// Strg + Shift + F -> Globale Projektsuche toggeln
+							globalSearchPanel.setVisible(!globalSearchPanel.isVisible());
+							if (globalSearchPanel.isVisible()) {
+								globalSearchPanel.getSearchField().requestFocusInWindow();
+							}
+						} else {
+							// Strg + F -> Lokale Dateisuche toggeln
+							searchPanel.setVisible(!searchPanel.isVisible());
+							if (searchPanel.isVisible()) {
+								searchPanel.getSearchField().requestFocusInWindow();
+							}
+						}
 						revalidate();
+						return true;
+					}
+
+					// 3. Ausführen: Strg + R (Standard) oder Strg + Shift + R (Debug)
+					if (e.getKeyCode() == KeyEvent.VK_R) {
+						String currentMainClass = mainClassInput.getText().trim();
+						if (e.isShiftDown()) {
+							// Strg + Shift + R -> Debugging starten
+							runModeSelector.setSelectedItem(RUN_MODE_DEBUG);
+							debugRunner.startDebug(currentMainClass);
+						} else {
+							// Strg + R -> Standard Ausführung starten
+							runModeSelector.setSelectedItem(RUN_MODE_STANDARD);
+							String currentMode = (String) modeSelector.getSelectedItem();
+							projectRunner.runProject(currentMode, currentMainClass);
+						}
 						return true;
 					}
 				}
 				return false;
 			});
+
+
+
+
 
 		addWindowListener(new WindowAdapter() {
 				@Override public void windowClosing(WindowEvent e) {
@@ -444,11 +512,13 @@ public class MainWindow extends JFrame {
 			projectRunner.setCurrentProjectFolder(currentProjectFolder);
 			debugRunner.setCurrentProjectFolder(currentProjectFolder);
 			gitManager.setCurrentProjectFolder(currentProjectFolder);
+			globalSearchPanel.setSubsystems(currentProjectFolder);
 		}
 
 		modeSelector.setSelectedItem(TIDEPreferences.getMode());
 
 		projectRunner.setTerminateButton(btnTerminate);
+		debugRunner.setTerminateButton(btnTerminate);
 		debugRunner.setHotSwapButton(btnHotSwap);
 
 		updateDynamicUI();
@@ -480,6 +550,7 @@ public class MainWindow extends JFrame {
 			debugRunner.setCurrentProjectFolder(currentProjectFolder);
 			gitManager.setCurrentProjectFolder(currentProjectFolder);
 			gitManager.checkGitStatusOnOpen();
+			globalSearchPanel.setSubsystems(currentProjectFolder);
 		}
 	}
 
