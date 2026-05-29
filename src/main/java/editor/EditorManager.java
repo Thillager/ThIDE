@@ -107,13 +107,11 @@ public class EditorManager {
 
 		for (Component c : popup.getComponents()) {
 			if (c instanceof JMenu menu) {
-				// Rekursiv für Submenus
 				String txt = menu.getText();
 				if (txt != null && !txt.isEmpty()) {
 					String translated = translateMenuItem(txt, english);
 					menu.setText(translated);
 				}
-				// Submenu items auch übersetzen
 				translatePopupMenuRecursive(menu.getPopupMenu(), locale);
 			} else if (c instanceof JMenuItem item) {
 				String txt = item.getText();
@@ -191,12 +189,6 @@ public class EditorManager {
 	}
 
 
-
-
-
-
-
-
 	public void openFileInEditor(File file) {
 		for (int i = 0; i < editorTabs.getTabCount(); i++) {
 			if (file.equals(openFiles.get(editorTabs.getComponentAt(i)))) {
@@ -237,7 +229,139 @@ public class EditorManager {
 			}
 			textArea.setCaretColor(Color.WHITE);
 
-			RTextScrollPane sp = new RTextScrollPane(textArea);
+
+
+			// --- ANONYME UNTERKLASSE FÜR UNREISSBARES, BUTTERWEICHES SCROLLEN ---
+            RTextScrollPane sp = new RTextScrollPane(textArea) {
+                private int lastValue = -1;
+                private int deltaY = 0;
+                private long lastScrollTime = 0;
+
+                // --- NEU: Das mathematische Schwungrad ---
+                private float smoothedSpeed = 0.0f;
+                private long lastPaintTime = 0;
+
+                {
+                    this.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+
+                    this.getVerticalScrollBar().addAdjustmentListener(e -> {
+                            if (lastValue != -1) {
+                                deltaY = e.getValue() - lastValue;
+                            }
+                            lastValue = e.getValue();
+                            lastScrollTime = System.currentTimeMillis();
+                        });
+                }
+
+                @Override
+                public void paint(Graphics g) {
+                    long now = System.currentTimeMillis();
+                    long age = now - lastScrollTime;
+
+                    // Zeitdifferenz (Delta Time) seit dem letzten Frame berechnen
+                    if (lastPaintTime == 0) lastPaintTime = now;
+                    float deltaTime = (now - lastPaintTime) / 1000.0f;
+                    lastPaintTime = now;
+
+                    // 1. SCHWUNGRAD-PHYSIK BERECHNEN
+                    if (age < 150 && Math.abs(deltaY) > 2) {
+                        // Wenn gescrollt wird, folgt die geglättete Geschwindigkeit sanft dem echten Input
+                        float targetSpeed = Math.max(0.0f, Math.abs(deltaY) - 3.0f);
+                        // Lerp: Wir nähern uns dem Zielwert stetig an (0.25 = Trägheitsfaktor)
+                        smoothedSpeed += (targetSpeed - smoothedSpeed) * 0.25f;
+                    } else {
+                        // Wenn die Maus stoppt, bremst das Schwungrad mathematisch perfekt linear ab
+                        // Völlig unabhängig davon, ob das OS unruhige Rest-Werte liefert!
+                        smoothedSpeed -= 80.0f * deltaTime; // Bremskraft
+                    }
+
+                    // Totalschutz gegen Unterlauf
+                    if (smoothedSpeed < 0.0f) smoothedSpeed = 0.0f;
+
+                    // BLITZSCHNELLER ABBRUCH: Erst wenn das Schwungrad komplett steht, schalten wir ab
+                    if (smoothedSpeed <= 0.1f && age > 150) {
+                        smoothedSpeed = 0.0f;
+                        deltaY = 0;
+                        lastValue = getVerticalScrollBar().getValue();
+                        super.paint(g);
+                        return;
+                    }
+
+                    int w = getWidth();
+                    int h = getHeight();
+
+                    // VolatileImage (VRAM) bereitstellen
+                    if (volatileBuffer == null || volatileBuffer.getWidth() != w || volatileBuffer.getHeight() != h 
+                        || volatileBuffer.validate(getGraphicsConfiguration()) == java.awt.image.VolatileImage.IMAGE_INCOMPATIBLE) {
+                        volatileBuffer = getGraphicsConfiguration().createCompatibleVolatileImage(w, h, Transparency.TRANSLUCENT);
+                    }
+
+                    do {
+                        Graphics2D gBuffer = volatileBuffer.createGraphics();
+                        gBuffer.setComposite(AlphaComposite.Clear);
+                        gBuffer.fillRect(0, 0, w, h);
+                        gBuffer.setComposite(AlphaComposite.SrcOver);
+                        super.paint(gBuffer);
+                        gBuffer.dispose();
+                    } while (volatileBuffer.contentsLost());
+
+                    // Render-Vorbereitung auf der GPU
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+                    // 2. INTENSITÄT AUS DEM SCHWUNGRAD ABLEITEN
+                    float speedFactor = smoothedSpeed / 35.0f; // Normiert auf 35 Pixel
+                    float dynamicIntensity = Math.min(speedFactor * speedFactor, 1.0f);
+
+                    // 3. ELASTISCHER STRETCH
+                    float stretchFactor = 1.0f + (0.07f * dynamicIntensity);
+                    g2d.translate(w / 2.0, h / 2.0);
+                    g2d.scale(1.0, stretchFactor);
+                    g2d.translate(-w / 2.0, -h / 2.0);
+
+                    // 4. TEXT-BASIS GRAFIK
+                    float mainAlpha = 1.0f - (0.15f * dynamicIntensity); 
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, mainAlpha));
+                    g2d.drawImage(volatileBuffer, 0, 0, null);
+
+                   // 5. PHYSIKALISCH KORREKTER RICHTUNGS-BEWEGUNGSSCHWEIF
+                    float blurAlpha = 0.35f * dynamicIntensity;
+                    if (blurAlpha > 0.01f) {
+                        // Richtung bestimmen: Scrollst du runter, fliegt der Text hoch, 
+                        // also muss der Schweif nach unten wegziehen (und umgekehrt).
+                        int directionSign = deltaY > 0 ? 1 : -1;
+                        
+                        // Maximale Reichweite des Schweifs (bis zu 12 Pixel bei Vollgas)
+                        float maxTrail = 12.0f * dynamicIntensity;
+
+                        // Kaskadierter Schweif: 3 Schichten, die nach hinten hin feiner und transparenter werden
+                        // Das verhindert die künstliche Trübheit und erzeugt ein echtes "Wegziehen"
+                        
+                        // Schicht 1: Nah am Original, relativ dicht
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.5f));
+                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 0.3f * directionSign), null);
+
+                        // Schicht 2: Mittlerer Abstand, halbe Deckkraft
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.3f));
+                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 0.6f * directionSign), null);
+
+                        // Schicht 3: Weit weg, hauchzart auslaufend
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.15f));
+                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 1.0f * directionSign), null);
+                    }
+
+                    g2d.dispose();
+
+                    // Animations-Loop aktiv halten, solange das Schwungrad dreht
+                    repaint();
+                }
+
+                private java.awt.image.VolatileImage volatileBuffer = null;
+            };
+
+
+
 			sp.getVerticalScrollBar().setUnitIncrement(0);
 			if (parent instanceof MainWindow mw) {
 				mw.enableSmoothScrolling(sp);
@@ -264,12 +388,10 @@ public class EditorManager {
 			openFiles.put(sp, file);
 			textArea.requestFocusInWindow();
 
-			// Outline aktualisieren
 			if (outlinePanel != null) {
 				outlinePanel.refresh(textArea, file.getName());
 			}
 
-			// --- AUTOCOMPLETE SETUP ---
 			DefaultCompletionProvider provider = createCompletionProvider(textArea);
 			AutoCompletion ac = new AutoCompletion(provider);
 			ac.setAutoCompleteSingleChoices(false);
@@ -277,7 +399,6 @@ public class EditorManager {
 			ac.setAutoActivationDelay(TIDEProperties.AUTOCOMPLETE_DELAY);
 			ac.install(textArea);
 
-			// --- LERN-FUNKTION ---
 			Set<String> knownWords = new HashSet<>();
 			String[] initialKeywords = {"public", "private", "static", "void", "class", "import",
 				"String", "int", "boolean", "new", "return"};
@@ -314,7 +435,6 @@ public class EditorManager {
 					}
 				});
 
-			// --- WÖRTER VERWALTEN ---
 			JButton manageWordsBtn = new JButton("Wörter");
 			manageWordsBtn.setFont(manageWordsBtn.getFont().deriveFont(10f));
 			manageWordsBtn.setForeground(new Color(180, 180, 255));
@@ -331,12 +451,11 @@ public class EditorManager {
 	}
 
 
-
 	public void saveCurrentFile() {
 		Component tab = editorTabs.getSelectedComponent();
-		if (tab instanceof RTextScrollPane) {
-			File file = openFiles.get(tab);
-			RSyntaxTextArea ta = (RSyntaxTextArea) ((RTextScrollPane) tab).getTextArea();
+		if (tab instanceof RTextScrollPane sp) {
+			File file = openFiles.get(sp);
+			RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
 			try {
 				Files.writeString(file.toPath(), ta.getText());
 				consolePanel.log("[SAVE] " + file.getName() + " gespeichert.\n", Color.GREEN);
@@ -352,7 +471,7 @@ public class EditorManager {
 		for (int i = 0; i < editorTabs.getTabCount(); i++) {
 			Component tab = editorTabs.getComponentAt(i);
 			if (!(tab instanceof RTextScrollPane sp)) continue;
-			File file = openFiles.get(tab);
+			File file = openFiles.get(sp);
 			if (file == null) continue;
 			RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
 			try {
@@ -372,13 +491,13 @@ public class EditorManager {
 
 	public void formatCurrentFile() {
 		Component tab = editorTabs.getSelectedComponent();
-		if (!(tab instanceof RTextScrollPane sp)) return;
+		if (!(tab instanceof RTextScrollPane sp)) return; 
+		File file = openFiles.get(sp);
 
 		RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
 		String[] lines     = ta.getText().split("\n", -1);
 		int      tabSize   = ta.getTabSize();
-		boolean  useTabs   = !ta.getTabsEmulated();   // true  → echte \t-Tabs
-		// false → Spaces (emulated)
+		boolean  useTabs   = !ta.getTabsEmulated();
 		String   tabUnit   = useTabs ? "\t" : " ".repeat(tabSize);
 
 		StringBuilder result = new StringBuilder();
@@ -387,7 +506,6 @@ public class EditorManager {
 		for (int i = 0; i < lines.length; i++) {
 			String trimmed = lines[i].stripLeading();
 
-			// Schließende Klammern / Keywords VOR dem Einrücken behandeln
 			if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
 	indent = Math.max(0, indent - 1);
 }
@@ -397,11 +515,9 @@ if (!trimmed.isEmpty()) {
 }
 if (i < lines.length - 1) result.append("\n");
 
-// Öffnende Klammern → nächste Zeile einrücken
 long opens  = trimmed.chars().filter(c -> c == '{' || c == '(' || c == '[').count();
 			long closes = trimmed.chars().filter(c -> c == '}' || c == ')' || c == ']').count();
 
-// Nur zählen, wenn nicht schon am Zeilenanfang behandelt
 if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
 closes = Math.max(0, closes - 1);
 }
