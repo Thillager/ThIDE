@@ -7,6 +7,7 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import ui.ConsolePanel;
 import ui.WordManagerDialog;
+import ui.MainWindow;
 import config.TIDEProperties;
 
 import javax.swing.*;
@@ -237,6 +238,13 @@ public class EditorManager {
 			textArea.setCaretColor(Color.WHITE);
 
 			RTextScrollPane sp = new RTextScrollPane(textArea);
+			sp.getVerticalScrollBar().setUnitIncrement(0);
+			if (parent instanceof MainWindow mw) {
+				mw.enableSmoothScrolling(sp);
+			}
+			sp.getVerticalScrollBar().setUnitIncrement(
+				textArea.getFontMetrics(textArea.getFont()).getHeight()
+			);
 			sp.setBorder(null);
 
 			JPanel tabHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));

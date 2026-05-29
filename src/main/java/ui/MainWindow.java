@@ -30,6 +30,7 @@ import javax.swing.border.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.InputEvent;
 
 
 
@@ -438,51 +439,61 @@ public class MainWindow extends JFrame {
 
 
 
-		// Globaler Shortcut-Manager für das gesamte Fenster
 		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
-				if (e.getID() == KeyEvent.KEY_PRESSED && e.isControlDown()) {
+				if (e.getID() != KeyEvent.KEY_PRESSED) return false;
 
-					// 1. Speichern: Strg + S
-					if (e.getKeyCode() == KeyEvent.VK_S) { 
-						editorManager.saveCurrentFile(); 
-						return true; 
-					}
+				// aktuellen Modifier-Status zusammenbauen
+				int mod = 0;
+				if (e.isControlDown()) mod |= InputEvent.CTRL_DOWN_MASK;
+				if (e.isShiftDown())   mod |= InputEvent.SHIFT_DOWN_MASK;
+				if (e.isAltDown())     mod |= InputEvent.ALT_DOWN_MASK;
 
-					// 2. Suchen: Strg + F (lokal) oder Strg + Shift + F (global)
-					if (e.getKeyCode() == KeyEvent.VK_F) {
-						if (e.isShiftDown()) {
-							// Strg + Shift + F -> Globale Projektsuche toggeln
-							globalSearchPanel.setVisible(!globalSearchPanel.isVisible());
-							if (globalSearchPanel.isVisible()) {
-								globalSearchPanel.getSearchField().requestFocusInWindow();
-							}
-						} else {
-							// Strg + F -> Lokale Dateisuche toggeln
-							searchPanel.setVisible(!searchPanel.isVisible());
-							if (searchPanel.isVisible()) {
-								searchPanel.getSearchField().requestFocusInWindow();
-							}
-						}
-						revalidate();
-						return true;
-					}
+				int key = e.getKeyCode();
 
-					// 3. Ausführen: Strg + R (Standard) oder Strg + Shift + R (Debug)
-					if (e.getKeyCode() == KeyEvent.VK_R) {
-						String currentMainClass = mainClassInput.getText().trim();
-						if (e.isShiftDown()) {
-							// Strg + Shift + R -> Debugging starten
-							runModeSelector.setSelectedItem(RUN_MODE_DEBUG);
-							debugRunner.startDebug(currentMainClass);
-						} else {
-							// Strg + R -> Standard Ausführung starten
-							runModeSelector.setSelectedItem(RUN_MODE_STANDARD);
-							String currentMode = (String) modeSelector.getSelectedItem();
-							projectRunner.runProject(currentMode, currentMainClass);
-						}
-						return true;
-					}
+				// Speichern
+				if (key == TIDEPreferences.getHotkey("save", KeyEvent.VK_S)
+					&& mod == TIDEPreferences.getHotkeyModifier("save", InputEvent.CTRL_DOWN_MASK)) {
+					editorManager.saveCurrentFile();
+					return true;
 				}
+
+				// Lokale Suche
+				if (key == TIDEPreferences.getHotkey("search", KeyEvent.VK_F)
+					&& mod == TIDEPreferences.getHotkeyModifier("search", InputEvent.CTRL_DOWN_MASK)) {
+					searchPanel.setVisible(!searchPanel.isVisible());
+					if (searchPanel.isVisible()) searchPanel.getSearchField().requestFocusInWindow();
+					revalidate();
+					return true;
+				}
+
+				// Globale Suche
+				if (key == TIDEPreferences.getHotkey("gsearch", KeyEvent.VK_F)
+					&& mod == TIDEPreferences.getHotkeyModifier("gsearch",
+						InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
+					globalSearchPanel.setVisible(!globalSearchPanel.isVisible());
+					if (globalSearchPanel.isVisible()) globalSearchPanel.getSearchField().requestFocusInWindow();
+					revalidate();
+					return true;
+				}
+
+				// Ausführen
+				if (key == TIDEPreferences.getHotkey("run", KeyEvent.VK_R)
+					&& mod == TIDEPreferences.getHotkeyModifier("run", InputEvent.CTRL_DOWN_MASK)) {
+					runModeSelector.setSelectedItem(RUN_MODE_STANDARD);
+					projectRunner.runProject((String) modeSelector.getSelectedItem(),
+						mainClassInput.getText().trim());
+					return true;
+				}
+
+				// Debuggen
+				if (key == TIDEPreferences.getHotkey("debug", KeyEvent.VK_R)
+					&& mod == TIDEPreferences.getHotkeyModifier("debug",
+						InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
+					runModeSelector.setSelectedItem(RUN_MODE_DEBUG);
+					debugRunner.startDebug(mainClassInput.getText().trim());
+					return true;
+				}
+
 				return false;
 			});
 
@@ -536,6 +547,103 @@ public class MainWindow extends JFrame {
 					outlinePanel.refresh(null, null);
 				}
 			});
+
+		// Alle JScrollPanes im Fenster smooth machen
+		for (Component c : getAllComponents(this)) {
+			if (c instanceof JScrollPane sp) {
+				sp.getVerticalScrollBar().setUnitIncrement(16);
+				sp.getHorizontalScrollBar().setUnitIncrement(16);
+			}
+		}
+
+		for (Component c : getAllComponents(this)) {
+			if (c instanceof JScrollPane sp) {
+				enableSmoothScrolling(sp);
+			}
+		}
+	}
+
+	private java.util.List<Component> getAllComponents(Container container) {
+		java.util.List<Component> list = new java.util.ArrayList<>();
+		for (Component c : container.getComponents()) {
+			list.add(c);
+			if (c instanceof Container) list.addAll(getAllComponents((Container) c));
+		}
+		return list;
+	}
+
+	public void enableSmoothScrolling(JScrollPane scrollPane) {
+
+		JScrollBar bar = scrollPane.getVerticalScrollBar();
+
+		final int[] target = {
+			bar.getValue()
+		};
+
+		final boolean[] animating = {
+			false
+		};
+
+		Timer timer = new Timer(1000 / 120, null);
+
+		timer.addActionListener(e -> {
+
+				int current = bar.getValue();
+
+				int diff = target[0] - current;
+
+				// stop
+				if (Math.abs(diff) <= 1) {
+
+					bar.setValue(target[0]);
+
+					animating[0] = false;
+
+					return;
+				}
+
+				// smooth interpolation
+				int step = (int)(diff * 0.22);
+
+				// minimum movement
+				if (step == 0) {
+					step = diff > 0 ? 1 : -1;
+				}
+
+				bar.setValue(current + step);
+			});
+
+		scrollPane.addMouseWheelListener(e -> {
+
+				e.consume();
+
+				int rotation = e.getWheelRotation();
+
+				int increment = bar.getUnitIncrement();
+
+				if (increment <= 0) {
+					increment = 16;
+				}
+
+				target[0] += rotation * increment * 6;
+
+				int max = bar.getMaximum()
+				- bar.getVisibleAmount();
+
+				target[0] = Math.max(
+					0,
+					Math.min(target[0], max)
+				);
+
+				if (!animating[0]) {
+
+					animating[0] = true;
+
+					timer.start();
+				}
+			});
+
+		bar.setUnitIncrement(0);
 	}
 
 	private void openFolderDialog() {

@@ -11,6 +11,13 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.Locale;
 
+import java.awt.event.InputEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.Map;
+import java.util.HashMap;
+
+
 public class SettingsDialog {
 
 	private final JFrame parent;
@@ -39,7 +46,7 @@ public class SettingsDialog {
 		JPanel langPanel = createSection("Sprache / Language");
 
 		JComboBox<LanguageManager.Language> langBox =
-			new JComboBox<>(LanguageManager.Language.values());
+		new JComboBox<>(LanguageManager.Language.values());
 		langBox.setSelectedItem(LanguageManager.Language.valueOf(TIDEPreferences.getLanguage()));
 		langBox.setMaximumSize(new Dimension(200, 28));
 		langBox.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -66,8 +73,8 @@ public class SettingsDialog {
 		fontSlider.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		fontSlider.addChangeListener(e -> {
-			fontSizeLabel.setText(fontSlider.getValue() + " pt");
-		});
+				fontSizeLabel.setText(fontSlider.getValue() + " pt");
+			});
 
 		JPanel fontRow = new JPanel(new BorderLayout(8, 0));
 		fontRow.setBackground(new Color(43, 45, 48));
@@ -98,8 +105,8 @@ public class SettingsDialog {
 		acSlider.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		acSlider.addChangeListener(e -> {
-			acLabel.setText("Verzögerung: " + acSlider.getValue() + " ms");
-		});
+				acLabel.setText("Verzögerung: " + acSlider.getValue() + " ms");
+			});
 
 		JPanel acRow = new JPanel(new BorderLayout(8, 0));
 		acRow.setBackground(new Color(43, 45, 48));
@@ -125,6 +132,106 @@ public class SettingsDialog {
 		consolePanel.add(autoScrollBox);
 		content.add(consolePanel);
 
+		// ── Hotkeys ───────────────────────────────────────────────
+		// ── Hotkeys ───────────────────────────────────────────────
+		JPanel hotkeyPanel = createSection("Hotkeys", 230);
+
+		// action | Beschriftung | Standard-KeyCode
+		// action | Beschriftung | Standard-KeyCode | Standard-Modifier
+		Object[][] hotkeyDefs = {
+			{ "save",    "Speichern",     KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK },
+			{ "search",  "Lokale Suche", KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK },
+			{ "gsearch", "Globale Suche",KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
+			{ "run",     "Ausführen",    KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK },
+			{ "debug",   "Debuggen",     KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
+		};
+
+		Map<String, Integer> pendingHotkeys  = new HashMap<>();
+		Map<String, Integer> pendingModifiers = new HashMap<>();
+		JPanel tablePanel = new JPanel(new GridLayout(hotkeyDefs.length, 2, 10, 6));
+		tablePanel.setBackground(new Color(43, 45, 48));
+		tablePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		for (Object[] def : hotkeyDefs) {
+			String action     = (String)  def[0];
+			String label      = (String)  def[1];
+			int    defaultKey = (Integer) def[2];
+			int    defaultMod = (Integer) def[3];
+			int    savedKey   = TIDEPreferences.getHotkey(action, defaultKey);
+
+			JLabel descLabel = new JLabel(label);
+			descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+			descLabel.setForeground(new Color(200, 200, 200));
+
+			// Statt nur: KeyEvent.getKeyText(savedKey)
+			int savedMod = TIDEPreferences.getHotkeyModifier(action, defaultMod);
+			String initModText = "";
+			if ((savedMod & InputEvent.CTRL_DOWN_MASK)  != 0) initModText += "Strg+";
+			if ((savedMod & InputEvent.SHIFT_DOWN_MASK) != 0) initModText += "Shift+";
+			if ((savedMod & InputEvent.ALT_DOWN_MASK)   != 0) initModText += "Alt+";
+			JTextField keyField = new JTextField(initModText + KeyEvent.getKeyText(savedKey));
+			keyField.setFont(new Font("Consolas", Font.BOLD, 12));
+			keyField.setForeground(new Color(255, 200, 80));
+			keyField.setBackground(new Color(55, 58, 62));
+			keyField.setCaretColor(new Color(255, 200, 80));
+			keyField.setBorder(BorderFactory.createCompoundBorder(
+					BorderFactory.createLineBorder(new Color(80, 80, 80)),
+					BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+			keyField.setEditable(false);  // nur per Tastendruck setzen
+			keyField.setMaximumSize(new Dimension(80, 26));
+
+			// Tastendruck aufnehmen
+			keyField.addKeyListener(new KeyAdapter() {
+					@Override
+					public void keyPressed(KeyEvent e) {
+						int code = e.getKeyCode();
+						if (code == KeyEvent.VK_CONTROL || code == KeyEvent.VK_SHIFT
+							|| code == KeyEvent.VK_ALT || code == KeyEvent.VK_META) return;
+
+						// Modifier zusammenbauen
+						int mod = 0;
+						if (e.isControlDown()) mod |= InputEvent.CTRL_DOWN_MASK;
+						if (e.isShiftDown())   mod |= InputEvent.SHIFT_DOWN_MASK;
+						if (e.isAltDown())     mod |= InputEvent.ALT_DOWN_MASK;
+
+						// Anzeige z.B. "Strg+Shift+R"
+						String modText = "";
+						if (e.isControlDown()) modText += "Strg+";
+						if (e.isShiftDown())   modText += "Shift+";
+						if (e.isAltDown())     modText += "Alt+";
+
+						keyField.setText(modText + KeyEvent.getKeyText(code));
+						keyField.setForeground(new Color(80, 200, 120));
+
+						pendingHotkeys.put(action, code);
+						pendingModifiers.put(action, mod);
+					}
+				});
+
+			// Fokus-Highlight
+			keyField.addFocusListener(new java.awt.event.FocusAdapter() {
+					@Override public void focusGained(java.awt.event.FocusEvent e) {
+						keyField.setBorder(BorderFactory.createCompoundBorder(
+								BorderFactory.createLineBorder(new Color(80, 200, 120)),
+								BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+					}
+					@Override public void focusLost(java.awt.event.FocusEvent e) {
+						keyField.setBorder(BorderFactory.createCompoundBorder(
+								BorderFactory.createLineBorder(new Color(80, 80, 80)),
+								BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+					}
+				});
+
+			tablePanel.add(descLabel);
+			tablePanel.add(keyField);
+		}
+
+		hotkeyPanel.add(tablePanel);
+		content.add(hotkeyPanel);
+		content.add(Box.createVerticalStrut(12));
+
+		// ── 
+
 		// ── Buttons ───────────────────────────────────────────────
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
 		btnPanel.setBackground(new Color(43, 45, 48));
@@ -138,31 +245,39 @@ public class SettingsDialog {
 		btnCancel.addActionListener(e -> dialog.dispose());
 
 		btnApply.addActionListener(e -> {
-			// Sprache
-			LanguageManager.Language selectedLang =
+				// Sprache
+				LanguageManager.Language selectedLang =
 				(LanguageManager.Language) langBox.getSelectedItem();
-			LanguageManager.set(selectedLang);
-			TIDEPreferences.saveLanguage(selectedLang.name());
-			Locale locale = selectedLang.name().equals("DE") ? Locale.GERMAN : Locale.ENGLISH;
-			Locale.setDefault(locale);
-			JComponent.setDefaultLocale(locale);
-			if (editorManager != null) editorManager.updateUIWithLocale(locale);
+				LanguageManager.set(selectedLang);
+				TIDEPreferences.saveLanguage(selectedLang.name());
+				Locale locale = selectedLang.name().equals("DE") ? Locale.GERMAN : Locale.ENGLISH;
+				Locale.setDefault(locale);
+				JComponent.setDefaultLocale(locale);
+				if (editorManager != null) editorManager.updateUIWithLocale(locale);
 
-			// Schriftgröße
-			int newSize = fontSlider.getValue();
-			TIDEPreferences.saveEditorFontSize(newSize);
-			if (editorManager != null) editorManager.applyFontSizeToAllEditors(newSize);
+				// Schriftgröße
+				int newSize = fontSlider.getValue();
+				TIDEPreferences.saveEditorFontSize(newSize);
+				if (editorManager != null) editorManager.applyFontSizeToAllEditors(newSize);
 
-			// Autocomplete-Delay
-			TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
+				// Autocomplete-Delay
+				TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
 
-			// Auto-Scroll
-			TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
+				// Auto-Scroll
+				TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
 
-			if (onLanguageChanged != null) onLanguageChanged.run();
+				if (onLanguageChanged != null) onLanguageChanged.run();
 
-			dialog.dispose();
-		});
+				// Hotkeys speichern
+				for (Map.Entry<String, Integer> entry : pendingHotkeys.entrySet()) {
+					TIDEPreferences.saveHotkey(entry.getKey(), entry.getValue());
+				}
+				for (Map.Entry<String, Integer> entry : pendingModifiers.entrySet()) {
+					TIDEPreferences.saveHotkeyModifier(entry.getKey(), entry.getValue());
+				}
+
+				dialog.dispose();
+			});
 
 		btnPanel.add(btnCancel);
 		btnPanel.add(btnApply);
@@ -176,12 +291,12 @@ public class SettingsDialog {
 		dialog.setVisible(true);
 	}
 
-	private JPanel createSection(String title) {
+	private JPanel createSection(String title, int height) {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.setBackground(new Color(43, 45, 48));
 		panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-		panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+		panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
 
 		TitledBorder border = BorderFactory.createTitledBorder(
 			BorderFactory.createLineBorder(new Color(80, 80, 80), 1),
@@ -189,8 +304,13 @@ public class SettingsDialog {
 		border.setTitleColor(new Color(180, 180, 180));
 		border.setTitleFont(new Font("Segoe UI", Font.PLAIN, 12));
 		panel.setBorder(BorderFactory.createCompoundBorder(
-			border,
-			new EmptyBorder(6, 8, 8, 8)));
+				border,
+				new EmptyBorder(6, 8, 8, 8)));
 		return panel;
+	}
+
+	// Overload für Abwärtskompatibilität – alle bisherigen Aufrufe bleiben unverändert
+	private JPanel createSection(String title) {
+		return createSection(title, 120);
 	}
 }

@@ -56,4 +56,18 @@ public class TIDEPreferences {
 		prefs.putInt("outlineWidth", width);
 	}
 
+	public static int getHotkey(String action, int defaultKey) {
+		return prefs.getInt("hotkey_" + action, defaultKey);
+	}
+	public static void saveHotkey(String action, int keyCode) {
+		prefs.putInt("hotkey_" + action, keyCode);
+	}
+
+	public static int getHotkeyModifier(String action, int defaultModifier) {
+		return prefs.getInt("hotkey_mod_" + action, defaultModifier);
+	}
+	public static void saveHotkeyModifier(String action, int modifier) {
+		prefs.putInt("hotkey_mod_" + action, modifier);
+	}
+
 }
