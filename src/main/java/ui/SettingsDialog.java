@@ -135,6 +135,32 @@ public class SettingsDialog {
 		content.add(visualPanel);
 		content.add(Box.createVerticalStrut(12));
 
+
+		// ── NEU: Scroll FPS Dropdown ──
+
+		JPanel fpsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+		fpsPanel.setBackground(new Color(43, 45, 48));
+
+		JLabel lblFps = new JLabel("Scroll Animations-FPS: ");
+		lblFps.setForeground(new Color(220, 220, 220));
+		lblFps.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+		Integer[] fpsOptions = { 60, 90, 144, 240 };
+		JComboBox<Integer> cbFps = new JComboBox<>(fpsOptions);
+		cbFps.setSelectedItem(TIDEPreferences.getScrollFPS());
+		cbFps.setBackground(new Color(60, 63, 65));
+		cbFps.setForeground(Color.WHITE);
+
+		fpsPanel.add(lblFps);
+		fpsPanel.add(cbFps);
+
+		visualPanel.add(fpsPanel);
+
+		visualPanel.add(motionBlurBox);
+		content.add(visualPanel);
+		content.add(Box.createVerticalStrut(12));
+
+
 		// ── Konsole ───────────────────────────────────────────────
 		JPanel consolePanel = createSection("Konsole / Console");
 
@@ -239,6 +265,7 @@ public class SettingsDialog {
 		content.add(hotkeyPanel);
 		content.add(Box.createVerticalStrut(12));
 
+
 		// ── Buttons ───────────────────────────────────────────────
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
 		btnPanel.setBackground(new Color(43, 45, 48));
@@ -275,6 +302,9 @@ public class SettingsDialog {
 
 				// Auto-Scroll
 				TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
+
+				int selectedFps = (int) cbFps.getSelectedItem();
+				TIDEPreferences.saveScrollFPS(selectedFps);
 
 				if (onLanguageChanged != null) onLanguageChanged.run();
 

@@ -295,9 +295,7 @@ public class EditorManager {
 						return;
 					}
 
-
 					float dynIntensity = MainWindow.dynIntensity;
-					int scrollDir      = MainWindow.scrollDir;
 
 					// ── Früh-Ausstieg: Wenn das System steht, sofort normal zeichnen ──
 					if (dynIntensity < 0.01f) {
@@ -337,16 +335,32 @@ public class EditorManager {
 					g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
 						RenderingHints.VALUE_RENDER_QUALITY);
 
-					// ── 1. DYNAMISCHER STRETCH (Gekoppelt an organischen Fluss) ──
-					// Basis-Stretch liegt bei schönen 2.8%. Da dynIntensity nun stabil steht,
-					// bleibt auch die Dehnung während des gesamten Scrollens absolut ruhig und zitterfrei.
+					// ── 1. REALISTIC ONE-WAY STRETCH (Kompensierter Richtungs-Stauch) ──
 					float stretchAmount = 0.028f * dynIntensity;
 					double scaleY = 1.0 + stretchAmount;
-					double anchorY = h / 2.0; 
 
+					double anchorY;
+					double translationY = 0.0;
+
+					// REPARATUR: Wir nutzen konsequent 'this.scrollDir' aus dem ScrollPane-State,
+					// damit die Richtung während der gesamten Bremsanimation stabil bleibt.
+					if (this.scrollDir > 0) {
+						// Nach unten scrollen -> Text fliegt hoch.
+						anchorY = 0.0; 
+						translationY = -h * stretchAmount;
+					} else if (this.scrollDir < 0) {
+						// Nach oben scrollen -> Text fliegt runter.
+						anchorY = (double) h;
+						translationY = h * stretchAmount;
+					} else {
+						anchorY = h / 2.0;
+					}
+
+					// Transformationen anwenden
 					g2d.translate(0, anchorY);
 					g2d.scale(1.0, scaleY);
 					g2d.translate(0, -anchorY);
+					g2d.translate(0, translationY);
 
 					// ── 2. Basis-Bild (Wird bei langem/schnellem Scrollen dezent transparenter) ──
 					float baseAlpha = 1.0f - (0.10f * dynIntensity);
@@ -356,13 +370,11 @@ public class EditorManager {
 					// ── 3. ORGANISCHER MOTION-BLUR TRAIL ────────────────────────
 					float blurAlpha = 0.48f * dynIntensity;
 					if (blurAlpha > 0.005f) {
-						int trailDir = -scrollDir; // Entgegen der Scrollrichtung
-						
-						// DYNAMISCHE LÄNGE: Scrollst du länger/schneller, wächst der Schweif
-						// organisch von 0 bis auf spürbare 22 Pixel an!
+						int trailDir = -this.scrollDir; // Entgegen der echten Scrollrichtung
+
 						float maxTrail = 22.0f * dynIntensity;
 
-						// Schicht 1: Nah und dicker (wird satter, je länger du scrollst)
+						// Schicht 1: Nah und dicker
 						g2d.setComposite(AlphaComposite.getInstance(
 								AlphaComposite.SRC_OVER, blurAlpha * 0.40f));
 						g2d.drawImage(volatileBuffer, 0, Math.round(maxTrail * 0.30f * trailDir), null);
@@ -416,7 +428,7 @@ public class EditorManager {
 			ac.install(textArea);
 
 			Set<String> knownWords = new HashSet<>();
-			String[] initialKeywords = {"public", "private", "static", "void", "class", "import",
+			String[] initialKeywords = {"public", "pri	vate", "static", "void", "class", "import",
 				"String", "int", "boolean", "new", "return"};
 			knownWords.addAll(Arrays.asList(initialKeywords));
 			String existingContent = textArea.getText();

@@ -77,4 +77,14 @@ public class TIDEPreferences {
 	public static void saveMotionBlurEnabled(boolean enabled) {
 		prefs.putBoolean("motionBlurEnabled", enabled);
 	}
+
+	// ── Scroll FPS Einstellungen ───────────────────────────────────────────
+	public static int getScrollFPS() {
+		// Gibt standardmäßig 60 (entspricht 16ms) zurück, falls nichts gespeichert ist
+		return prefs.getInt("scrollFPS", 60);
+	}
+
+	public static void saveScrollFPS(int fps) {
+		prefs.putInt("scrollFPS", fps);
+	}
 }
