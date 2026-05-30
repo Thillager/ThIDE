@@ -136,6 +136,8 @@ public class SettingsDialog {
 		content.add(Box.createVerticalStrut(12));
 
 
+
+
 		// ── NEU: Scroll FPS Dropdown ──
 
 		JPanel fpsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
@@ -159,6 +161,19 @@ public class SettingsDialog {
 		visualPanel.add(motionBlurBox);
 		content.add(visualPanel);
 		content.add(Box.createVerticalStrut(12));
+
+		JLabel restartHint = new JLabel(
+			"<html><font color='#C8C8C8'>"
+			+ "Hinweis: Nach Änderung der Scroll-FPS "
+			+ "wird ein Neustart empfohlen."
+			+ "</font></html>"
+		);
+
+		restartHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+		restartHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		visualPanel.add(Box.createVerticalStrut(4));
+		visualPanel.add(restartHint);
 
 
 		// ── Konsole ───────────────────────────────────────────────

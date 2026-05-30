@@ -232,55 +232,27 @@ public class EditorManager {
 			textArea.setCaretColor(Color.WHITE);
 
 
+			// ── Geteilte State-Holder für SmoothScroll ↔ Blur-Effekt ────────────
+			float[] sharedDynIntensity = { 0.0f };
+			int[]   sharedScrollDir    = { 0 };
+
 			// ─────────────────────────────────────────────────────────────────────
 			// MOTION-BLUR SCROLL-PANE
-			// Physikalisch korrekter Richtungs-Blur + Stretch entgegen der
-			// Scroll-Richtung, GPU-beschleunigt via VolatileImage.
 			// ─────────────────────────────────────────────────────────────────────
 			RTextScrollPane sp = new RTextScrollPane(textArea) {
 
 				// ── State ────────────────────────────────────────────────────────
 				private int   lastScrollValue = -1;
-				private int   rawDeltaY       = 0;   // letzter roher Scroll-Schritt
-				// lastScrollTime auf "sehr weit in der Vergangenheit" initialisieren,
-				// damit age beim ersten Paint sofort > SCROLL_ACTIVE_WINDOW_MS ist
-				// und kein Blur vor dem ersten Scrollen sichtbar wird.
-				private long  lastScrollTime  = Long.MIN_VALUE / 2;
-
-				// Blur-Intensität für den visuellen Effekt (nur Blur/Stretch,
-					// NICHT die eigentliche Scrollbewegung – die bleibt unberührt).
-				// Zeitbasiert abgebremst, damit kein Ruckeln entsteht.
-				private float blurIntensity  = 0.0f;
-				private int   scrollDir      = 0;    // +1 = runter, -1 = rauf
-
-				// lastPaintTime: -1 = noch nie gemalt → kein dt beim ersten Frame
-				private long  lastPaintTime  = -1;
-
-				// VolatileImage lebt im VRAM → kein CPU-Roundtrip
 				private VolatileImage volatileBuffer = null;
 
 				{
 					getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
 
-					// Blur-State NUR von echten Wheel-Events treiben, NICHT vom
-					// AdjustmentListener – der feuert auch vom Velocity-Timer und
-					// würde den Blur dauerhaft aktiviert halten.
-					addMouseWheelListener(e -> {
-							int rot = e.getWheelRotation();
-							if (rot != 0) {
-								rawDeltaY    = rot * 15; // skaliert auf px-äquivalent
-								scrollDir    = rot > 0 ? 1 : -1;
-								lastScrollTime = System.currentTimeMillis();
-							}
-						});
-
-					// AdjustmentListener nur noch für Richtungstracking beim
-					// programmatischen Scrollen (z.B. Goto-Line), NICHT für lastScrollTime
 					getVerticalScrollBar().addAdjustmentListener(e -> {
 							int newVal = e.getValue();
 							if (lastScrollValue != -1) {
 								int delta = newVal - lastScrollValue;
-								if (delta != 0) scrollDir = delta > 0 ? 1 : -1;
+								if (delta != 0) sharedScrollDir[0] = delta > 0 ? 1 : -1;
 							}
 							lastScrollValue = newVal;
 						});
@@ -290,12 +262,11 @@ public class EditorManager {
 				public void paint(Graphics g) {
 					// ── Motion Blur komplett deaktiviert? ────────────────────────
 					if (!TIDEPreferences.getMotionBlurEnabled()) {
-						rawDeltaY     = 0;
 						super.paint(g);
 						return;
 					}
 
-					float dynIntensity = MainWindow.dynIntensity;
+					float dynIntensity = sharedDynIntensity[0];
 
 					// ── Früh-Ausstieg: Wenn das System steht, sofort normal zeichnen ──
 					if (dynIntensity < 0.01f) {
@@ -330,49 +301,26 @@ public class EditorManager {
 
 					// ── Auf Haupt-Graphics rendern ────────────────────────────────
 					Graphics2D g2d = (Graphics2D) g.create();
-					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-						RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-					g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
-						RenderingHints.VALUE_RENDER_QUALITY);
 
-					// ── 1. REALISTIC ONE-WAY STRETCH (Kompensierter Richtungs-Stauch) ──
-					float stretchAmount = 0.028f * dynIntensity;
-					double scaleY = 1.0 + stretchAmount;
+					g2d.setRenderingHint(
+						RenderingHints.KEY_INTERPOLATION,
+						RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
+					);
 
-					double anchorY;
-					double translationY = 0.0;
 
-					// REPARATUR: Wir nutzen konsequent 'this.scrollDir' aus dem ScrollPane-State,
-					// damit die Richtung während der gesamten Bremsanimation stabil bleibt.
-					if (this.scrollDir > 0) {
-						// Nach unten scrollen -> Text fliegt hoch.
-						anchorY = 0.0; 
-						translationY = -h * stretchAmount;
-					} else if (this.scrollDir < 0) {
-						// Nach oben scrollen -> Text fliegt runter.
-						anchorY = (double) h;
-						translationY = h * stretchAmount;
-					} else {
-						anchorY = h / 2.0;
-					}
 
-					// Transformationen anwenden
-					g2d.translate(0, anchorY);
-					g2d.scale(1.0, scaleY);
-					g2d.translate(0, -anchorY);
-					g2d.translate(0, translationY);
-
-					// ── 2. Basis-Bild (Wird bei langem/schnellem Scrollen dezent transparenter) ──
+					// ── 1. Basis-Bild (Wird bei langem/schnellem Scrollen dezent transparenter) ──
+					// ── 2. Basis-Bild ────────────────────────────────────────────
 					float baseAlpha = 1.0f - (0.10f * dynIntensity);
 					g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, baseAlpha));
 					g2d.drawImage(volatileBuffer, 0, 0, null);
 
 					// ── 3. ORGANISCHER MOTION-BLUR TRAIL ────────────────────────
-					float blurAlpha = 0.48f * dynIntensity;
+					float blurAlpha = 0.75f * dynIntensity;
 					if (blurAlpha > 0.005f) {
-						int trailDir = -this.scrollDir; // Entgegen der echten Scrollrichtung
+						int trailDir = -sharedScrollDir[0]; // Entgegen der echten Scrollrichtung
 
-						float maxTrail = 22.0f * dynIntensity;
+						float maxTrail = 40.0f * dynIntensity;
 
 						// Schicht 1: Nah und dicker
 						g2d.setComposite(AlphaComposite.getInstance(
@@ -391,9 +339,11 @@ public class EditorManager {
 
 
 			sp.getVerticalScrollBar().setUnitIncrement(0);
+			javax.swing.Timer smoothScrollTimer = null;
 			if (parent instanceof MainWindow mw) {
-				mw.enableSmoothScrolling(sp);
+				smoothScrollTimer = mw.enableSmoothScrolling(sp, sharedDynIntensity, sharedScrollDir);
 			}
+			final javax.swing.Timer timerRef = smoothScrollTimer;
 			sp.getVerticalScrollBar().setUnitIncrement(
 				textArea.getFontMetrics(textArea.getFont()).getHeight()
 			);
@@ -407,7 +357,11 @@ public class EditorManager {
 			closeBtn.setBorder(null);
 			closeBtn.setContentAreaFilled(false);
 			closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-			closeBtn.addActionListener(e -> { openFiles.remove(sp); editorTabs.remove(sp); });
+			closeBtn.addActionListener(e -> {
+					if (timerRef != null) timerRef.stop(); // Memory Leak Fix
+					openFiles.remove(sp);
+					editorTabs.remove(sp);
+				});
 			tabHeader.add(closeBtn);
 
 			editorTabs.addTab(file.getName(), sp);

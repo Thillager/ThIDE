@@ -6,24 +6,36 @@ import java.awt.*;
 
 public class TIDE {
 
-	public static void main(String[] args) {
-		System.setProperty("sun.java2d.d3d", "false");
-		System.setProperty("sun.java2d.noddraw", "true");
+    public static void main(String[] args) {
 
-		UIManager.put("Component.arc", 8);
-		UIManager.put("Button.arc", 8);
-		UIManager.put("TextComponent.arc", 8);
-		UIManager.put("ScrollBar.thumbArc", 8);
-		UIManager.put("TabbedPane.selectedBackground", new Color(60, 63, 65));
-		UIManager.put("TabbedPane.showTabSeparators", true);
+        String os = System.getProperty("os.name", "").toLowerCase();
 
-		try {
-			UIManager.setLookAndFeel(new FlatDarkLaf());
-		} catch (Exception ex) {
-			System.err.println("Konnte FlatLaf nicht laden.");
-		}
+        if (os.contains("win")) {
+            // Windows: Direct3D ist schneller als OpenGL
+            System.setProperty("sun.java2d.d3d",    "true");
+            System.setProperty("sun.java2d.noddraw", "false"); // NICHT deaktivieren!
+        } else {
+            // Linux / macOS: OpenGL-Pipeline
+            System.setProperty("sun.java2d.opengl", "true");
+        }
 
+        // VolatileImage immer im VRAM halten (wichtig für den Blur-Effekt)
+        System.setProperty("sun.java2d.accthreshold", "0");
 
-		SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
-	}
+        // ── FlatLaf UI-Tweaks ───────────────────────────────────────────────
+        UIManager.put("Component.arc",              8);
+        UIManager.put("Button.arc",                 8);
+        UIManager.put("TextComponent.arc",          8);
+        UIManager.put("ScrollBar.thumbArc",         8);
+        UIManager.put("TabbedPane.selectedBackground", new Color(60, 63, 65));
+        UIManager.put("TabbedPane.showTabSeparators",  true);
+
+        try {
+            UIManager.setLookAndFeel(new FlatDarkLaf());
+        } catch (Exception ex) {
+            System.err.println("Konnte FlatLaf nicht laden.");
+        }
+
+        SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
+    }
 }

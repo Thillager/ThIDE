@@ -93,21 +93,9 @@ public class MainWindow extends JFrame {
 	private double targetScrollY = 0;
 
 
-	public static int rawDeltaY = 0;
 
-
-	public static double currentVelocity = 0.0;
-	public static int scrollDir = 0;
-	public static float dynIntensity = 0.0f;
 
 	public MainWindow() {
-
-		// Hardware-Beschleunigung für OpenGL/Direct3D erzwingen
-		System.setProperty("sun.java2d.opengl", "true"); 
-		System.setProperty("sun.java2d.d3d", "true");
-
-		// Die künstliche 60Hz-Bremse des RepaintManagers komplett deaktivieren
-		System.setProperty("sun.java2d.noddraw", "true");
 
 		LanguageManager.Language lang =
 		LanguageManager.Language.valueOf(TIDEPreferences.getLanguage());
@@ -380,7 +368,6 @@ public class MainWindow extends JFrame {
 					verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight());
 			});
 
-		// ← NEU: Editor+Console | Outline
 		editorOutlineSplit = new JSplitPane(
 			JSplitPane.HORIZONTAL_SPLIT, verticalSplit, outlinePanel);
 		editorOutlineSplit.setResizeWeight(1.0); 
@@ -589,19 +576,53 @@ public class MainWindow extends JFrame {
 		return list;
 	}
 
-	public void enableSmoothScrolling(JScrollPane scrollPane) {
+	public Timer enableSmoothScrolling(JScrollPane scrollPane) {
+		return enableSmoothScrolling(scrollPane, null, null);
+	}
+
+	/**
+	* Überladung für Editor-ScrollPanes: die übergebenen Holder werden
+	* im Timer-Callback beschrieben, damit die anonyme ScrollPane-Subklasse
+	* im EditorManager direkt darauf zugreifen kann – ohne globalen Static-State.
+	*/
+	public Timer enableSmoothScrolling(JScrollPane scrollPane,
+		float[] sharedDynIntensity,
+		int[]   sharedScrollDir) {
 		JScrollBar bar = scrollPane.getVerticalScrollBar();
+
+		double[] velocity     = { 0.0 };
+		int[]    scrollDir    = sharedScrollDir    != null ? sharedScrollDir    : new int[]  { 0 };
+		float[]  dynIntensity = sharedDynIntensity != null ? sharedDynIntensity : new float[]{ 0.0f };
+		long[]   lastTick     = { System.nanoTime() };  // ← NEU: Zeit des letzten Ticks
+
+		// Feste Physik-Konstanten (unabhängig von FPS)
+		// Reibung pro Sekunde: Velocity fällt auf diesen Bruchteil ab
+		final double FRICTION_PER_SECOND = 0.000002;
+
 		Timer timer = new Timer(7, null);
 
 		timer.addActionListener(e -> {
-				// ── 1. KNACKIGER STOPP ──────────────────────────────────────────
-				if (Math.abs(currentVelocity) < 1.5) {
-					currentVelocity = 0.0;
+				// ── Zeitdelta berechnen ──────────────────────────────────────────
+				long now = System.nanoTime();
+				double dt = (now - lastTick[0]) / 1_000_000_000.0; // Sekunden
+				lastTick[0] = now;
 
-					// Beim echten Stopp fadet der Effekt nun organisch aus, statt gelöscht zu werden
-					dynIntensity *= 0.70f;
-					if (dynIntensity < 0.01f) {
-						dynIntensity = 0.0f;
+				// dt deckeln: wenn der Timer kurz pausiert war (Tab-Wechsel, GC),
+				// soll er nicht plötzlich einen riesigen Sprung machen
+				if (dt > 0.1) dt = 0.1;
+
+				// ── Zeitbasierte Reibung ─────────────────────────────────────────
+				// Math.pow(FRICTION_PER_SECOND, dt) ergibt bei dt=1/60s exakt
+				// den gleichen Effekt wie früher 0.65 pro Frame bei 60fps –
+				// aber jetzt auch bei 144fps oder nach einem Tab-Wechsel korrekt.
+				velocity[0] *= Math.pow(FRICTION_PER_SECOND, dt);
+
+				// ── Stopp-Schwelle ───────────────────────────────────────────────
+				if (Math.abs(velocity[0]) < 3.0) {
+					velocity[0] = 0.0;
+					dynIntensity[0] *= (float) Math.pow(0.001, dt); // schnelles Ausblenden
+					if (dynIntensity[0] < 0.01f) {
+						dynIntensity[0] = 0.0f;
 						timer.stop();
 					}
 					scrollPane.paintImmediately(0, 0, scrollPane.getWidth(), scrollPane.getHeight());
@@ -609,65 +630,66 @@ public class MainWindow extends JFrame {
 				}
 
 				double current = bar.getValue();
-				double nextPos = current + currentVelocity;
+				double nextPos = current + velocity[0] * dt * 60.0; // normiert auf 60fps-Gefühl
 
 				int max = bar.getMaximum() - bar.getVisibleAmount();
-				if (nextPos < 0) {
-					nextPos = 0;
-					currentVelocity = 0.0; 
-				} else if (nextPos > max) {
-					nextPos = max;
-					currentVelocity = 0.0;
-				}
+				if (nextPos < 0)        { nextPos = 0;   velocity[0] = 0.0; }
+				else if (nextPos > max) { nextPos = max;  velocity[0] = 0.0; }
 
 				bar.setValue((int) Math.round(nextPos));
 
-				// Knackige Reibung für das Scrollen (35% Verlust pro Frame)
-				currentVelocity *= 0.65;
+				if      (velocity[0] > 0.1)  scrollDir[0] = 1;
+				else if (velocity[0] < -0.1) scrollDir[0] = -1;
 
-				if (currentVelocity > 0.1) scrollDir = 1;
-				else if (currentVelocity < -0.1) scrollDir = -1;
-
-				// ── 2. ORGANISCHER EFFEKT-SPEICHER ──────────────────────────────
-				// Wir berechnen die Wunsch-Intensität basierend auf dem aktuellen Tempo
-				float targetIntensity = (float) Math.min(Math.abs(currentVelocity) / 45.0, 1.0);
-
-				// Anstatt dynIntensity hart zu setzen, gleitet sie jetzt langsam zum Ziel!
-				// Wenn targetIntensity höher ist, lädt sie sich auf. 
-				// Wenn targetIntensity in deinen Dreh-Pausen kurz absinkt, hält dynIntensity die Stellung!
-				if (targetIntensity > dynIntensity) {
-					dynIntensity += (targetIntensity - dynIntensity) * 0.20f; // Sanfter Aufbau (Trägheit)
-				} else {
-					dynIntensity += (targetIntensity - dynIntensity) * 0.10f; // Noch langsameres Abklingen bei Pausen!
-				}
+				// ── dynIntensity zeitbasiert ─────────────────────────────────────
+				// dynIntensity zeitbasiert ─────────────────────────────────────
+				float targetIntensity = (float) Math.min(Math.abs(velocity[0]) / 20.0, 1.0);  // war 45.0 → erreicht 1.0 schon früher
+				double riseRate = Math.pow(0.0001, dt * 60);  // war 0.001 → noch schneller
+				double fallRate = Math.pow(0.05,   dt * 60);  // war 0.08 → schnelleres Abklingen
+				if (targetIntensity > dynIntensity[0])
+				dynIntensity[0] += (float)((targetIntensity - dynIntensity[0]) * (1.0 - riseRate));
+				else
+				dynIntensity[0] += (float)((targetIntensity - dynIntensity[0]) * (1.0 - fallRate));
 
 				scrollPane.repaint();
 			});
 
 		scrollPane.addMouseWheelListener(e -> {
-				e.consume(); 
+				e.consume();
 
-				// ── DYNAMISCHE FPS AUS DEN PREFERENCES LESEN ──
-				int fps = config.TIDEPreferences.getScrollFPS();
-				// Formel: 1000ms / FPS. Bei 60 FPS -> 16ms, bei 144 FPS -> 6ms
-				int delayMs = Math.max(1, 1000 / fps); 
-				timer.setDelay(delayMs);
+				int fps     = config.TIDEPreferences.getScrollFPS();
+				int delayMs = Math.max(1, 1000 / fps);
 
-				int rotation = e.getWheelRotation();
+				if (timer.getDelay() != delayMs) {
+					timer.setDelay(delayMs);
+
+					velocity[0] = 0.0;
+					dynIntensity[0] = 0.0f;
+					scrollDir[0] = 0;
+					lastTick[0] = System.nanoTime();
+				}
+
+				lastTick[0] = System.nanoTime();
+
+				int rotation  = e.getWheelRotation();
 				int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
 
-				double push = rotation * increment * 4.5;
-				currentVelocity += push;
+				// Impuls stärker machen damit mehrere Scrolls sich aufbauen können
+				double push = rotation * increment * 8.0;  // war 4.5
+				velocity[0] += push;
 
-				double maxSpeed = 80.0;
-				if (currentVelocity > maxSpeed)  currentVelocity = maxSpeed;
-				if (currentVelocity < -maxSpeed) currentVelocity = -maxSpeed;
+				// Maximalgeschwindigkeit ebenfalls hochsetzen
+				double maxSpeed = 160.0;  // war 80.0
+				if (velocity[0] >  maxSpeed) velocity[0] =  maxSpeed;
+				if (velocity[0] < -maxSpeed) velocity[0] = -maxSpeed;
 
 				if (!timer.isRunning()) timer.start();
 			});
 
 		bar.setUnitIncrement(16);
+		return timer;
 	}
+
 
 	private void openFolderDialog() {
 		JFileChooser chooser = new JFileChooser(System.getProperty("user.home"));
