@@ -344,8 +344,6 @@ public class MainWindow extends JFrame {
 		toolBar.add(btnTBuild);
 		toolBar.add(Box.createHorizontalStrut(5));
 		toolBar.add(gitMenuBar);
-		toolBar.add(Box.createHorizontalStrut(15));
-		toolBar.add(langSel);
 		toolBar.add(Box.createHorizontalStrut(10));
 		toolBar.add(btnClear);
 		toolBar.add(Box.createHorizontalStrut(5));
