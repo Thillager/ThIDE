@@ -8,12 +8,14 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import ui.ConsolePanel;
 import ui.WordManagerDialog;
 import ui.MainWindow;
+import config.TIDEPreferences;
 import config.TIDEProperties;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.image.VolatileImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -230,136 +232,150 @@ public class EditorManager {
 			textArea.setCaretColor(Color.WHITE);
 
 
+			// ─────────────────────────────────────────────────────────────────────
+			// MOTION-BLUR SCROLL-PANE
+			// Physikalisch korrekter Richtungs-Blur + Stretch entgegen der
+			// Scroll-Richtung, GPU-beschleunigt via VolatileImage.
+			// ─────────────────────────────────────────────────────────────────────
+			RTextScrollPane sp = new RTextScrollPane(textArea) {
 
-			// --- ANONYME UNTERKLASSE FÜR UNREISSBARES, BUTTERWEICHES SCROLLEN ---
-            RTextScrollPane sp = new RTextScrollPane(textArea) {
-                private int lastValue = -1;
-                private int deltaY = 0;
-                private long lastScrollTime = 0;
+				// ── State ────────────────────────────────────────────────────────
+				private int   lastScrollValue = -1;
+				private int   rawDeltaY       = 0;   // letzter roher Scroll-Schritt
+				// lastScrollTime auf "sehr weit in der Vergangenheit" initialisieren,
+				// damit age beim ersten Paint sofort > SCROLL_ACTIVE_WINDOW_MS ist
+				// und kein Blur vor dem ersten Scrollen sichtbar wird.
+				private long  lastScrollTime  = Long.MIN_VALUE / 2;
 
-                // --- NEU: Das mathematische Schwungrad ---
-                private float smoothedSpeed = 0.0f;
-                private long lastPaintTime = 0;
+				// Blur-Intensität für den visuellen Effekt (nur Blur/Stretch,
+					// NICHT die eigentliche Scrollbewegung – die bleibt unberührt).
+				// Zeitbasiert abgebremst, damit kein Ruckeln entsteht.
+				private float blurIntensity  = 0.0f;
+				private int   scrollDir      = 0;    // +1 = runter, -1 = rauf
 
-                {
-                    this.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+				// lastPaintTime: -1 = noch nie gemalt → kein dt beim ersten Frame
+				private long  lastPaintTime  = -1;
 
-                    this.getVerticalScrollBar().addAdjustmentListener(e -> {
-                            if (lastValue != -1) {
-                                deltaY = e.getValue() - lastValue;
-                            }
-                            lastValue = e.getValue();
-                            lastScrollTime = System.currentTimeMillis();
-                        });
-                }
+				// VolatileImage lebt im VRAM → kein CPU-Roundtrip
+				private VolatileImage volatileBuffer = null;
 
-                @Override
-                public void paint(Graphics g) {
-                    long now = System.currentTimeMillis();
-                    long age = now - lastScrollTime;
+				{
+					getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
 
-                    // Zeitdifferenz (Delta Time) seit dem letzten Frame berechnen
-                    if (lastPaintTime == 0) lastPaintTime = now;
-                    float deltaTime = (now - lastPaintTime) / 1000.0f;
-                    lastPaintTime = now;
+					// Blur-State NUR von echten Wheel-Events treiben, NICHT vom
+					// AdjustmentListener – der feuert auch vom Velocity-Timer und
+					// würde den Blur dauerhaft aktiviert halten.
+					addMouseWheelListener(e -> {
+							int rot = e.getWheelRotation();
+							if (rot != 0) {
+								rawDeltaY    = rot * 15; // skaliert auf px-äquivalent
+								scrollDir    = rot > 0 ? 1 : -1;
+								lastScrollTime = System.currentTimeMillis();
+							}
+						});
 
-                    // 1. SCHWUNGRAD-PHYSIK BERECHNEN
-                    if (age < 150 && Math.abs(deltaY) > 2) {
-                        // Wenn gescrollt wird, folgt die geglättete Geschwindigkeit sanft dem echten Input
-                        float targetSpeed = Math.max(0.0f, Math.abs(deltaY) - 3.0f);
-                        // Lerp: Wir nähern uns dem Zielwert stetig an (0.25 = Trägheitsfaktor)
-                        smoothedSpeed += (targetSpeed - smoothedSpeed) * 0.25f;
-                    } else {
-                        // Wenn die Maus stoppt, bremst das Schwungrad mathematisch perfekt linear ab
-                        // Völlig unabhängig davon, ob das OS unruhige Rest-Werte liefert!
-                        smoothedSpeed -= 80.0f * deltaTime; // Bremskraft
-                    }
+					// AdjustmentListener nur noch für Richtungstracking beim
+					// programmatischen Scrollen (z.B. Goto-Line), NICHT für lastScrollTime
+					getVerticalScrollBar().addAdjustmentListener(e -> {
+							int newVal = e.getValue();
+							if (lastScrollValue != -1) {
+								int delta = newVal - lastScrollValue;
+								if (delta != 0) scrollDir = delta > 0 ? 1 : -1;
+							}
+							lastScrollValue = newVal;
+						});
+				}
 
-                    // Totalschutz gegen Unterlauf
-                    if (smoothedSpeed < 0.0f) smoothedSpeed = 0.0f;
+				@Override
+				public void paint(Graphics g) {
+					// ── Motion Blur komplett deaktiviert? ────────────────────────
+					if (!TIDEPreferences.getMotionBlurEnabled()) {
+						rawDeltaY     = 0;
+						super.paint(g);
+						return;
+					}
 
-                    // BLITZSCHNELLER ABBRUCH: Erst wenn das Schwungrad komplett steht, schalten wir ab
-                    if (smoothedSpeed <= 0.1f && age > 150) {
-                        smoothedSpeed = 0.0f;
-                        deltaY = 0;
-                        lastValue = getVerticalScrollBar().getValue();
-                        super.paint(g);
-                        return;
-                    }
 
-                    int w = getWidth();
-                    int h = getHeight();
+					float dynIntensity = MainWindow.dynIntensity;
+					int scrollDir      = MainWindow.scrollDir;
 
-                    // VolatileImage (VRAM) bereitstellen
-                    if (volatileBuffer == null || volatileBuffer.getWidth() != w || volatileBuffer.getHeight() != h 
-                        || volatileBuffer.validate(getGraphicsConfiguration()) == java.awt.image.VolatileImage.IMAGE_INCOMPATIBLE) {
-                        volatileBuffer = getGraphicsConfiguration().createCompatibleVolatileImage(w, h, Transparency.TRANSLUCENT);
-                    }
+					// ── Früh-Ausstieg: Wenn das System steht, sofort normal zeichnen ──
+					if (dynIntensity < 0.01f) {
+						super.paint(g);
+						return;
+					}
 
-                    do {
-                        Graphics2D gBuffer = volatileBuffer.createGraphics();
-                        gBuffer.setComposite(AlphaComposite.Clear);
-                        gBuffer.fillRect(0, 0, w, h);
-                        gBuffer.setComposite(AlphaComposite.SrcOver);
-                        super.paint(gBuffer);
-                        gBuffer.dispose();
-                    } while (volatileBuffer.contentsLost());
+					int w = getWidth();
+					int h = getHeight();
 
-                    // Render-Vorbereitung auf der GPU
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+					// ── VolatileImage (VRAM) frisch halten ───────────────────────
+					GraphicsConfiguration gc = getGraphicsConfiguration();
+					if (volatileBuffer == null
+						|| volatileBuffer.getWidth()  != w
+						|| volatileBuffer.getHeight() != h
+						|| volatileBuffer.validate(gc) == VolatileImage.IMAGE_INCOMPATIBLE) {
+						if (volatileBuffer != null) volatileBuffer.flush();
+						volatileBuffer = gc.createCompatibleVolatileImage(w, h, Transparency.OPAQUE);
+					}
 
-                    // 2. INTENSITÄT AUS DEM SCHWUNGRAD ABLEITEN
-                    float speedFactor = smoothedSpeed / 35.0f; // Normiert auf 35 Pixel
-                    float dynamicIntensity = Math.min(speedFactor * speedFactor, 1.0f);
+					do {
+						if (volatileBuffer.validate(gc) == VolatileImage.IMAGE_INCOMPATIBLE) {
+							volatileBuffer.flush();
+							volatileBuffer = gc.createCompatibleVolatileImage(w, h, Transparency.OPAQUE);
+						}
+						Graphics2D gBuf = volatileBuffer.createGraphics();
+						gBuf.setRenderingHint(RenderingHints.KEY_RENDERING,
+							RenderingHints.VALUE_RENDER_SPEED);
+						super.paint(gBuf);
+						gBuf.dispose();
+					} while (volatileBuffer.contentsLost());
 
-                    // 3. ELASTISCHER STRETCH
-                    float stretchFactor = 1.0f + (0.07f * dynamicIntensity);
-                    g2d.translate(w / 2.0, h / 2.0);
-                    g2d.scale(1.0, stretchFactor);
-                    g2d.translate(-w / 2.0, -h / 2.0);
+					// ── Auf Haupt-Graphics rendern ────────────────────────────────
+					Graphics2D g2d = (Graphics2D) g.create();
+					g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+						RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+					g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
+						RenderingHints.VALUE_RENDER_QUALITY);
 
-                    // 4. TEXT-BASIS GRAFIK
-                    float mainAlpha = 1.0f - (0.15f * dynamicIntensity); 
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, mainAlpha));
-                    g2d.drawImage(volatileBuffer, 0, 0, null);
+					// ── 1. DYNAMISCHER STRETCH (Gekoppelt an organischen Fluss) ──
+					// Basis-Stretch liegt bei schönen 2.8%. Da dynIntensity nun stabil steht,
+					// bleibt auch die Dehnung während des gesamten Scrollens absolut ruhig und zitterfrei.
+					float stretchAmount = 0.028f * dynIntensity;
+					double scaleY = 1.0 + stretchAmount;
+					double anchorY = h / 2.0; 
 
-                   // 5. PHYSIKALISCH KORREKTER RICHTUNGS-BEWEGUNGSSCHWEIF
-                    float blurAlpha = 0.35f * dynamicIntensity;
-                    if (blurAlpha > 0.01f) {
-                        // Richtung bestimmen: Scrollst du runter, fliegt der Text hoch, 
-                        // also muss der Schweif nach unten wegziehen (und umgekehrt).
-                        int directionSign = deltaY > 0 ? 1 : -1;
-                        
-                        // Maximale Reichweite des Schweifs (bis zu 12 Pixel bei Vollgas)
-                        float maxTrail = 12.0f * dynamicIntensity;
+					g2d.translate(0, anchorY);
+					g2d.scale(1.0, scaleY);
+					g2d.translate(0, -anchorY);
 
-                        // Kaskadierter Schweif: 3 Schichten, die nach hinten hin feiner und transparenter werden
-                        // Das verhindert die künstliche Trübheit und erzeugt ein echtes "Wegziehen"
-                        
-                        // Schicht 1: Nah am Original, relativ dicht
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.5f));
-                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 0.3f * directionSign), null);
+					// ── 2. Basis-Bild (Wird bei langem/schnellem Scrollen dezent transparenter) ──
+					float baseAlpha = 1.0f - (0.10f * dynIntensity);
+					g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, baseAlpha));
+					g2d.drawImage(volatileBuffer, 0, 0, null);
 
-                        // Schicht 2: Mittlerer Abstand, halbe Deckkraft
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.3f));
-                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 0.6f * directionSign), null);
+					// ── 3. ORGANISCHER MOTION-BLUR TRAIL ────────────────────────
+					float blurAlpha = 0.48f * dynIntensity;
+					if (blurAlpha > 0.005f) {
+						int trailDir = -scrollDir; // Entgegen der Scrollrichtung
+						
+						// DYNAMISCHE LÄNGE: Scrollst du länger/schneller, wächst der Schweif
+						// organisch von 0 bis auf spürbare 22 Pixel an!
+						float maxTrail = 22.0f * dynIntensity;
 
-                        // Schicht 3: Weit weg, hauchzart auslaufend
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, blurAlpha * 0.15f));
-                        g2d.drawImage(volatileBuffer, 0, (int)(maxTrail * 1.0f * directionSign), null);
-                    }
+						// Schicht 1: Nah und dicker (wird satter, je länger du scrollst)
+						g2d.setComposite(AlphaComposite.getInstance(
+								AlphaComposite.SRC_OVER, blurAlpha * 0.40f));
+						g2d.drawImage(volatileBuffer, 0, Math.round(maxTrail * 0.30f * trailDir), null);
 
-                    g2d.dispose();
+						// Schicht 2: Der dynamische Ausläufer
+						g2d.setComposite(AlphaComposite.getInstance(
+								AlphaComposite.SRC_OVER, blurAlpha * 0.20f));
+						g2d.drawImage(volatileBuffer, 0, Math.round(maxTrail * 0.80f * trailDir), null);
+					}
 
-                    // Animations-Loop aktiv halten, solange das Schwungrad dreht
-                    repaint();
-                }
-
-                private java.awt.image.VolatileImage volatileBuffer = null;
-            };
-
+					g2d.dispose();
+				}
+			};
 
 
 			sp.getVerticalScrollBar().setUnitIncrement(0);

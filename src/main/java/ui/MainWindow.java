@@ -88,6 +88,18 @@ public class MainWindow extends JFrame {
 	private JSplitPane editorOutlineSplit; 
 	private OutlinePanel outlinePanel;
 
+
+	private Timer smoothScrollTimer;
+	private double targetScrollY = 0;
+
+
+	public static int rawDeltaY = 0;
+
+
+	public static double currentVelocity = 0.0;
+	public static int scrollDir = 0;
+	public static float dynIntensity = 0.0f;
+
 	public MainWindow() {
 
 		LanguageManager.Language lang =
@@ -573,77 +585,76 @@ public class MainWindow extends JFrame {
 	}
 
 	public void enableSmoothScrolling(JScrollPane scrollPane) {
-
 		JScrollBar bar = scrollPane.getVerticalScrollBar();
-
-		final int[] target = {
-			bar.getValue()
-		};
-
-		final boolean[] animating = {
-			false
-		};
-
-		Timer timer = new Timer(1000 / 120, null);
+		Timer timer = new Timer(16, null);
 
 		timer.addActionListener(e -> {
-
-				int current = bar.getValue();
-
-				int diff = target[0] - current;
-
-				// stop
-				if (Math.abs(diff) <= 1) {
-
-					bar.setValue(target[0]);
-
-					animating[0] = false;
-
-					return;
+			// ── 1. KNACKIGER STOPP ──────────────────────────────────────────
+			if (Math.abs(currentVelocity) < 1.5) {
+				currentVelocity = 0.0;
+				
+				// Beim echten Stopp fadet der Effekt nun organisch aus, statt gelöscht zu werden
+				dynIntensity *= 0.70f;
+				if (dynIntensity < 0.01f) {
+					dynIntensity = 0.0f;
+					timer.stop();
 				}
+				scrollPane.repaint();
+				return;
+			}
 
-				// smooth interpolation
-				int step = (int)(diff * 0.22);
+			double current = bar.getValue();
+			double nextPos = current + currentVelocity;
 
-				// minimum movement
-				if (step == 0) {
-					step = diff > 0 ? 1 : -1;
-				}
+			int max = bar.getMaximum() - bar.getVisibleAmount();
+			if (nextPos < 0) {
+				nextPos = 0;
+				currentVelocity = 0.0; 
+			} else if (nextPos > max) {
+				nextPos = max;
+				currentVelocity = 0.0;
+			}
 
-				bar.setValue(current + step);
-			});
+			bar.setValue((int) Math.round(nextPos));
+
+			// Knackige Reibung für das Scrollen (35% Verlust pro Frame)
+			currentVelocity *= 0.65;
+
+			if (currentVelocity > 0.1) scrollDir = 1;
+			else if (currentVelocity < -0.1) scrollDir = -1;
+
+			// ── 2. ORGANISCHER EFFEKT-SPEICHER ──────────────────────────────
+			// Wir berechnen die Wunsch-Intensität basierend auf dem aktuellen Tempo
+			float targetIntensity = (float) Math.min(Math.abs(currentVelocity) / 45.0, 1.0);
+			
+			// Anstatt dynIntensity hart zu setzen, gleitet sie jetzt langsam zum Ziel!
+			// Wenn targetIntensity höher ist, lädt sie sich auf. 
+			// Wenn targetIntensity in deinen Dreh-Pausen kurz absinkt, hält dynIntensity die Stellung!
+			if (targetIntensity > dynIntensity) {
+				dynIntensity += (targetIntensity - dynIntensity) * 0.20f; // Sanfter Aufbau (Trägheit)
+			} else {
+				dynIntensity += (targetIntensity - dynIntensity) * 0.10f; // Noch langsameres Abklingen bei Pausen!
+			}
+
+			scrollPane.repaint();
+		});
 
 		scrollPane.addMouseWheelListener(e -> {
+			e.consume(); 
+			int rotation = e.getWheelRotation();
+			int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
 
-				e.consume();
+			double push = rotation * increment * 4.5;
+			currentVelocity += push;
 
-				int rotation = e.getWheelRotation();
+			double maxSpeed = 80.0;
+			if (currentVelocity > maxSpeed)  currentVelocity = maxSpeed;
+			if (currentVelocity < -maxSpeed) currentVelocity = -maxSpeed;
 
-				int increment = bar.getUnitIncrement();
+			if (!timer.isRunning()) timer.start();
+		});
 
-				if (increment <= 0) {
-					increment = 16;
-				}
-
-				target[0] += rotation * increment * 6;
-
-				int max = bar.getMaximum()
-				- bar.getVisibleAmount();
-
-				target[0] = Math.max(
-					0,
-					Math.min(target[0], max)
-				);
-
-				if (!animating[0]) {
-
-					animating[0] = true;
-
-					timer.start();
-				}
-			});
-
-		bar.setUnitIncrement(0);
+		bar.setUnitIncrement(16);
 	}
 
 	private void openFolderDialog() {

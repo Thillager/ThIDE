@@ -70,4 +70,11 @@ public class TIDEPreferences {
 		prefs.putInt("hotkey_mod_" + action, modifier);
 	}
 
+	// ── Motion Blur ───────────────────────────────────────────
+	public static boolean getMotionBlurEnabled() {
+		return prefs.getBoolean("motionBlurEnabled", true);
+	}
+	public static void saveMotionBlurEnabled(boolean enabled) {
+		prefs.putBoolean("motionBlurEnabled", enabled);
+	}
 }

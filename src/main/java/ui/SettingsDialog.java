@@ -32,7 +32,7 @@ public class SettingsDialog {
 
 	public void show() {
 		JDialog dialog = new JDialog(parent, "Einstellunge / Settings", true);
-		dialog.setSize(480, 420);
+		dialog.setSize(480, 480);
 		dialog.setLocationRelativeTo(parent);
 		dialog.setLayout(new BorderLayout(10, 10));
 		dialog.getContentPane().setBackground(new Color(43, 45, 48));
@@ -119,6 +119,22 @@ public class SettingsDialog {
 		content.add(acPanel);
 		content.add(Box.createVerticalStrut(12));
 
+		// ── Visuell ───────────────────────────────────────────────
+		JPanel visualPanel = createSection("Visuell / Visual", 80);
+
+		JCheckBox motionBlurBox = new JCheckBox(
+			"Scroll-Effekte aktiviert (Motion Blur & Stretch)",
+			TIDEPreferences.getMotionBlurEnabled());
+		motionBlurBox.setBackground(new Color(43, 45, 48));
+		motionBlurBox.setForeground(new Color(200, 200, 200));
+		motionBlurBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+		motionBlurBox.setToolTipText(
+			"Motion Blur und Stretch-Effekt beim Scrollen ein-/ausschalten");
+
+		visualPanel.add(motionBlurBox);
+		content.add(visualPanel);
+		content.add(Box.createVerticalStrut(12));
+
 		// ── Konsole ───────────────────────────────────────────────
 		JPanel consolePanel = createSection("Konsole / Console");
 
@@ -133,10 +149,8 @@ public class SettingsDialog {
 		content.add(consolePanel);
 
 		// ── Hotkeys ───────────────────────────────────────────────
-		// ── Hotkeys ───────────────────────────────────────────────
 		JPanel hotkeyPanel = createSection("Hotkeys", 230);
 
-		// action | Beschriftung | Standard-KeyCode
 		// action | Beschriftung | Standard-KeyCode | Standard-Modifier
 		Object[][] hotkeyDefs = {
 			{ "save",    "Speichern",     KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK },
@@ -163,7 +177,6 @@ public class SettingsDialog {
 			descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 			descLabel.setForeground(new Color(200, 200, 200));
 
-			// Statt nur: KeyEvent.getKeyText(savedKey)
 			int savedMod = TIDEPreferences.getHotkeyModifier(action, defaultMod);
 			String initModText = "";
 			if ((savedMod & InputEvent.CTRL_DOWN_MASK)  != 0) initModText += "Strg+";
@@ -177,10 +190,9 @@ public class SettingsDialog {
 			keyField.setBorder(BorderFactory.createCompoundBorder(
 					BorderFactory.createLineBorder(new Color(80, 80, 80)),
 					BorderFactory.createEmptyBorder(2, 6, 2, 6)));
-			keyField.setEditable(false);  // nur per Tastendruck setzen
+			keyField.setEditable(false);
 			keyField.setMaximumSize(new Dimension(80, 26));
 
-			// Tastendruck aufnehmen
 			keyField.addKeyListener(new KeyAdapter() {
 					@Override
 					public void keyPressed(KeyEvent e) {
@@ -188,13 +200,11 @@ public class SettingsDialog {
 						if (code == KeyEvent.VK_CONTROL || code == KeyEvent.VK_SHIFT
 							|| code == KeyEvent.VK_ALT || code == KeyEvent.VK_META) return;
 
-						// Modifier zusammenbauen
 						int mod = 0;
 						if (e.isControlDown()) mod |= InputEvent.CTRL_DOWN_MASK;
 						if (e.isShiftDown())   mod |= InputEvent.SHIFT_DOWN_MASK;
 						if (e.isAltDown())     mod |= InputEvent.ALT_DOWN_MASK;
 
-						// Anzeige z.B. "Strg+Shift+R"
 						String modText = "";
 						if (e.isControlDown()) modText += "Strg+";
 						if (e.isShiftDown())   modText += "Shift+";
@@ -208,7 +218,6 @@ public class SettingsDialog {
 					}
 				});
 
-			// Fokus-Highlight
 			keyField.addFocusListener(new java.awt.event.FocusAdapter() {
 					@Override public void focusGained(java.awt.event.FocusEvent e) {
 						keyField.setBorder(BorderFactory.createCompoundBorder(
@@ -229,8 +238,6 @@ public class SettingsDialog {
 		hotkeyPanel.add(tablePanel);
 		content.add(hotkeyPanel);
 		content.add(Box.createVerticalStrut(12));
-
-		// ── 
 
 		// ── Buttons ───────────────────────────────────────────────
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
@@ -262,6 +269,9 @@ public class SettingsDialog {
 
 				// Autocomplete-Delay
 				TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
+
+				// Motion Blur
+				TIDEPreferences.saveMotionBlurEnabled(motionBlurBox.isSelected());
 
 				// Auto-Scroll
 				TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
@@ -309,7 +319,7 @@ public class SettingsDialog {
 		return panel;
 	}
 
-	// Overload für Abwärtskompatibilität – alle bisherigen Aufrufe bleiben unverändert
+	// Overload für Abwärtskompatibilität
 	private JPanel createSection(String title) {
 		return createSection(title, 120);
 	}
