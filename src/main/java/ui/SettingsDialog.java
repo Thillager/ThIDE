@@ -162,6 +162,44 @@ public class SettingsDialog {
 		content.add(visualPanel);
 		content.add(Box.createVerticalStrut(12));
 
+		// ── NEU: Scroll-Geschwindigkeit Slider ──
+JPanel speedPanel = new JPanel(new BorderLayout(10, 0));
+speedPanel.setBackground(new Color(43, 45, 48));
+speedPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+speedPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+JLabel lblSpeedDesc = new JLabel("Scroll-Geschwindigkeit: ");
+lblSpeedDesc.setForeground(new Color(220, 220, 220));
+lblSpeedDesc.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+int currentSpeed = TIDEPreferences.getScrollSpeed();
+JLabel speedValueLabel = new JLabel(currentSpeed + "%");
+speedValueLabel.setForeground(new Color(200, 200, 200));
+speedValueLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
+speedValueLabel.setPreferredSize(new Dimension(45, 20));
+
+// Slider von 50% bis 250% Geschwindigkeit
+JSlider speedSlider = new JSlider(50, 250, currentSpeed);
+speedSlider.setBackground(new Color(43, 45, 48));
+speedSlider.setForeground(new Color(200, 200, 200));
+speedSlider.setMajorTickSpacing(50);
+speedSlider.setPaintTicks(true);
+
+speedSlider.addChangeListener(e -> {
+    speedValueLabel.setText(speedSlider.getValue() + "%");
+});
+
+JPanel speedControls = new JPanel(new BorderLayout(5, 0));
+speedControls.setBackground(new Color(43, 45, 48));
+speedControls.add(speedSlider, BorderLayout.CENTER);
+speedControls.add(speedValueLabel, BorderLayout.EAST);
+
+speedPanel.add(lblSpeedDesc, BorderLayout.WEST);
+speedPanel.add(speedControls, BorderLayout.CENTER);
+
+visualPanel.add(Box.createVerticalStrut(10));
+visualPanel.add(speedPanel);
+
 		JLabel restartHint = new JLabel(
 			"<html><font color='#C8C8C8'>"
 			+ "Hinweis: Nach Änderung der Scroll-FPS "
