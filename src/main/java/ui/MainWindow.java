@@ -654,38 +654,40 @@ public class MainWindow extends JFrame {
 				scrollPane.repaint();
 			});
 
-		scrollPane.addMouseWheelListener(e -> {
-				e.consume();
+scrollPane.addMouseWheelListener(e -> {
+    e.consume();
 
-				int fps     = config.TIDEPreferences.getScrollFPS();
-				int delayMs = Math.max(1, 1000 / fps);
+    int fps     = config.TIDEPreferences.getScrollFPS();
+    int delayMs = Math.max(1, 1000 / fps);
 
-				if (timer.getDelay() != delayMs) {
-					timer.setDelay(delayMs);
+    if (timer.getDelay() != delayMs) {
+        timer.setDelay(delayMs);
 
-					velocity[0] = 0.0;
-					dynIntensity[0] = 0.0f;
-					scrollDir[0] = 0;
-					lastTick[0] = System.nanoTime();
-				}
+        velocity[0] = 0.0;
+        dynIntensity[0] = 0.0f;
+        scrollDir[0] = 0;
+        lastTick[0] = System.nanoTime();
+    }
 
-				lastTick[0] = System.nanoTime();
+    lastTick[0] = System.nanoTime();
 
-				int rotation  = e.getWheelRotation();
-				int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
+    int rotation  = e.getWheelRotation();
+    int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
 
-				// Impuls stärker machen damit mehrere Scrolls sich aufbauen können
-				double push = rotation * increment * 8.0;  // war 4.5
-				velocity[0] += push;
+    // ── NEU: Multiplikator aus den Einstellungen berechnen ──
+    double speedMultiplier = config.TIDEPreferences.getScrollSpeed() / 100.0;
 
-				// Maximalgeschwindigkeit ebenfalls hochsetzen
-				double maxSpeed = 160.0;  // war 80.0
-				if (velocity[0] >  maxSpeed) velocity[0] =  maxSpeed;
-				if (velocity[0] < -maxSpeed) velocity[0] = -maxSpeed;
+    // Impuls mit dem User-Multiplikator skalieren
+    double push = rotation * increment * 8.0 * speedMultiplier;  
+    velocity[0] += push;
 
-				if (!timer.isRunning()) timer.start();
-			});
+    // Maximalgeschwindigkeit ebenfalls dynamisch anpassen
+    double maxSpeed = 160.0 * speedMultiplier;  
+    if (velocity[0] >  maxSpeed) velocity[0] =  maxSpeed;
+    if (velocity[0] < -maxSpeed) velocity[0] = -maxSpeed;
 
+    if (!timer.isRunning()) timer.start();
+});
 		bar.setUnitIncrement(16);
 		return timer;
 	}
