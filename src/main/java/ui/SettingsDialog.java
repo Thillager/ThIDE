@@ -178,11 +178,10 @@ speedValueLabel.setForeground(new Color(200, 200, 200));
 speedValueLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
 speedValueLabel.setPreferredSize(new Dimension(45, 20));
 
-// Slider von 50% bis 250% Geschwindigkeit
-JSlider speedSlider = new JSlider(50, 250, currentSpeed);
+JSlider speedSlider = new JSlider(10, 250, currentSpeed);
 speedSlider.setBackground(new Color(43, 45, 48));
 speedSlider.setForeground(new Color(200, 200, 200));
-speedSlider.setMajorTickSpacing(50);
+speedSlider.setMajorTickSpacing(40);
 speedSlider.setPaintTicks(true);
 
 speedSlider.addChangeListener(e -> {
