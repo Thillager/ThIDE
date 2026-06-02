@@ -353,6 +353,9 @@ visualPanel.add(speedPanel);
 				// Motion Blur
 				TIDEPreferences.saveMotionBlurEnabled(motionBlurBox.isSelected());
 
+			// ... unter TIDEPreferences.saveScrollFPS(selectedFps);
+TIDEPreferences.saveScrollSpeed(speedSlider.getValue());
+
 				// Auto-Scroll
 				TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
 
