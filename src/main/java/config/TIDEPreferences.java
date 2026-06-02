@@ -87,4 +87,14 @@ public class TIDEPreferences {
 	public static void saveScrollFPS(int fps) {
 		prefs.putInt("scrollFPS", fps);
 	}
+
+	// Ergänze dies in deiner TIDEPreferences-Klasse:
+public static int getScrollSpeed() {
+    // Gibt standardmäßig 100 (%) zurück, falls kein Wert gespeichert ist
+    return prefs.getInt("scrollSpeed", 100); 
+}
+
+public static void saveScrollSpeed(int speed) {
+    prefs.putInt("scrollSpeed", speed);
+}
 }
