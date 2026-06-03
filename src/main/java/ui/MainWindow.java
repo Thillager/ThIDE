@@ -480,6 +480,15 @@ public class MainWindow extends JFrame {
 					return true;
 				}
 
+				// Speichern
+				if (key == TIDEPreferences.getHotkey("stop", KeyEvent.VK_X)
+					&& mod == TIDEPreferences.getHotkeyModifier("stop", InputEvent.CTRL_DOWN_MASK)) {
+					projectRunner.stopRunningProcess();
+					debugRunner.stopDebugProcess();
+					return true;
+				}
+
+
 				// Ausführen
 				if (key == TIDEPreferences.getHotkey("run", KeyEvent.VK_R)
 					&& mod == TIDEPreferences.getHotkeyModifier("run", InputEvent.CTRL_DOWN_MASK)) {

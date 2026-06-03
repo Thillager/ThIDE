@@ -31,8 +31,8 @@ public class SettingsDialog {
 	}
 
 	public void show() {
-		JDialog dialog = new JDialog(parent, "Einstellunge / Settings", true);
-		dialog.setSize(480, 480);
+		JDialog dialog = new JDialog(parent, "Einstellungen / Settings", true);
+		dialog.setSize(480, 560);
 		dialog.setLocationRelativeTo(parent);
 		dialog.setLayout(new BorderLayout(10, 10));
 		dialog.getContentPane().setBackground(new Color(43, 45, 48));
@@ -72,9 +72,7 @@ public class SettingsDialog {
 		fontSlider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
 		fontSlider.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		fontSlider.addChangeListener(e -> {
-				fontSizeLabel.setText(fontSlider.getValue() + " pt");
-			});
+		fontSlider.addChangeListener(e -> fontSizeLabel.setText(fontSlider.getValue() + " pt"));
 
 		JPanel fontRow = new JPanel(new BorderLayout(8, 0));
 		fontRow.setBackground(new Color(43, 45, 48));
@@ -104,9 +102,7 @@ public class SettingsDialog {
 		acSlider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
 		acSlider.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		acSlider.addChangeListener(e -> {
-				acLabel.setText("Verzögerung: " + acSlider.getValue() + " ms");
-			});
+		acSlider.addChangeListener(e -> acLabel.setText("Verzögerung: " + acSlider.getValue() + " ms"));
 
 		JPanel acRow = new JPanel(new BorderLayout(8, 0));
 		acRow.setBackground(new Color(43, 45, 48));
@@ -120,7 +116,7 @@ public class SettingsDialog {
 		content.add(Box.createVerticalStrut(12));
 
 		// ── Visuell ───────────────────────────────────────────────
-		JPanel visualPanel = createSection("Visuell / Visual", 80);
+		JPanel visualPanel = createSection("Visuell / Visual", 210);
 
 		JCheckBox motionBlurBox = new JCheckBox(
 			"Scroll-Effekte aktiviert (Motion Blur & Stretch)",
@@ -128,18 +124,10 @@ public class SettingsDialog {
 		motionBlurBox.setBackground(new Color(43, 45, 48));
 		motionBlurBox.setForeground(new Color(200, 200, 200));
 		motionBlurBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-		motionBlurBox.setToolTipText(
-			"Motion Blur und Stretch-Effekt beim Scrollen ein-/ausschalten");
-
+		motionBlurBox.setToolTipText("Motion Blur und Stretch-Effekt beim Scrollen ein-/ausschalten");
 		visualPanel.add(motionBlurBox);
-		content.add(visualPanel);
-		content.add(Box.createVerticalStrut(12));
 
-
-
-
-		// ── NEU: Scroll FPS Dropdown ──
-
+		// Scroll FPS Dropdown
 		JPanel fpsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
 		fpsPanel.setBackground(new Color(43, 45, 48));
 
@@ -155,63 +143,92 @@ public class SettingsDialog {
 
 		fpsPanel.add(lblFps);
 		fpsPanel.add(cbFps);
-
 		visualPanel.add(fpsPanel);
 
-		visualPanel.add(motionBlurBox);
-		content.add(visualPanel);
-		content.add(Box.createVerticalStrut(12));
+		// Scroll-Geschwindigkeit Slider
+		JPanel speedPanel = new JPanel(new BorderLayout(10, 0));
+		speedPanel.setBackground(new Color(43, 45, 48));
+		speedPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+		speedPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		// ── NEU: Scroll-Geschwindigkeit Slider ──
-JPanel speedPanel = new JPanel(new BorderLayout(10, 0));
-speedPanel.setBackground(new Color(43, 45, 48));
-speedPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-speedPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		JLabel lblSpeedDesc = new JLabel("Scroll-Geschwindigkeit: ");
+		lblSpeedDesc.setForeground(new Color(220, 220, 220));
+		lblSpeedDesc.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-JLabel lblSpeedDesc = new JLabel("Scroll-Geschwindigkeit: ");
-lblSpeedDesc.setForeground(new Color(220, 220, 220));
-lblSpeedDesc.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		int currentSpeed = TIDEPreferences.getScrollSpeed();
+		JLabel speedValueLabel = new JLabel(currentSpeed + "%");
+		speedValueLabel.setForeground(new Color(200, 200, 200));
+		speedValueLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
+		speedValueLabel.setPreferredSize(new Dimension(45, 20));
 
-int currentSpeed = TIDEPreferences.getScrollSpeed();
-JLabel speedValueLabel = new JLabel(currentSpeed + "%");
-speedValueLabel.setForeground(new Color(200, 200, 200));
-speedValueLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
-speedValueLabel.setPreferredSize(new Dimension(45, 20));
+		JSlider speedSlider = new JSlider(10, 250, currentSpeed);
+		speedSlider.setBackground(new Color(43, 45, 48));
+		speedSlider.setForeground(new Color(200, 200, 200));
+		speedSlider.setMajorTickSpacing(40);
+		speedSlider.setPaintTicks(true);
+		speedSlider.addChangeListener(e -> speedValueLabel.setText(speedSlider.getValue() + "%"));
 
-JSlider speedSlider = new JSlider(10, 250, currentSpeed);
-speedSlider.setBackground(new Color(43, 45, 48));
-speedSlider.setForeground(new Color(200, 200, 200));
-speedSlider.setMajorTickSpacing(40);
-speedSlider.setPaintTicks(true);
+		JPanel speedControls = new JPanel(new BorderLayout(5, 0));
+		speedControls.setBackground(new Color(43, 45, 48));
+		speedControls.add(speedSlider, BorderLayout.CENTER);
+		speedControls.add(speedValueLabel, BorderLayout.EAST);
 
-speedSlider.addChangeListener(e -> {
-    speedValueLabel.setText(speedSlider.getValue() + "%");
-});
+		speedPanel.add(lblSpeedDesc, BorderLayout.WEST);
+		speedPanel.add(speedControls, BorderLayout.CENTER);
 
-JPanel speedControls = new JPanel(new BorderLayout(5, 0));
-speedControls.setBackground(new Color(43, 45, 48));
-speedControls.add(speedSlider, BorderLayout.CENTER);
-speedControls.add(speedValueLabel, BorderLayout.EAST);
-
-speedPanel.add(lblSpeedDesc, BorderLayout.WEST);
-speedPanel.add(speedControls, BorderLayout.CENTER);
-
-visualPanel.add(Box.createVerticalStrut(10));
-visualPanel.add(speedPanel);
+		visualPanel.add(Box.createVerticalStrut(8));
+		visualPanel.add(speedPanel);
 
 		JLabel restartHint = new JLabel(
-			"<html><font color='#C8C8C8'>"
-			+ "Hinweis: Nach Änderung der Scroll-FPS "
-			+ "wird ein Neustart empfohlen."
-			+ "</font></html>"
-		);
-
+			"<html><font color='#C8C8C8'>Hinweis: Nach Änderung der Scroll-FPS wird ein Neustart empfohlen.</font></html>");
 		restartHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		restartHint.setAlignmentX(Component.LEFT_ALIGNMENT);
-
 		visualPanel.add(Box.createVerticalStrut(4));
 		visualPanel.add(restartHint);
 
+		content.add(visualPanel);
+		content.add(Box.createVerticalStrut(12));
+
+		// ── Rendering / Hardwarebeschleunigung ────────────────────
+		JPanel hwPanel = createSection("Rendering / Hardwarebeschleunigung", 90);
+
+		JPanel hwRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
+		hwRow.setBackground(new Color(43, 45, 48));
+
+		JLabel lblHw = new JLabel("Hardwarebeschleunigung: ");
+		lblHw.setForeground(new Color(220, 220, 220));
+		lblHw.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+		// Reihenfolge muss mit hwOptionKeys uebereinstimmen
+		String[] hwOptions   = { "Automatisch", "Immer AN", "Immer AUS" };
+		String[] hwOptionKeys = { "auto", "on", "off" };
+
+		JComboBox<String> hwBox = new JComboBox<>(hwOptions);
+		String currentHw = TIDEPreferences.getHwAccelMode();
+		for (int i = 0; i < hwOptionKeys.length; i++) {
+			if (hwOptionKeys[i].equals(currentHw)) {
+				hwBox.setSelectedIndex(i);
+				break;
+			}
+		}
+		hwBox.setBackground(new Color(60, 63, 65));
+		hwBox.setForeground(Color.WHITE);
+		hwBox.setMaximumSize(new Dimension(160, 28));
+
+		hwRow.add(lblHw);
+		hwRow.add(hwBox);
+		hwPanel.add(hwRow);
+
+		JLabel hwHint = new JLabel(
+			"<html><font color='#C8C8C8'>Automatisch: AN bei installierter App, AUS beim JAR-Start.<br>" +
+			"Änderung wirkt nach Neustart von TIDE.</font></html>");
+		hwHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+		hwHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+		hwPanel.add(Box.createVerticalStrut(4));
+		hwPanel.add(hwHint);
+
+		content.add(hwPanel);
+		content.add(Box.createVerticalStrut(12));
 
 		// ── Konsole ───────────────────────────────────────────────
 		JPanel consolePanel = createSection("Konsole / Console");
@@ -225,20 +242,21 @@ visualPanel.add(speedPanel);
 
 		consolePanel.add(autoScrollBox);
 		content.add(consolePanel);
+		content.add(Box.createVerticalStrut(12));
 
 		// ── Hotkeys ───────────────────────────────────────────────
 		JPanel hotkeyPanel = createSection("Hotkeys", 230);
 
-		// action | Beschriftung | Standard-KeyCode | Standard-Modifier
 		Object[][] hotkeyDefs = {
-			{ "save",    "Speichern",     KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK },
-			{ "search",  "Lokale Suche", KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK },
-			{ "gsearch", "Globale Suche",KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
-			{ "run",     "Ausführen",    KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK },
-			{ "debug",   "Debuggen",     KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
+			{ "save",    "Speichern",      KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK },
+			{ "stop",    "Stop",     KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK },
+			{ "search",  "Lokale Suche",   KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK },
+			{ "gsearch", "Globale Suche",  KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
+			{ "run",     "Ausführen",      KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK },
+			{ "debug",   "Debuggen",       KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK },
 		};
 
-		Map<String, Integer> pendingHotkeys  = new HashMap<>();
+		Map<String, Integer> pendingHotkeys   = new HashMap<>();
 		Map<String, Integer> pendingModifiers = new HashMap<>();
 		JPanel tablePanel = new JPanel(new GridLayout(hotkeyDefs.length, 2, 10, 6));
 		tablePanel.setBackground(new Color(43, 45, 48));
@@ -250,16 +268,17 @@ visualPanel.add(speedPanel);
 			int    defaultKey = (Integer) def[2];
 			int    defaultMod = (Integer) def[3];
 			int    savedKey   = TIDEPreferences.getHotkey(action, defaultKey);
+			int    savedMod   = TIDEPreferences.getHotkeyModifier(action, defaultMod);
 
 			JLabel descLabel = new JLabel(label);
 			descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 			descLabel.setForeground(new Color(200, 200, 200));
 
-			int savedMod = TIDEPreferences.getHotkeyModifier(action, defaultMod);
 			String initModText = "";
 			if ((savedMod & InputEvent.CTRL_DOWN_MASK)  != 0) initModText += "Strg+";
 			if ((savedMod & InputEvent.SHIFT_DOWN_MASK) != 0) initModText += "Shift+";
 			if ((savedMod & InputEvent.ALT_DOWN_MASK)   != 0) initModText += "Alt+";
+
 			JTextField keyField = new JTextField(initModText + KeyEvent.getKeyText(savedKey));
 			keyField.setFont(new Font("Consolas", Font.BOLD, 12));
 			keyField.setForeground(new Color(255, 200, 80));
@@ -317,7 +336,6 @@ visualPanel.add(speedPanel);
 		content.add(hotkeyPanel);
 		content.add(Box.createVerticalStrut(12));
 
-
 		// ── Buttons ───────────────────────────────────────────────
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
 		btnPanel.setBackground(new Color(43, 45, 48));
@@ -349,27 +367,26 @@ visualPanel.add(speedPanel);
 				// Autocomplete-Delay
 				TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
 
-				// Motion Blur
+				// Motion Blur & Scroll
 				TIDEPreferences.saveMotionBlurEnabled(motionBlurBox.isSelected());
+				TIDEPreferences.saveScrollSpeed(speedSlider.getValue());
+				TIDEPreferences.saveScrollFPS((int) cbFps.getSelectedItem());
 
-			// ... unter TIDEPreferences.saveScrollFPS(selectedFps);
-TIDEPreferences.saveScrollSpeed(speedSlider.getValue());
+				// Hardwarebeschleunigung
+				TIDEPreferences.saveHwAccelMode(hwOptionKeys[hwBox.getSelectedIndex()]);
 
 				// Auto-Scroll
 				TIDEPreferences.saveConsoleAutoScroll(autoScrollBox.isSelected());
 
-				int selectedFps = (int) cbFps.getSelectedItem();
-				TIDEPreferences.saveScrollFPS(selectedFps);
-
-				if (onLanguageChanged != null) onLanguageChanged.run();
-
-				// Hotkeys speichern
+				// Hotkeys
 				for (Map.Entry<String, Integer> entry : pendingHotkeys.entrySet()) {
 					TIDEPreferences.saveHotkey(entry.getKey(), entry.getValue());
 				}
 				for (Map.Entry<String, Integer> entry : pendingModifiers.entrySet()) {
 					TIDEPreferences.saveHotkeyModifier(entry.getKey(), entry.getValue());
 				}
+
+				if (onLanguageChanged != null) onLanguageChanged.run();
 
 				dialog.dispose();
 			});
@@ -381,8 +398,8 @@ TIDEPreferences.saveScrollSpeed(speedSlider.getValue());
 		scrollPane.setBorder(null);
 		scrollPane.getViewport().setBackground(new Color(43, 45, 48));
 
-		dialog.add(scrollPane,  BorderLayout.CENTER);
-		dialog.add(btnPanel,    BorderLayout.SOUTH);
+		dialog.add(scrollPane, BorderLayout.CENTER);
+		dialog.add(btnPanel,   BorderLayout.SOUTH);
 		dialog.setVisible(true);
 	}
 
@@ -394,17 +411,14 @@ TIDEPreferences.saveScrollSpeed(speedSlider.getValue());
 		panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
 
 		TitledBorder border = BorderFactory.createTitledBorder(
-			BorderFactory.createLineBorder(new Color(80, 80, 80), 1),
-			title);
+			BorderFactory.createLineBorder(new Color(80, 80, 80), 1), title);
 		border.setTitleColor(new Color(180, 180, 180));
 		border.setTitleFont(new Font("Segoe UI", Font.PLAIN, 12));
 		panel.setBorder(BorderFactory.createCompoundBorder(
-				border,
-				new EmptyBorder(6, 8, 8, 8)));
+				border, new EmptyBorder(6, 8, 8, 8)));
 		return panel;
 	}
 
-	// Overload für Abwärtskompatibilität
 	private JPanel createSection(String title) {
 		return createSection(title, 120);
 	}

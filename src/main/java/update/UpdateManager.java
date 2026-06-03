@@ -92,16 +92,16 @@ public class UpdateManager {
 	}
 
 	/**
-	* Erkennt ob die App direkt als .jar gestartet wurde,
-	* NICHT als jpackage-installiertes Programm.
-	*
-	* jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
-	* neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
-	* aber kein echter "Direktstart" vorliegt.
-	*
-	* Zusaetzlich kann beim jpackage-Build die System-Property
-	* -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
-	*/
+	 * Erkennt ob die App direkt als .jar gestartet wurde,
+	 * NICHT als jpackage-installiertes Programm.
+	 *
+	 * jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
+	 * neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
+	 * aber kein echter "Direktstart" vorliegt.
+	 *
+	 * Zusaetzlich kann beim jpackage-Build die System-Property
+	 * -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
+	 */
 	public boolean isRunningAsJar() {
 		// Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
 		if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
@@ -110,21 +110,26 @@ public class UpdateManager {
 
 		try {
 			java.net.URI uri = UpdateManager.class.getProtectionDomain()
-			.getCodeSource().getLocation().toURI();
+				.getCodeSource().getLocation().toURI();
 			String path = uri.getPath();
 
 			if (!path.endsWith(".jar")) return false;
 
 			// jpackage-Heuristik: JAR liegt in einem "app"-Verzeichnis
-			// neben dem nativen Launcher (.exe / kein .jar-Start)
-			File jarFile  = new File(uri);
+			// neben dem nativen Launcher
+			File jarFile   = new File(uri);
 			File parentDir = jarFile.getParentFile();
 			if (parentDir != null && parentDir.getName().equalsIgnoreCase("app")) {
 				File launcherDir = parentDir.getParentFile();
 				if (launcherDir != null) {
-					File[] exes = launcherDir.listFiles(
-						f -> f.isFile() && f.getName().endsWith(".exe"));
-					if (exes != null && exes.length > 0) {
+					// Windows: .exe  |  Linux: ausfuehrbare Datei ohne Extension
+					File[] launchers = launcherDir.listFiles(f ->
+						f.isFile() && (
+							f.getName().endsWith(".exe") ||
+							(!f.getName().contains(".") && f.canExecute())
+						)
+					);
+					if (launchers != null && launchers.length > 0) {
 						return false;
 					}
 				}
@@ -139,7 +144,7 @@ public class UpdateManager {
 	public File getRunningJarFile() {
 		try {
 			java.net.URI uri = UpdateManager.class.getProtectionDomain()
-			.getCodeSource().getLocation().toURI();
+				.getCodeSource().getLocation().toURI();
 			File f = new File(uri);
 			if (f.getName().endsWith(".jar")) return f;
 		} catch (Exception ignored) {}
@@ -168,7 +173,7 @@ public class UpdateManager {
 							return;
 						}
 						String downloadUrl = "https://github.com/" + githubRepo
-						+ "/releases/download/v" + version + "/" + jarAssetName;
+							+ "/releases/download/v" + version + "/" + jarAssetName;
 						consolePanel.log("[INFO] Lade neue JAR herunter: " + jarAssetName + "...\n", Color.CYAN);
 						SwingUtilities.invokeLater(() ->
 							consolePanel.log("[INFO] Download laeuft, bitte warten...\n", Color.YELLOW));
@@ -253,7 +258,7 @@ public class UpdateManager {
 		String os         = System.getProperty("os.name", "").toLowerCase();
 		boolean isWindows = os.contains("win");
 		String java = System.getProperty("java.home") + File.separator + "bin" + File.separator
-		+ (isWindows ? "java.exe" : "java");
+			+ (isWindows ? "java.exe" : "java");
 
 		if (isWindows) {
 			File bat = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.bat");
@@ -264,10 +269,10 @@ public class UpdateManager {
 				pw.println("echo Ersetze JAR...");
 				pw.println("copy /Y \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
 				pw.println("if %errorlevel% neq 0 (");
-					pw.println("  echo JAR-Austausch fehlgeschlagen!");
-					pw.println("  pause");
-					pw.println("  exit /b 1");
-					pw.println(")");
+				pw.println("  echo JAR-Austausch fehlgeschlagen!");
+				pw.println("  pause");
+				pw.println("  exit /b 1");
+				pw.println(")");
 				pw.println("echo Starte neue Version...");
 				pw.println("start \"\" \"" + java + "\" -jar \"" + currentJar.getAbsolutePath() + "\"");
 				pw.println("del \"%~f0\"");
@@ -324,10 +329,10 @@ public class UpdateManager {
 			pw.println("echo Installiere Update...");
 			pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
 			pw.println("if %errorlevel% neq 0 (");
-				pw.println("  echo Installation fehlgeschlagen!");
-				pw.println("  pause");
-				pw.println("  exit /b 1");
-				pw.println(")");
+			pw.println("  echo Installation fehlgeschlagen!");
+			pw.println("  pause");
+			pw.println("  exit /b 1");
+			pw.println(")");
 			pw.println("echo Update erfolgreich installiert.");
 			pw.println("del \"%~f0\"");
 		}
@@ -348,15 +353,15 @@ public class UpdateManager {
 			});
 	}
 
-	// Erstellt ein .sh skript für das Linux-.deb-Update
+	// Erstellt ein .sh-Skript fuer das Linux-.deb-Update
 
 	private void launchLinuxUpdate(File debFile) throws IOException {
 		boolean hasSudoNopass = false;
 		try {
 			Process p = new ProcessBuilder("sudo", "-n", "true")
-			.redirectErrorStream(true).start();
+				.redirectErrorStream(true).start();
 			hasSudoNopass = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)
-			&& p.exitValue() == 0;
+				&& p.exitValue() == 0;
 		} catch (Exception ignored) {}
 
 		File shFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.sh");
@@ -378,8 +383,8 @@ public class UpdateManager {
 		shFile.setExecutable(true);
 
 		String sudoHint = hasSudoNopass
-		? "Kein Passwort nötig (sudo-Rechte erkannt)."
-		: "Du wirst nach deinem Passwort gefragt.";
+			? "Kein Passwort noetig (sudo-Rechte erkannt)."
+			: "Du wirst nach deinem Passwort gefragt.";
 
 		consolePanel.log("[INFO] Starte Linux-Update-Skript"
 			+ (hasSudoNopass ? " (sudo, kein Passwort noetig)" : " (pkexec)") + "...\n", Color.CYAN);
