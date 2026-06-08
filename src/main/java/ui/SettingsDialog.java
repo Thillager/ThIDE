@@ -85,6 +85,14 @@ public class SettingsDialog {
 		content.add(fontPanel);
 		content.add(Box.createVerticalStrut(12));
 
+		// -- Auto stop --------------------------------------------
+		JPanel auStPanel = createSection("Stop when to many resources are used");
+		JButton toggleAuSt = new JButton("toggle");
+		
+		
+		auStPanel.add(toggleAuSt);
+		content.add(auStPanel);
+
 		// ── Autocomplete ─────────────────────────────────────────
 		JPanel acPanel = createSection("Autocomplete");
 
