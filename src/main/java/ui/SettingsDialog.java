@@ -32,7 +32,7 @@ public class SettingsDialog {
 
 	public void show() {
 		JDialog dialog = new JDialog(parent, "Einstellungen / Settings", true);
-		dialog.setSize(480, 560);
+		dialog.setSize(600, 700);
 		dialog.setLocationRelativeTo(parent);
 		dialog.setLayout(new BorderLayout(10, 10));
 		dialog.getContentPane().setBackground(new Color(43, 45, 48));
@@ -410,6 +410,10 @@ public class SettingsDialog {
 		JScrollPane scrollPane = new JScrollPane(content);
 		scrollPane.setBorder(null);
 		scrollPane.getViewport().setBackground(new Color(43, 45, 48));
+
+		int baseIncrement = 16;
+		double multiplier = TIDEPreferences.getScrollSpeed() / 100.0;
+		scrollPane.getVerticalScrollBar().setUnitIncrement((int)(baseIncrement * multiplier));
 
 		dialog.add(scrollPane, BorderLayout.CENTER);
 		dialog.add(btnPanel,   BorderLayout.SOUTH);

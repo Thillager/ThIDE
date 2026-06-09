@@ -52,7 +52,7 @@ public class EditorManager {
 			if (tab instanceof RTextScrollPane sp) {
 				Component view = sp.getViewport().getView();
 				if (view instanceof RSyntaxTextArea textArea) {
-					textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, size));
+					textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
 				}
 			}
 		}
@@ -220,7 +220,6 @@ public class EditorManager {
 			else textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
 
 			textArea.setCodeFoldingEnabled(true);
-			textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
 
 			try {
 				Theme theme = Theme.load(getClass().getResourceAsStream(
@@ -231,6 +230,7 @@ public class EditorManager {
 			}
 			textArea.setCaretColor(Color.WHITE);
 
+			textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
 
 			// ── Geteilte State-Holder für SmoothScroll ↔ Blur-Effekt ────────────
 			float[] sharedDynIntensity = { 0.0f };

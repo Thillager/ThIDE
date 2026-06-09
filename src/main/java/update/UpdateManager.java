@@ -91,21 +91,7 @@ public class UpdateManager {
 			}).start();
 	}
 
-	/**
-	* Erkennt ob die App direkt als .jar gestartet wurde,
-	* NICHT als jpackage-installiertes Programm.
-	*
-	* jpackage legt die JAR typischerweise in ein "app"-Unterverzeichnis
-	* neben dem nativen Launcher, sodass der Pfad zwar auf .jar endet,
-	* aber kein echter "Direktstart" vorliegt.
-	*
-	* Zusaetzlich kann beim jpackage-Build die System-Property
-	* -DTIDE_PACKAGED=true gesetzt werden, um den Fall explizit zu markieren.
-	*/
-	/**
-    * Erkennt ob die App direkt als .jar gestartet wurde,
-    * NICHT als jpackage-installiertes Programm.
-    */
+	
     public boolean isRunningAsJar() {
         // Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
         if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
