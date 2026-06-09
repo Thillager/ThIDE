@@ -96,7 +96,7 @@ public void stopDebugProcess() {
 // ---- intern ----
 
 private void executeDebug(DebugStrategy strategy, String mainClass) {
-	editorManager.saveCurrentFile();
+	editorManager.saveAllFiles();
 	setHotSwapButtonVisible(false);
 
 

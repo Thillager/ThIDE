@@ -9,7 +9,10 @@ import java.awt.*;
  * Das Motion-Blur-System läuft seit der Überarbeitung direkt in der
  * anonymen RTextScrollPane-Unterklasse innerhalb von EditorManager.
  */
-public class MotionBlurLayerUI extends LayerUI<JScrollPane> {
+
+
+@SuppressWarnings({"serial", "this-escape"})
+ public class MotionBlurLayerUI extends LayerUI<JScrollPane> {
     @Override
     public void paint(Graphics g, JComponent c) {
         super.paint(g, c);

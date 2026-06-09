@@ -33,8 +33,6 @@ public class ProjectRunner {
 
 	private JButton btnTerminate;
 
-	public static boolean auStBool = true;
-
 	private volatile Process runningProcess;
 
 	public ProjectRunner(ConsolePanel consolePanel, EditorManager editorManager,
