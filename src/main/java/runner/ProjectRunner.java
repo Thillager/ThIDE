@@ -32,6 +32,8 @@ public class ProjectRunner {
 
 	private JButton btnTerminate;
 
+	public static boolean auStBool = true;
+
 	private volatile Process runningProcess;
 
 	public ProjectRunner(ConsolePanel consolePanel, EditorManager editorManager,
@@ -315,7 +317,7 @@ public class ProjectRunner {
 					pb.redirectErrorStream(true);
 					Process p = pb.start();
 					runningProcess = p;
-					if (settingsDialog.auStBool) {
+					if (ui.SettingsDialog.auStBool) {
 					startResourceMonitor(); 
 					}
 					else {
