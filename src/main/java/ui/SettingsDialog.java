@@ -89,12 +89,14 @@ public class SettingsDialog {
 
 		// -- Auto stop --------------------------------------------
 		JPanel auStPanel = createSection("Stop when to many resources are used");
-		JButton toggleAuSt = new JButton("toggle");
-
-		toggleAuSt.addActionListener(e-> auStBool = !auStBool);
 		
-		auStPanel.add(toggleAuSt);
+		JCheckBox auStBox = new JCheckBox(
+			"Auto Stop",
+			TIDEPreferences.getAuSt());
+		
+		auStPanel.add(auStBox);
 		content.add(auStPanel);
+		content.add(Box.createVerticalStrut(12));
 
 		// ── Autocomplete ─────────────────────────────────────────
 		JPanel acPanel = createSection("Autocomplete");
@@ -377,6 +379,8 @@ public class SettingsDialog {
 
 				// Autocomplete-Delay
 				TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
+
+				TIDEPreferences.saveAuSt(auStBox.isSelected());
 
 				// Motion Blur & Scroll
 				TIDEPreferences.saveMotionBlurEnabled(motionBlurBox.isSelected());

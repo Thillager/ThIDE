@@ -1,6 +1,7 @@
 package runner;
 
 import config.LanguageManager;
+import config.TIDEPreferences;
 import editor.CompilerErrorMarker;
 import editor.EditorManager;
 import ui.ConsolePanel;
@@ -317,7 +318,7 @@ public class ProjectRunner {
 					pb.redirectErrorStream(true);
 					Process p = pb.start();
 					runningProcess = p;
-					if (ui.SettingsDialog.auStBool) {
+					if (TIDEPreferences.getAuSt()) {
 					startResourceMonitor(); 
 					}
 					else {

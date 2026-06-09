@@ -79,9 +79,9 @@ public class TIDEPreferences {
 	}
 
 	public static boolean getAuSt() {
-		return prefs.getBoolean("AutoStop", enabled);
+		return prefs.getBoolean("AutoStop", true);
 	}
-	public static void saveAuSt() {
+	public static void saveAuSt(boolean enabled) {
 		prefs.putBoolean("AutoStop", enabled);
 	}
 
