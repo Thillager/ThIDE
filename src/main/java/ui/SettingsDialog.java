@@ -24,6 +24,8 @@ public class SettingsDialog {
 	private final EditorManager editorManager;
 	private final Runnable onLanguageChanged;
 
+	private boolean auStBool;
+
 	public SettingsDialog(JFrame parent, EditorManager editorManager, Runnable onLanguageChanged) {
 		this.parent            = parent;
 		this.editorManager     = editorManager;
@@ -88,7 +90,8 @@ public class SettingsDialog {
 		// -- Auto stop --------------------------------------------
 		JPanel auStPanel = createSection("Stop when to many resources are used");
 		JButton toggleAuSt = new JButton("toggle");
-		
+
+		toggleAuSt.addActionListener(e-> auStBool = !auStBool);
 		
 		auStPanel.add(toggleAuSt);
 		content.add(auStPanel);
