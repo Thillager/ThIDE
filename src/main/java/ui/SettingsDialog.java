@@ -24,7 +24,7 @@ public class SettingsDialog {
 	private final EditorManager editorManager;
 	private final Runnable onLanguageChanged;
 
-	private boolean auStBool;
+	public boolean auStBool;
 
 	public SettingsDialog(JFrame parent, EditorManager editorManager, Runnable onLanguageChanged) {
 		this.parent            = parent;

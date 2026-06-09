@@ -4,6 +4,7 @@ import config.LanguageManager;
 import editor.CompilerErrorMarker;
 import editor.EditorManager;
 import ui.ConsolePanel;
+import ui.SettingsDialog;
 
 import javax.swing.*;
 import java.awt.*;
@@ -314,8 +315,12 @@ public class ProjectRunner {
 					pb.redirectErrorStream(true);
 					Process p = pb.start();
 					runningProcess = p;
+					if (settingsDialog.auStBool) {
 					startResourceMonitor(); 
-
+					}
+					else {
+						
+					}
 					BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
 					String line;
 					StringBuilder fullOutput = new StringBuilder();
