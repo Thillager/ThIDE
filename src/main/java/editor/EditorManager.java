@@ -220,7 +220,7 @@ public class EditorManager {
 			else textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
 
 			textArea.setCodeFoldingEnabled(true);
-			textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEProperties.EDITOR_FONT_SIZE));
+			textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
 
 			try {
 				Theme theme = Theme.load(getClass().getResourceAsStream(
@@ -382,7 +382,7 @@ public class EditorManager {
 			ac.install(textArea);
 
 			Set<String> knownWords = new HashSet<>();
-			String[] initialKeywords = {"public", "pri	vate", "static", "void", "class", "import",
+			String[] initialKeywords = {"public", "private", "static", "void", "class", "import",
 				"String", "int", "boolean", "new", "return"};
 			knownWords.addAll(Arrays.asList(initialKeywords));
 			String existingContent = textArea.getText();

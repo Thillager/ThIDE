@@ -32,9 +32,6 @@ import java.awt.event.WindowEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.InputEvent;
 
-
-
-
 @SuppressWarnings({"serial", "this-escape"})
 public class MainWindow extends JFrame {
 
