@@ -156,13 +156,73 @@ public class ProjectRunner {
 			String separator = System.getProperty("path.separator");
 			String classpath = "out" + separator + "libs/*";
 
-			// -nowarn unterdrückt die verbleibenden Standard-Hinweise des Compilers
-			String compileCmd = "javac -encoding UTF-8 -nowarn -Xlint:none -cp \"" + classpath + "\" " +
-			"-d out " +
-			"-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
-			"\"@" + sourcesListFile.getName() + "\"";
+			File libsDir = new File(currentProjectFolder, "libs");
 
-			String runCmd = "java --enable-native-access=ALL-UNNAMED -cp \"out" + separator + "libs/*\" " + mc;
+			boolean hasJavaFx = false;
+			StringBuilder javafxModules = new StringBuilder();
+
+			if (libsDir.exists()) {
+				File[] jars = libsDir.listFiles();
+
+				if (jars != null) {
+					for (File jar : jars) {
+						String name = jar.getName().toLowerCase();
+
+						if (name.startsWith("javafx-") && name.endsWith(".jar")) {
+							hasJavaFx = true;
+
+							String module =
+							name.substring(0, name.indexOf(".jar"))
+							.replaceAll("-\\d+.*$", "")
+							.replace('-', '.');
+
+							if (!javafxModules.isEmpty()) {
+								javafxModules.append(",");
+							}
+
+							javafxModules.append(module);
+						}
+					}
+				}
+			}
+
+			String compileCmd;
+			String runCmd;
+
+			if (hasJavaFx) {
+
+				compileCmd =
+				"javac " +
+				"--module-path libs " +
+				"--add-modules " + javafxModules +
+				" -encoding UTF-8 -nowarn -Xlint:none " +
+				"-cp \"" + classpath + "\" " +
+				"-d out " +
+				"-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
+				"\"@" + sourcesListFile.getName() + "\"";
+
+				runCmd =
+				"java " +
+				"--module-path libs " +
+				"--add-modules " + javafxModules +
+				" --enable-native-access=ALL-UNNAMED " +
+				"-cp \"out" + separator + "libs/*\" " +
+				mc;
+
+			} else {
+
+				compileCmd =
+				"javac -encoding UTF-8 -nowarn -Xlint:none " +
+				"-cp \"" + classpath + "\" " +
+				"-d out " +
+				"-sourcepath \"" + sourceRoot.getAbsolutePath() + "\" " +
+				"\"@" + sourcesListFile.getName() + "\"";
+
+				runCmd =
+				"java --enable-native-access=ALL-UNNAMED " +
+				"-cp \"out" + separator + "libs/*\" " +
+				mc;
+			}
 
 			executeCommand(compileCmd + " && " + runCmd, false);
 			break;
@@ -317,10 +377,10 @@ public class ProjectRunner {
 					Process p = pb.start();
 					runningProcess = p;
 					if (TIDEPreferences.getAuSt()) {
-					startResourceMonitor(); 
+						startResourceMonitor(); 
 					}
 					else {
-						
+
 					}
 					BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
 					String line;
