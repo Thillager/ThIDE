@@ -222,11 +222,15 @@ public class EditorManager {
 			textArea.setCodeFoldingEnabled(true);
 
 			try {
-				Theme theme = Theme.load(getClass().getResourceAsStream(
-						"/org/fife/ui/rsyntaxtextarea/themes/monokai.xml"));
-				theme.apply(textArea);
+				String themeName = MainWindow.THEME.syntaxTheme;
+				Theme rstaTheme = Theme.load(getClass().getResourceAsStream(
+						"/org/fife/ui/rsyntaxtextarea/themes/" + themeName + ".xml"));
+				rstaTheme.apply(textArea);
 			} catch (IOException ioe) {
-				textArea.setBackground(new Color(30, 31, 34));
+				String themeName = MainWindow.THEME.syntaxTheme;
+				Theme rstaTheme = Theme.load(getClass().getResourceAsStream(
+						"/org/fife/ui/rsyntaxtextarea/themes/Monokai.xml"));
+				rstaTheme.apply(textArea);
 			}
 			textArea.setCaretColor(Color.WHITE);
 

@@ -54,6 +54,30 @@ public class SettingsDialog {
 		content.add(langPanel);
 		content.add(Box.createVerticalStrut(12));
 
+
+		// ── Theme ────────────────────────────────────────────────────
+		JPanel themePanel = createSection("Theme", 90);
+
+		String[] themeNames = java.util.Arrays.stream(config.Theme.ALL)
+		.map(t -> t.name).toArray(String[]::new);
+		JComboBox<String> themeBox = new JComboBox<>(themeNames);
+		themeBox.setSelectedItem(TIDEPreferences.getTheme());
+		themeBox.setMaximumSize(new Dimension(200, 28));
+		themeBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+		themeBox.setBackground(new Color(55, 58, 62));
+		themeBox.setForeground(Color.WHITE);
+
+		JLabel themeHint = new JLabel(
+			"<html><font color='#C8C8C8'>Änderung wirkt nach Neustart von TIDE.</font></html>");
+		themeHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+		themeHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		themePanel.add(themeBox);
+		themePanel.add(Box.createVerticalStrut(4));
+		themePanel.add(themeHint);
+		content.add(themePanel);
+		content.add(Box.createVerticalStrut(12));
+
 		// ── Schriftgröße ─────────────────────────────────────────
 		JPanel fontPanel = createSection("Editor-Schriftgröße / Font Size");
 
@@ -87,11 +111,11 @@ public class SettingsDialog {
 
 		// -- Auto stop --------------------------------------------
 		JPanel auStPanel = createSection("Stop when to many resources are used");
-		
+
 		JCheckBox auStBox = new JCheckBox(
 			"Auto Stop",
 			TIDEPreferences.getAuSt());
-		
+
 		auStPanel.add(auStBox);
 		content.add(auStPanel);
 		content.add(Box.createVerticalStrut(12));
@@ -374,6 +398,9 @@ public class SettingsDialog {
 				int newSize = fontSlider.getValue();
 				TIDEPreferences.saveEditorFontSize(newSize);
 				if (editorManager != null) editorManager.applyFontSizeToAllEditors(newSize);
+
+				// Theme speichern
+				TIDEPreferences.saveTheme((String) themeBox.getSelectedItem());
 
 				// Autocomplete-Delay
 				TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());

@@ -65,12 +65,6 @@ public class TIDE {
         UIManager.put("TabbedPane.selectedBackground", new Color(60, 63, 65));
         UIManager.put("TabbedPane.showTabSeparators",  true);
 
-        try {
-            UIManager.setLookAndFeel(new FlatDarkLaf());
-        } catch (Exception ex) {
-            System.err.println("Konnte FlatLaf nicht laden.");
-        }
-
         // ── 3. GUI START ───────────────────────────────────────────────────
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
     }

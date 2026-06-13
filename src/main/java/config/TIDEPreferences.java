@@ -116,4 +116,7 @@ public class TIDEPreferences {
 			prefs.put("hwAccelMode", mode);
 		}
 	}
+
+	public static String getTheme()            { return prefs.get("theme", "Dark"); }
+	public static void   saveTheme(String name){ prefs.put("theme", name); }
 }
