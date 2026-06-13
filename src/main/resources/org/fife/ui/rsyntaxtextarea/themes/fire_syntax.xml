@@ -25,67 +25,71 @@
   <!ATTLIST style token CDATA #REQUIRED foreground CDATA #REQUIRED bold (true|false) #IMPLIED italic (true|false) #IMPLIED underline (true|false) #IMPLIED>
 ]>
 <theme version="1.0">
-   <background color="000000"/>
+   <background color="0d0000"/>
    <caret color="ff3333"/>
-   <currentLineHighlight color="2a0a0a" fade="true"/>
-   <marginLine color="2a0a0a"/>
+   <currentLineHighlight color="1a0505" fade="true"/>
+   <marginLine color="3a0a0a"/>
    <markAllHighlight color="5a1010"/>
    <matchedBracket color="ff5555" bgColor="330000"/>
-   <hyperlinks color="ff6666"/>
-   <selection background="440a0a" foreground="ffffff"/>
+   <hyperlinks color="ff8888"/>
+   <selection background="550d0d" foreground="ffcccc"/>
    <font family="Consolas" size="13"/>
    <tokenStyles>
-      <!-- Basis -->
-      <style token="IDENTIFIER"                     foreground="ff4444"/>
-      <style token="NULL"                            foreground="ff4444"/>
-      <style token="WHITESPACE"                      foreground="2a0a0a"/>
-      <style token="ERROR_IDENTIFIER"                foreground="ff0000" bold="true"/>
-      <style token="ERROR_NUMBER_FORMAT"             foreground="ff0000" bold="true"/>
-      <style token="ERROR_STRING_DOUBLE"             foreground="ff0000" bold="true"/>
-      <style token="ERROR_CHAR"                      foreground="ff0000" bold="true"/>
+      <!-- Normaler Text / Fallback: hell-rot damit nichts schwarz auf schwarz wird -->
+      <style token="IDENTIFIER"                     foreground="ff8888"/>
+      <style token="NULL"                            foreground="ff6666"/>
+      <style token="WHITESPACE"                      foreground="ff8888"/>
+
+      <!-- Fehler -->
+      <style token="ERROR_IDENTIFIER"               foreground="ff2222" bold="true"/>
+      <style token="ERROR_NUMBER_FORMAT"             foreground="ff2222" bold="true"/>
+      <style token="ERROR_STRING_DOUBLE"             foreground="ff2222" bold="true"/>
+      <style token="ERROR_CHAR"                      foreground="ff2222" bold="true"/>
 
       <!-- Schlüsselwörter -->
-      <style token="RESERVED_WORD"                   foreground="ff0000" bold="true"/>
-      <style token="RESERVED_WORD_2"                 foreground="ff2222" bold="true"/>
-      <style token="DATA_TYPE"                       foreground="ff3333" bold="true"/>
+      <style token="RESERVED_WORD"                  foreground="ff3333" bold="true"/>
+      <style token="RESERVED_WORD_2"                foreground="ff4444" bold="true"/>
+      <style token="DATA_TYPE"                       foreground="ff5555" bold="true"/>
 
       <!-- Literale -->
-      <style token="LITERAL_STRING_DOUBLE_QUOTE"     foreground="ff6666"/>
-      <style token="LITERAL_STRING_SINGLE_QUOTE"     foreground="ff6666"/>
-      <style token="LITERAL_BACKQUOTE"               foreground="ff6666"/>
-      <style token="LITERAL_CHAR"                    foreground="ff6666"/>
-      <style token="LITERAL_NUMBER_DECIMAL_INT"      foreground="ff4444"/>
-      <style token="LITERAL_NUMBER_FLOAT"            foreground="ff4444"/>
-      <style token="LITERAL_NUMBER_HEXADECIMAL"      foreground="ff4444"/>
-      <style token="LITERAL_BOOLEAN"                 foreground="ff0000" bold="true"/>
+      <style token="LITERAL_STRING_DOUBLE_QUOTE"    foreground="ffaaaa"/>
+      <style token="LITERAL_STRING_SINGLE_QUOTE"    foreground="ffaaaa"/>
+      <style token="LITERAL_BACKQUOTE"              foreground="ffaaaa"/>
+      <style token="LITERAL_CHAR"                   foreground="ffaaaa"/>
+      <style token="LITERAL_NUMBER_DECIMAL_INT"     foreground="ff9999"/>
+      <style token="LITERAL_NUMBER_FLOAT"           foreground="ff9999"/>
+      <style token="LITERAL_NUMBER_HEXADECIMAL"     foreground="ff9999"/>
+      <style token="LITERAL_BOOLEAN"                foreground="ff3333" bold="true"/>
 
-      <!-- Kommentare -->
-      <style token="COMMENT_EOL"                     foreground="552222" italic="true"/>
-      <style token="COMMENT_MULTILINE"               foreground="552222" italic="true"/>
-      <style token="COMMENT_DOCUMENTATION"           foreground="662222" italic="true"/>
-      <style token="COMMENT_KEYWORD"                 foreground="993333" bold="true" italic="true"/>
-      <style token="COMMENT_MARKUP"                  foreground="773333" italic="true"/>
+      <!-- Kommentare (etwas dunkler, aber noch sichtbar) -->
+      <style token="COMMENT_EOL"                    foreground="993333" italic="true"/>
+      <style token="COMMENT_MULTILINE"              foreground="993333" italic="true"/>
+      <style token="COMMENT_DOCUMENTATION"          foreground="aa4444" italic="true"/>
+      <style token="COMMENT_KEYWORD"                foreground="cc5555" bold="true" italic="true"/>
+      <style token="COMMENT_MARKUP"                 foreground="aa4444" italic="true"/>
 
       <!-- Operatoren & Separatoren -->
-      <style token="OPERATOR"                        foreground="ff3333"/>
-      <style token="SEPARATOR"                       foreground="cc3333"/>
+      <style token="OPERATOR"                       foreground="ff6666"/>
+      <style token="SEPARATOR"                      foreground="ff7777"/>
 
       <!-- Annotationen, Funktionen, Variablen -->
-      <style token="ANNOTATION"                      foreground="ff5555" italic="true"/>
-      <style token="FUNCTION"                        foreground="ff4444"/>
-      <style token="VARIABLE"                        foreground="ff4444"/>
-      <style token="VARIABLE_2"                      foreground="ff4444"/>
-      <style token="VARIABLE_3"                      foreground="ff4444"/>
-      <style token="PREPROCESSOR"                    foreground="cc2222"/>
-      <style token="REGEX"                           foreground="ff6666"/>
-      <style token="MARKUP_TAG_NAME"                 foreground="ff3333" bold="true"/>
-      <style token="MARKUP_TAG_ATTRIBUTE"            foreground="ff5555"/>
-      <style token="MARKUP_TAG_ATTRIBUTE_VALUE"      foreground="ff6666"/>
-      <style token="MARKUP_COMMENT"                  foreground="552222" italic="true"/>
-      <style token="MARKUP_CDATA"                    foreground="ff4444"/>
-      <style token="MARKUP_CDATA_DELIMITER"          foreground="cc3333"/>
-      <style token="MARKUP_DTD"                      foreground="993333"/>
-      <style token="MARKUP_ENTITY_REFERENCE"         foreground="ff5555"/>
-      <style token="MARKUP_PROCESSING_INSTRUCTION"   foreground="cc2222"/>
+      <style token="ANNOTATION"                     foreground="ff7777" italic="true"/>
+      <style token="FUNCTION"                       foreground="ff8888"/>
+      <style token="VARIABLE"                       foreground="ff8888"/>
+      <style token="VARIABLE_2"                     foreground="ff9999"/>
+      <style token="VARIABLE_3"                     foreground="ff9999"/>
+      <style token="PREPROCESSOR"                   foreground="ff5555"/>
+      <style token="REGEX"                          foreground="ffaaaa"/>
+
+      <!-- Markup / XML / HTML -->
+      <style token="MARKUP_TAG_NAME"                foreground="ff4444" bold="true"/>
+      <style token="MARKUP_TAG_ATTRIBUTE"           foreground="ff7777"/>
+      <style token="MARKUP_TAG_ATTRIBUTE_VALUE"     foreground="ffaaaa"/>
+      <style token="MARKUP_COMMENT"                 foreground="993333" italic="true"/>
+      <style token="MARKUP_CDATA"                   foreground="ff8888"/>
+      <style token="MARKUP_CDATA_DELIMITER"         foreground="ff5555"/>
+      <style token="MARKUP_DTD"                     foreground="cc4444"/>
+      <style token="MARKUP_ENTITY_REFERENCE"        foreground="ff7777"/>
+      <style token="MARKUP_PROCESSING_INSTRUCTION"  foreground="ff5555"/>
    </tokenStyles>
 </theme>
