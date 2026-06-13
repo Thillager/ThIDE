@@ -117,7 +117,7 @@ public class Theme {
         new Color(45, 30, 30),       
         new Color(15, 10, 10),       
         "dark",                      
-        "fire_syntax"
+        "Monokai"
     );
 
     public static final Theme MONOKAI = new Theme(
