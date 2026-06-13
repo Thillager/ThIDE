@@ -18,6 +18,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
 public class ProjectRunner {
 
 	public static final String MODE_JAVA   = "Java";
@@ -224,6 +228,46 @@ public class ProjectRunner {
 				mc;
 			}
 
+			// ── HIERMIT IN PROJECTRUNNER.JAVA ERSETZEN ────────────────────────────────
+			try {
+				// 1. Standard-Variante: src/main/resources kopieren falls vorhanden
+				File resourcesDir = new File(currentProjectFolder, "src/main/resources");
+				if (resourcesDir.exists()) {
+					copyDirectory(resourcesDir.toPath(), new File(currentProjectFolder, "out").toPath());
+				}
+
+				// 2. Sicherheits-Variante: Falls XMLs direkt im normalen src-Ordner liegen,
+				// kopieren wir sie händisch rüber, damit javac sie nicht verschluckt!
+				File srcDir = new File(currentProjectFolder, "src");
+				if (srcDir.exists()) {
+					File outDir = new File(currentProjectFolder, "out");
+					java.nio.file.Files.walk(srcDir.toPath()).forEach(path -> {
+							try {
+								String fileName = path.getFileName().toString().toLowerCase();
+								// Wenn es eine XML-Datei (oder ein anderes Asset) ist, kopieren wir sie nach 'out'
+								if (java.nio.file.Files.isRegularFile(path) && (fileName.endsWith(".xml") || fileName.endsWith(".png"))) {
+									java.nio.file.Path relativePath = srcDir.toPath().relativize(path);
+
+									// Falls die XML in src/main/resources lag, schneiden wir das für den out-Ordner ab,
+									// damit die Paketstruktur (org/fife/...) direkt im out-Ordner startet
+									if (relativePath.toString().startsWith("main" + File.separator + "resources")) {
+										relativePath = new File(currentProjectFolder, "src/main/resources").toPath().relativize(path);
+									}
+
+									java.nio.file.Path destination = outDir.toPath().resolve(relativePath);
+									java.nio.file.Files.createDirectories(destination.getParent());
+									java.nio.file.Files.copy(path, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+								}
+							} catch (IOException e) {
+								consolePanel.log("[RUNNER WARN] Ressource konnte nicht kopiert werden: " + e.getMessage() + "\n", Color.ORANGE);
+							}
+						});
+				}
+			} catch (Exception e) {
+				consolePanel.log("[RUNNER FEHLER] Fehler beim Ressourcen-Kopieren: " + e.getMessage() + "\n", Color.RED);
+			}
+			// ─────────────────────────────────────────────────────────────────────────
+
 			executeCommand(compileCmd + " && " + runCmd, false);
 			break;
 
@@ -325,6 +369,26 @@ public class ProjectRunner {
 			}
 			break;
 		}
+	}
+
+	private static void copyDirectory(Path source, Path target) throws IOException {
+		Files.walk(source).forEach(path -> {
+				try {
+					Path destination = target.resolve(source.relativize(path));
+
+					if (Files.isDirectory(path)) {
+						Files.createDirectories(destination);
+					} else {
+						Files.copy(
+							path,
+							destination,
+							StandardCopyOption.REPLACE_EXISTING
+						);
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 	}
 
 

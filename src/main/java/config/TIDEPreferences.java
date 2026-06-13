@@ -87,7 +87,6 @@ public class TIDEPreferences {
 
 	// ── Scroll FPS Einstellungen ───────────────────────────────────────────
 	public static int getScrollFPS() {
-		// Gibt standardmäßig 60 (entspricht 16ms) zurück, falls nichts gespeichert ist
 		return prefs.getInt("scrollFPS", 60);
 	}
 
@@ -97,7 +96,6 @@ public class TIDEPreferences {
 
 	// ── Scroll Geschwindigkeit ─────────────────────────────────────────────
 	public static int getScrollSpeed() {
-		// Gibt standardmäßig 100 (%) zurück, falls kein Wert gespeichert ist
 		return prefs.getInt("scrollSpeed", 100); 
 	}
 
@@ -107,7 +105,6 @@ public class TIDEPreferences {
 
 	// ── Hardwarebeschleunigung ─────────────────────────────────────────────
 	public static String getHwAccelMode() {
-		// "auto" ist der Standardwert, falls das Feld leer ist
 		return prefs.get("hwAccelMode", "auto");
 	}
 
@@ -117,6 +114,21 @@ public class TIDEPreferences {
 		}
 	}
 
-	public static String getTheme()            { return prefs.get("theme", "Dark"); }
-	public static void   saveTheme(String name){ prefs.put("theme", name); }
+	// ── IDE Look & Feel Theme ──────────────────────────────────────────────
+	public static String getTheme() {
+		return prefs.get("theme", "dark");
+	}
+
+	public static void saveTheme(String theme) {
+		prefs.put("theme", theme);
+	}
+
+	// ── Editor XML-Farbschema Pfad ─────────────────────────────────────────
+	public static String getEditorThemePath() {
+		return prefs.get("editorThemePath", "");
+	}
+
+	public static void saveEditorThemePath(String path) {
+		prefs.put("editorThemePath", path);
+	}
 }

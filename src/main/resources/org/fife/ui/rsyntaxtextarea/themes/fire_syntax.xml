@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE theme [
+  <!ELEMENT theme (background?, caret?, currentLineHighlight?, marginLine?, markAllHighlight?, matchedBracket?, hyperlinks?, selection?, font?, tokenStyles?)>
+  <!ATTLIST theme version CDATA #REQUIRED>
+  <!ELEMENT background EMPTY>
+  <!ATTLIST background color CDATA #REQUIRED>
+  <!ELEMENT caret EMPTY>
+  <!ATTLIST caret color CDATA #REQUIRED>
+  <!ELEMENT currentLineHighlight EMPTY>
+  <!ATTLIST currentLineHighlight color CDATA #REQUIRED fade (true|false) #REQUIRED>
+  <!ELEMENT marginLine EMPTY>
+  <!ATTLIST marginLine color CDATA #REQUIRED>
+  <!ELEMENT markAllHighlight EMPTY>
+  <!ATTLIST markAllHighlight color CDATA #REQUIRED>
+  <!ELEMENT matchedBracket EMPTY>
+  <!ATTLIST matchedBracket color CDATA #REQUIRED bgColor CDATA #REQUIRED>
+  <!ELEMENT hyperlinks EMPTY>
+  <!ATTLIST hyperlinks color CDATA #REQUIRED>
+  <!ELEMENT selection EMPTY>
+  <!ATTLIST selection background CDATA #REQUIRED foreground CDATA #REQUIRED>
+  <!ELEMENT font EMPTY>
+  <!ATTLIST font family CDATA #REQUIRED size CDATA #REQUIRED>
+  <!ELEMENT tokenStyles (style*)>
+  <!ELEMENT style EMPTY>
+  <!ATTLIST style token CDATA #REQUIRED foreground CDATA #REQUIRED bold (true|false) #IMPLIED italic (true|false) #IMPLIED underline (true|false) #IMPLIED>
+]>
+<theme version="1.0">
+   <background color="000000"/>
+   <caret color="ff3333"/>
+   
+   <currentLineHighlight color="2a0a0a" fade="true"/>
+   
+   <marginLine color="2a0a0a"/>
+   <markAllHighlight color="5a1010"/>
+   <matchedBracket color="ff5555" bgColor="330000"/>
+   <hyperlinks color="ff6666"/>
+   <selection background="440a0a" foreground="ffffff"/>
+
+   <font family="Consolas" size="13"/>
+
+   <tokenStyles>
+      <style token="IDENTIFIER" foreground="ff4444"/>
+      <style token="NULL" foreground="ff4444"/>
+      <style token="WHITESPACE" foreground="2a0a0a"/>
+      
+      <style token="RESERVED_WORD" foreground="ff0000" bold="true"/>
+      <style token="RESERVED_WORD_2" foreground="ff2222" bold="true"/>
+      <style token="DATA_TYPE" foreground="ff3333" bold="true"/>
+      
+      <style token="LITERAL_STRING_DOUBLE_QUOTE" foreground="ff6666"/>
+      <style token="LITERAL_CHAR" foreground="ff6666"/>
+      <style token="LITERAL_NUMBER_DECIMAL_INT" foreground="ff4444"/>
+      <style token="LITERAL_NUMBER_FLOAT" foreground="ff4444"/>
+      <style token="LITERAL_BOOLEAN" foreground="ff0000" bold="true"/>
+      
+      <style token="COMMENT_EOL" foreground="552222" italic="true"/>
+      <style token="COMMENT_MULTILINE" foreground="552222" italic="true"/>
+   </tokenStyles>
+</theme>

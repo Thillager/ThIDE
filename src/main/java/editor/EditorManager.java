@@ -3,7 +3,9 @@ package editor;
 import org.fife.ui.autocomplete.*;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rsyntaxtextarea.Token;
+import org.fife.ui.rsyntaxtextarea.SyntaxScheme;
+import org.fife.ui.rsyntaxtextarea.Style;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import ui.ConsolePanel;
 import ui.WordManagerDialog;
@@ -221,20 +223,57 @@ public class EditorManager {
 
 			textArea.setCodeFoldingEnabled(true);
 
-			try {
-				String themeName = MainWindow.THEME.syntaxTheme;
-				Theme rstaTheme = Theme.load(getClass().getResourceAsStream(
-						"/org/fife/ui/rsyntaxtextarea/themes/" + themeName + ".xml"));
-				rstaTheme.apply(textArea);
-			} catch (IOException ioe) {
-				String themeName = MainWindow.THEME.syntaxTheme;
-				Theme rstaTheme = Theme.load(getClass().getResourceAsStream(
-						"/org/fife/ui/rsyntaxtextarea/themes/Monokai.xml"));
-				rstaTheme.apply(textArea);
-			}
-			textArea.setCaretColor(Color.WHITE);
+			// 1. Zuerst die Schriftart auf das TextArea anwenden (Verhindert den Font-Reset-Bug)
+			textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
 
-			textArea.setFont(new Font (TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
+			// ── REINE XML THEME LADE-LOGIK START ─────────────────────────────────
+			try {
+				String themeSetting = TIDEPreferences.getTheme();
+				if (MainWindow.THEME != null && MainWindow.THEME.syntaxTheme != null) {
+					themeSetting = MainWindow.THEME.syntaxTheme;
+				}
+
+				org.fife.ui.rsyntaxtextarea.Theme rstaTheme = null;
+
+				if (themeSetting != null && !themeSetting.trim().isEmpty()) {
+					File themeFile = new File(themeSetting);
+					if (!themeFile.exists() && !themeSetting.toLowerCase().endsWith(".xml")) {
+						themeFile = new File(themeSetting + ".xml");
+					}
+					if (!themeFile.exists()) {
+						themeFile = new File("out/org/fife/ui/rsyntaxtextarea/themes/" + themeSetting + (themeSetting.toLowerCase().endsWith(".xml") ? "" : ".xml"));
+					}
+
+					if (themeFile.exists()) {
+						try (java.io.InputStream fis = new java.io.FileInputStream(themeFile)) {
+							rstaTheme = org.fife.ui.rsyntaxtextarea.Theme.load(fis);
+						}
+					} else {
+						String resourcePath = "themes/" + themeSetting.toLowerCase() + (themeSetting.toLowerCase().endsWith(".xml") ? "" : ".xml");
+						try (java.io.InputStream is = org.fife.ui.rsyntaxtextarea.Theme.class.getResourceAsStream(resourcePath)) {
+							if (is != null) {
+								rstaTheme = org.fife.ui.rsyntaxtextarea.Theme.load(is);
+							}
+						}
+					}
+				}
+
+				// Rein natives Anwenden des geladenen XML-Themes ohne Buffer-Manipulation
+				if (rstaTheme != null) {
+					rstaTheme.apply(textArea);
+				} else {
+					try (java.io.InputStream defaultStream = org.fife.ui.rsyntaxtextarea.Theme.class.getResourceAsStream("themes/dark.xml")) {
+						if (defaultStream != null) {
+							org.fife.ui.rsyntaxtextarea.Theme.load(defaultStream).apply(textArea);
+						}
+					}
+				}
+			} catch (Exception e) {
+				consolePanel.log("[FEHLER] Theme-Ladefehler: " + e.getMessage() + "\n", java.awt.Color.RED);
+			}
+			// ── REINE XML THEME LADE-LOGIK ENDE ───────────────────────────────────
+
+			textArea.setCaretColor(Color.WHITE);
 
 			// ── Geteilte State-Holder für SmoothScroll ↔ Blur-Effekt ────────────
 			float[] sharedDynIntensity = { 0.0f };
@@ -245,7 +284,6 @@ public class EditorManager {
 			// ─────────────────────────────────────────────────────────────────────
 			RTextScrollPane sp = new RTextScrollPane(textArea) {
 
-				// ── State ────────────────────────────────────────────────────────
 				private int   lastScrollValue = -1;
 				private VolatileImage volatileBuffer = null;
 
@@ -264,7 +302,6 @@ public class EditorManager {
 
 				@Override
 				public void paint(Graphics g) {
-					// ── Motion Blur komplett deaktiviert? ────────────────────────
 					if (!TIDEPreferences.getMotionBlurEnabled()) {
 						super.paint(g);
 						return;
@@ -272,7 +309,6 @@ public class EditorManager {
 
 					float dynIntensity = sharedDynIntensity[0];
 
-					// ── Früh-Ausstieg: Wenn das System steht, sofort normal zeichnen ──
 					if (dynIntensity < 0.01f) {
 						super.paint(g);
 						return;
@@ -281,7 +317,6 @@ public class EditorManager {
 					int w = getWidth();
 					int h = getHeight();
 
-					// ── VolatileImage (VRAM) frisch halten ───────────────────────
 					GraphicsConfiguration gc = getGraphicsConfiguration();
 					if (volatileBuffer == null
 						|| volatileBuffer.getWidth()  != w
@@ -303,7 +338,6 @@ public class EditorManager {
 						gBuf.dispose();
 					} while (volatileBuffer.contentsLost());
 
-					// ── Auf Haupt-Graphics rendern ────────────────────────────────
 					Graphics2D g2d = (Graphics2D) g.create();
 
 					g2d.setRenderingHint(
@@ -311,27 +345,19 @@ public class EditorManager {
 						RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
 					);
 
-
-
-					// ── 1. Basis-Bild (Wird bei langem/schnellem Scrollen dezent transparenter) ──
-					// ── 2. Basis-Bild ────────────────────────────────────────────
 					float baseAlpha = 1.0f - (0.10f * dynIntensity);
 					g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, baseAlpha));
 					g2d.drawImage(volatileBuffer, 0, 0, null);
 
-					// ── 3. ORGANISCHER MOTION-BLUR TRAIL ────────────────────────
 					float blurAlpha = 0.75f * dynIntensity;
 					if (blurAlpha > 0.005f) {
-						int trailDir = -sharedScrollDir[0]; // Entgegen der echten Scrollrichtung
-
+						int trailDir = -sharedScrollDir[0]; 
 						float maxTrail = 40.0f * dynIntensity;
 
-						// Schicht 1: Nah und dicker
 						g2d.setComposite(AlphaComposite.getInstance(
 								AlphaComposite.SRC_OVER, blurAlpha * 0.40f));
 						g2d.drawImage(volatileBuffer, 0, Math.round(maxTrail * 0.30f * trailDir), null);
 
-						// Schicht 2: Der dynamische Ausläufer
 						g2d.setComposite(AlphaComposite.getInstance(
 								AlphaComposite.SRC_OVER, blurAlpha * 0.20f));
 						g2d.drawImage(volatileBuffer, 0, Math.round(maxTrail * 0.80f * trailDir), null);
@@ -362,7 +388,7 @@ public class EditorManager {
 			closeBtn.setContentAreaFilled(false);
 			closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 			closeBtn.addActionListener(e -> {
-					if (timerRef != null) timerRef.stop(); // Memory Leak Fix
+					if (timerRef != null) timerRef.stop(); 
 					openFiles.remove(sp);
 					editorTabs.remove(sp);
 				});
@@ -493,58 +519,58 @@ public class EditorManager {
 			String trimmed = lines[i].stripLeading();
 
 			if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
-	indent = Math.max(0, indent - 1);
-}
+				indent = Math.max(0, indent - 1);
+			}
 
-if (!trimmed.isEmpty()) {
-	result.append(tabUnit.repeat(indent)).append(trimmed);
-}
-if (i < lines.length - 1) result.append("\n");
+			if (!trimmed.isEmpty()) {
+				result.append(tabUnit.repeat(indent)).append(trimmed);
+			}
+			if (i < lines.length - 1) result.append("\n");
 
-long opens  = trimmed.chars().filter(c -> c == '{' || c == '(' || c == '[').count();
+			long opens  = trimmed.chars().filter(c -> c == '{' || c == '(' || c == '[').count();
 			long closes = trimmed.chars().filter(c -> c == '}' || c == ')' || c == ']').count();
 
-if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
-closes = Math.max(0, closes - 1);
-}
+			if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
+				closes = Math.max(0, closes - 1);
+			}
 
-indent = Math.max(0, indent + (int)(opens - closes));
-}
-
-int caretPos = ta.getCaretPosition();
-ta.setText(result.toString());
-ta.setCaretPosition(Math.min(caretPos, ta.getDocument().getLength()));
-consolePanel.log("[FORMAT] Datei formatiert.\n", Color.GREEN);
-}
-
-public File getActiveFile() {
-	Component tab = editorTabs.getSelectedComponent();
-	if (tab != null) return openFiles.get(tab);
-	return null;
-}
-
-private DefaultCompletionProvider createCompletionProvider(RSyntaxTextArea textArea) {
-	DefaultCompletionProvider provider = new DefaultCompletionProvider();
-	Set<String> seen = new HashSet<>();
-
-	String[] keywords = {"public", "private", "static", "void", "class", "import",
-		"String", "int", "boolean", "new", "return"};
-	for (String kw : keywords) {
-		if (seen.add(kw)) {
-			provider.addCompletion(new BasicCompletion(provider, kw));
+			indent = Math.max(0, indent + (int)(opens - closes));
 		}
+
+		int caretPos = ta.getCaretPosition();
+		ta.setText(result.toString());
+		ta.setCaretPosition(Math.min(caretPos, ta.getDocument().getLength()));
+		consolePanel.log("[FORMAT] Datei formatiert.\n", Color.GREEN);
 	}
 
-	String content = textArea.getText();
-	if (content != null && !content.isEmpty()) {
-		String[] tokens = content.split("[^\\w]+");
-		for (String token : tokens) {
-			if (token.length() > TIDEProperties.AUTOCOMPLETE_MIN_LEN && seen.add(token)) {
-				provider.addCompletion(new BasicCompletion(provider, token));
+	public File getActiveFile() {
+		Component tab = editorTabs.getSelectedComponent();
+		if (tab != null) return openFiles.get(tab);
+		return null;
+	}
+
+	private DefaultCompletionProvider createCompletionProvider(RSyntaxTextArea textArea) {
+		DefaultCompletionProvider provider = new DefaultCompletionProvider();
+		Set<String> seen = new HashSet<>();
+
+		String[] keywords = {"public", "private", "static", "void", "class", "import",
+			"String", "int", "boolean", "new", "return"};
+		for (String kw : keywords) {
+			if (seen.add(kw)) {
+				provider.addCompletion(new BasicCompletion(provider, kw));
 			}
 		}
-	}
 
-	return provider;
-}
+		String content = textArea.getText();
+		if (content != null && !content.isEmpty()) {
+			String[] tokens = content.split("[^\\w]+");
+			for (String token : tokens) {
+				if (token.length() > TIDEProperties.AUTOCOMPLETE_MIN_LEN && seen.add(token)) {
+					provider.addCompletion(new BasicCompletion(provider, token));
+				}
+			}
+		}
+
+		return provider;
+	}
 }
