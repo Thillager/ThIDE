@@ -3,6 +3,7 @@ package ui;
 import config.LanguageManager;
 import config.TIDEPreferences;
 import config.TIDEProperties;
+import config.Theme; // Importiert dein Theme-Objekt
 import editor.EditorManager;
 
 import javax.swing.*;
@@ -17,39 +18,49 @@ import java.awt.event.KeyEvent;
 import java.util.Map;
 import java.util.HashMap;
 
-
 public class SettingsDialog {
 
     private final JFrame parent;
     private final EditorManager editorManager;
     private final Runnable onLanguageChanged;
+    
+    // Wir holen uns das aktuell aktive Theme beim Öffnen des Dialogs
+    private final Theme currentTheme;
 
     public SettingsDialog(JFrame parent, EditorManager editorManager, Runnable onLanguageChanged) {
         this.parent            = parent;
         this.editorManager     = editorManager;
         this.onLanguageChanged = onLanguageChanged;
+        
+        // Holt das Theme aus den Preferences (Standard: DARK über byName abgefangen)
+        this.currentTheme      = Theme.byName(TIDEPreferences.getTheme());
     }
 
     public void show() {
         JDialog dialog = new JDialog(parent, "Einstellungen / Settings", true);
-        dialog.setSize(600, 750); // Leicht erhöht für das neue Layout
+        dialog.setSize(600, 750); 
         dialog.setLocationRelativeTo(parent);
         dialog.setLayout(new BorderLayout(10, 10));
-        dialog.getContentPane().setBackground(new Color(43, 45, 48));
+        
+        // Dynamische Theme-Farbe für den Dialog-Hintergrund
+        dialog.getContentPane().setBackground(currentTheme.background);
 
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBackground(new Color(43, 45, 48));
+        content.setBackground(currentTheme.background);
         content.setBorder(new EmptyBorder(15, 20, 10, 20));
 
         // ── Sprache ──────────────────────────────────────────────
         JPanel langPanel = createSection("Sprache / Language");
 
-        JComboBox<LanguageManager.Language> langBox =
-        new JComboBox<>(LanguageManager.Language.values());
+        // Sprach-Auswahl-Styling
+        JComboBox<LanguageManager.Language> langBox = new JComboBox<>(LanguageManager.Language.values());
         langBox.setSelectedItem(LanguageManager.Language.valueOf(TIDEPreferences.getLanguage()));
         langBox.setMaximumSize(new Dimension(200, 28));
         langBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        langBox.setBackground(currentTheme.backgroundLight);
+        langBox.setForeground(currentTheme.foreground);
+        
         langPanel.add(langBox);
         content.add(langPanel);
         content.add(Box.createVerticalStrut(12));
@@ -59,9 +70,9 @@ public class SettingsDialog {
         JPanel themePanel = createSection("Theme / Design", 180);
         themePanel.setLayout(new BoxLayout(themePanel, BoxLayout.Y_AXIS));
 
-        // 1. IDE Look & Feel (Alte bestehende Themes)
+        // 1. IDE Look & Feel
         JLabel lblIdeTheme = new JLabel("IDE-Design (Look & Feel):");
-        lblIdeTheme.setForeground(new Color(200, 200, 200));
+        lblIdeTheme.setForeground(currentTheme.foregroundDim);
         lblIdeTheme.setAlignmentX(Component.LEFT_ALIGNMENT);
         themePanel.add(lblIdeTheme);
         themePanel.add(Box.createVerticalStrut(4));
@@ -72,16 +83,16 @@ public class SettingsDialog {
         JComboBox<String> themeBox = new JComboBox<>(builtInThemes);
         themeBox.setMaximumSize(new Dimension(220, 28));
         themeBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        themeBox.setBackground(new Color(55, 58, 62));
-        themeBox.setForeground(Color.WHITE);
-        themeBox.setSelectedItem(TIDEPreferences.getTheme());
+        themeBox.setBackground(currentTheme.backgroundLight);
+        themeBox.setForeground(currentTheme.foreground);
+        themeBox.setSelectedItem(currentTheme.name); // Nimmt den Namen des aktuellen Themes
         themePanel.add(themeBox);
 
         themePanel.add(Box.createVerticalStrut(12));
 
         // 2. Editor Farbschema (XML Datei)
         JLabel lblEditorTheme = new JLabel("Editor-Farbschema (XML-Datei):");
-        lblEditorTheme.setForeground(new Color(200, 200, 200));
+        lblEditorTheme.setForeground(currentTheme.foregroundDim);
         lblEditorTheme.setAlignmentX(Component.LEFT_ALIGNMENT);
         themePanel.add(lblEditorTheme);
         themePanel.add(Box.createVerticalStrut(4));
@@ -92,17 +103,17 @@ public class SettingsDialog {
         themeRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JTextField txtThemePath = new JTextField(TIDEPreferences.getEditorThemePath());
-        txtThemePath.setBackground(new Color(30, 31, 34));
-        txtThemePath.setForeground(Color.WHITE);
-        txtThemePath.setCaretColor(Color.WHITE);
+        txtThemePath.setBackground(currentTheme.background);
+        txtThemePath.setForeground(currentTheme.foreground);
+        txtThemePath.setCaretColor(currentTheme.foreground);
         txtThemePath.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(80, 80, 80)),
+            BorderFactory.createLineBorder(currentTheme.border),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
         JButton btnBrowse = new JButton("Durchsuchen...");
-        btnBrowse.setBackground(new Color(60, 63, 65));
-        btnBrowse.setForeground(Color.WHITE);
+        btnBrowse.setBackground(currentTheme.backgroundLight);
+        btnBrowse.setForeground(currentTheme.foreground);
         btnBrowse.setFocusPainted(false);
         
         btnBrowse.addActionListener(e -> {
@@ -118,7 +129,8 @@ public class SettingsDialog {
         themePanel.add(themeRow);
 
         JLabel themeHint = new JLabel(
-            "<html><font color='#C8C8C8'>Änderungen wirken nach einem Neustart von TIDE.</font></html>");
+            "<html>Änderungen wirken nach einem Neustart von TIDE.</html>");
+        themeHint.setForeground(currentTheme.foregroundDim);
         themeHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         themeHint.setAlignmentX(Component.LEFT_ALIGNMENT);
         themePanel.add(Box.createVerticalStrut(6));
@@ -132,12 +144,12 @@ public class SettingsDialog {
 
         int currentSize = TIDEPreferences.getEditorFontSize();
         JLabel fontSizeLabel = new JLabel(currentSize + " pt");
-        fontSizeLabel.setForeground(new Color(200, 200, 200));
+        fontSizeLabel.setForeground(currentTheme.foregroundDim);
         fontSizeLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
 
         JSlider fontSlider = new JSlider(8, 28, currentSize);
-        fontSlider.setBackground(new Color(43, 45, 48));
-        fontSlider.setForeground(new Color(200, 200, 200));
+        fontSlider.setBackground(currentTheme.background);
+        fontSlider.setForeground(currentTheme.foregroundDim);
         fontSlider.setMajorTickSpacing(4);
         fontSlider.setMinorTickSpacing(1);
         fontSlider.setPaintTicks(true);
@@ -148,7 +160,7 @@ public class SettingsDialog {
         fontSlider.addChangeListener(e -> fontSizeLabel.setText(fontSlider.getValue() + " pt"));
 
         JPanel fontRow = new JPanel(new BorderLayout(8, 0));
-        fontRow.setBackground(new Color(43, 45, 48));
+        fontRow.setBackground(currentTheme.background);
         fontRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         fontRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         fontRow.add(fontSlider, BorderLayout.CENTER);
@@ -161,9 +173,9 @@ public class SettingsDialog {
         // -- Auto stop --------------------------------------------
         JPanel auStPanel = createSection("Stop when to many resources are used");
 
-        JCheckBox auStBox = new JCheckBox(
-            "Auto Stop",
-            TIDEPreferences.getAuSt());
+        JCheckBox auStBox = new JCheckBox("Auto Stop", TIDEPreferences.getAuSt());
+        auStBox.setBackground(currentTheme.background);
+        auStBox.setForeground(currentTheme.foregroundDim);
 
         auStPanel.add(auStBox);
         content.add(auStPanel);
@@ -174,12 +186,12 @@ public class SettingsDialog {
 
         int currentDelay = TIDEPreferences.getAutocompleteDelay();
         JLabel acLabel = new JLabel("Verzögerung: " + currentDelay + " ms");
-        acLabel.setForeground(new Color(200, 200, 200));
+        acLabel.setForeground(currentTheme.foregroundDim);
         acLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
 
         JSlider acSlider = new JSlider(0, 1000, currentDelay);
-        acSlider.setBackground(new Color(43, 45, 48));
-        acSlider.setForeground(new Color(200, 200, 200));
+        acSlider.setBackground(currentTheme.background);
+        acSlider.setForeground(currentTheme.foregroundDim);
         acSlider.setMajorTickSpacing(250);
         acSlider.setPaintTicks(true);
         acSlider.setPaintLabels(true);
@@ -189,7 +201,7 @@ public class SettingsDialog {
         acSlider.addChangeListener(e -> acLabel.setText("Verzögerung: " + acSlider.getValue() + " ms"));
 
         JPanel acRow = new JPanel(new BorderLayout(8, 0));
-        acRow.setBackground(new Color(43, 45, 48));
+        acRow.setBackground(currentTheme.background);
         acRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         acRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         acRow.add(acSlider, BorderLayout.CENTER);
@@ -205,24 +217,24 @@ public class SettingsDialog {
         JCheckBox motionBlurBox = new JCheckBox(
             "Scroll-Effekte aktiviert (Motion Blur & Stretch)",
             TIDEPreferences.getMotionBlurEnabled());
-        motionBlurBox.setBackground(new Color(43, 45, 48));
-        motionBlurBox.setForeground(new Color(200, 200, 200));
+        motionBlurBox.setBackground(currentTheme.background);
+        motionBlurBox.setForeground(currentTheme.foregroundDim);
         motionBlurBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         motionBlurBox.setToolTipText("Motion Blur und Stretch-Effekt beim Scrollen ein-/ausschalten");
         visualPanel.add(motionBlurBox);
 
         // Scroll FPS Dropdown
         JPanel fpsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
-        fpsPanel.setBackground(new Color(43, 45, 48));
+        fpsPanel.setBackground(currentTheme.background);
 
         JLabel lblFps = new JLabel("Scroll Animations-FPS: ");
-        lblFps.setForeground(new Color(220, 220, 220));
+        lblFps.setForeground(currentTheme.foreground);
         lblFps.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         Integer[] fpsOptions = { 60, 90, 144, 240 };
         JComboBox<Integer> cbFps = new JComboBox<>(fpsOptions);
         cbFps.setSelectedItem(TIDEPreferences.getScrollFPS());
-        cbFps.setBackground(new Color(60, 63, 65));
+        cbFps.setBackground(currentTheme.backgroundLight);
         cbFps.setForeground(Color.WHITE);
 
         fpsPanel.add(lblFps);
@@ -231,29 +243,29 @@ public class SettingsDialog {
 
         // Scroll-Geschwindigkeit Slider
         JPanel speedPanel = new JPanel(new BorderLayout(10, 0));
-        speedPanel.setBackground(new Color(43, 45, 48));
+        speedPanel.setBackground(currentTheme.background);
         speedPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
         speedPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblSpeedDesc = new JLabel("Scroll-Geschwindigkeit: ");
-        lblSpeedDesc.setForeground(new Color(220, 220, 220));
+        lblSpeedDesc.setForeground(currentTheme.foreground);
         lblSpeedDesc.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         int currentSpeed = TIDEPreferences.getScrollSpeed();
         JLabel speedValueLabel = new JLabel(currentSpeed + "%");
-        speedValueLabel.setForeground(new Color(200, 200, 200));
+        speedValueLabel.setForeground(currentTheme.foregroundDim);
         speedValueLabel.setFont(new Font("Consolas", Font.PLAIN, 13));
         speedValueLabel.setPreferredSize(new Dimension(45, 20));
 
         JSlider speedSlider = new JSlider(10, 250, currentSpeed);
-        speedSlider.setBackground(new Color(43, 45, 48));
-        speedSlider.setForeground(new Color(200, 200, 200));
+        speedSlider.setBackground(currentTheme.background);
+        speedSlider.setForeground(currentTheme.foregroundDim);
         speedSlider.setMajorTickSpacing(40);
         speedSlider.setPaintTicks(true);
         speedSlider.addChangeListener(e -> speedValueLabel.setText(speedSlider.getValue() + "%"));
 
         JPanel speedControls = new JPanel(new BorderLayout(5, 0));
-        speedControls.setBackground(new Color(43, 45, 48));
+        speedControls.setBackground(currentTheme.background);
         speedControls.add(speedSlider, BorderLayout.CENTER);
         speedControls.add(speedValueLabel, BorderLayout.EAST);
 
@@ -264,7 +276,8 @@ public class SettingsDialog {
         visualPanel.add(speedPanel);
 
         JLabel restartHint = new JLabel(
-            "<html><font color='#C8C8C8'>Hinweis: Nach Änderung der Scroll-FPS wird ein Neustart empfohlen.</font></html>");
+            "<html>Hinweis: Nach Änderung der Scroll-FPS wird ein Neustart empfohlen.</html>");
+        restartHint.setForeground(currentTheme.foregroundDim);
         restartHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         restartHint.setAlignmentX(Component.LEFT_ALIGNMENT);
         visualPanel.add(Box.createVerticalStrut(4));
@@ -277,13 +290,12 @@ public class SettingsDialog {
         JPanel hwPanel = createSection("Rendering / Hardwarebeschleunigung", 90);
 
         JPanel hwRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
-        hwRow.setBackground(new Color(43, 45, 48));
+        hwRow.setBackground(currentTheme.background);
 
         JLabel lblHw = new JLabel("Hardwarebeschleunigung: ");
-        lblHw.setForeground(new Color(220, 220, 220));
+        lblHw.setForeground(currentTheme.foreground);
         lblHw.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-        // Reihenfolge muss mit hwOptionKeys uebereinstimmen
         String[] hwOptions   = { "Automatisch", "Immer AN", "Immer AUS" };
         String[] hwOptionKeys = { "auto", "on", "off" };
 
@@ -295,7 +307,7 @@ public class SettingsDialog {
                 break;
             }
         }
-        hwBox.setBackground(new Color(60, 63, 65));
+        hwBox.setBackground(currentTheme.backgroundLight);
         hwBox.setForeground(Color.WHITE);
         hwBox.setMaximumSize(new Dimension(160, 28));
 
@@ -304,8 +316,9 @@ public class SettingsDialog {
         hwPanel.add(hwRow);
 
         JLabel hwHint = new JLabel(
-            "<html><font color='#C8C8C8'>Automatisch: AN bei installierter App, AUS beim JAR-Start.<br>" +
-            "Änderung wirkt nach Neustart von TIDE.</font></html>");
+            "<html>Automatisch: AN bei installierter App, AUS beim JAR-Start.<br>" +
+            "Änderung wirkt nach Neustart von TIDE.</html>");
+        hwHint.setForeground(currentTheme.foregroundDim);
         hwHint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         hwHint.setAlignmentX(Component.LEFT_ALIGNMENT);
         hwPanel.add(Box.createVerticalStrut(4));
@@ -320,8 +333,8 @@ public class SettingsDialog {
         JCheckBox autoScrollBox = new JCheckBox(
             "Auto-Scroll aktiviert",
             TIDEPreferences.getConsoleAutoScroll());
-        autoScrollBox.setBackground(new Color(43, 45, 48));
-        autoScrollBox.setForeground(new Color(200, 200, 200));
+        autoScrollBox.setBackground(currentTheme.background);
+        autoScrollBox.setForeground(currentTheme.foregroundDim);
         autoScrollBox.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         consolePanel.add(autoScrollBox);
@@ -343,7 +356,7 @@ public class SettingsDialog {
         Map<String, Integer> pendingHotkeys   = new HashMap<>();
         Map<String, Integer> pendingModifiers = new HashMap<>();
         JPanel tablePanel = new JPanel(new GridLayout(hotkeyDefs.length, 2, 10, 6));
-        tablePanel.setBackground(new Color(43, 45, 48));
+        tablePanel.setBackground(currentTheme.background);
         tablePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         for (Object[] def : hotkeyDefs) {
@@ -356,7 +369,7 @@ public class SettingsDialog {
 
             JLabel descLabel = new JLabel(label);
             descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            descLabel.setForeground(new Color(200, 200, 200));
+            descLabel.setForeground(currentTheme.foregroundDim);
 
             String initModText = "";
             if ((savedMod & InputEvent.CTRL_DOWN_MASK)  != 0) initModText += "Strg+";
@@ -365,11 +378,11 @@ public class SettingsDialog {
 
             JTextField keyField = new JTextField(initModText + KeyEvent.getKeyText(savedKey));
             keyField.setFont(new Font("Consolas", Font.BOLD, 12));
-            keyField.setForeground(new Color(255, 200, 80));
-            keyField.setBackground(new Color(55, 58, 62));
-            keyField.setCaretColor(new Color(255, 200, 80));
+            keyField.setForeground(currentTheme.accent); // Nutzt das Farb-Highlight des Themes
+            keyField.setBackground(currentTheme.backgroundLight);
+            keyField.setCaretColor(currentTheme.accent);
             keyField.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(80, 80, 80)),
+                    BorderFactory.createLineBorder(currentTheme.border),
                     BorderFactory.createEmptyBorder(2, 6, 2, 6)));
             keyField.setEditable(false);
             keyField.setMaximumSize(new Dimension(80, 26));
@@ -392,7 +405,7 @@ public class SettingsDialog {
                         if (e.isAltDown())     modText += "Alt+";
 
                         keyField.setText(modText + KeyEvent.getKeyText(code));
-                        keyField.setForeground(new Color(80, 200, 120));
+                        keyField.setForeground(currentTheme.accentGreen); // Visuelles Feedback bei Erfolg
 
                         pendingHotkeys.put(action, code);
                         pendingModifiers.put(action, mod);
@@ -402,12 +415,12 @@ public class SettingsDialog {
             keyField.addFocusListener(new java.awt.event.FocusAdapter() {
                     @Override public void focusGained(java.awt.event.FocusEvent e) {
                         keyField.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(new Color(80, 200, 120)),
+                                BorderFactory.createLineBorder(currentTheme.accentGreen),
                                 BorderFactory.createEmptyBorder(2, 6, 2, 6)));
                     }
                     @Override public void focusLost(java.awt.event.FocusEvent e) {
                         keyField.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(new Color(80, 80, 80)),
+                                BorderFactory.createLineBorder(currentTheme.border),
                                 BorderFactory.createEmptyBorder(2, 6, 2, 6)));
                     }
                 });
@@ -422,20 +435,21 @@ public class SettingsDialog {
 
         // ── Buttons ───────────────────────────────────────────────
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        btnPanel.setBackground(new Color(43, 45, 48));
+        btnPanel.setBackground(currentTheme.background);
 
         JButton btnApply  = new JButton("Übernehmen");
         JButton btnCancel = new JButton("Abbrechen");
 
-        btnApply.setForeground(new Color(80, 200, 120));
-        btnCancel.setForeground(new Color(180, 180, 180));
+        btnApply.setForeground(currentTheme.accentGreen);
+        btnCancel.setForeground(currentTheme.foregroundDim);
+        btnApply.setBackground(currentTheme.backgroundLight);
+        btnCancel.setBackground(currentTheme.backgroundLight);
 
         btnCancel.addActionListener(e -> dialog.dispose());
 
         btnApply.addActionListener(e -> {
                 // Sprache
-                LanguageManager.Language selectedLang =
-                (LanguageManager.Language) langBox.getSelectedItem();
+                LanguageManager.Language selectedLang = (LanguageManager.Language) langBox.getSelectedItem();
                 LanguageManager.set(selectedLang);
                 TIDEPreferences.saveLanguage(selectedLang.name());
                 Locale locale = selectedLang.name().equals("DE") ? Locale.GERMAN : Locale.ENGLISH;
@@ -448,13 +462,12 @@ public class SettingsDialog {
                 TIDEPreferences.saveEditorFontSize(newSize);
                 if (editorManager != null) editorManager.applyFontSizeToAllEditors(newSize);
 
-                // BEIDE Werte werden jetzt unabhängig voneinander gespeichert
+                // Design Speichern
                 TIDEPreferences.saveTheme((String) themeBox.getSelectedItem());
                 TIDEPreferences.saveEditorThemePath(txtThemePath.getText());
 
                 // Autocomplete-Delay
                 TIDEPreferences.saveAutocompleteDelay(acSlider.getValue());
-
                 TIDEPreferences.saveAuSt(auStBox.isSelected());
 
                 // Motion Blur & Scroll
@@ -486,7 +499,7 @@ public class SettingsDialog {
 
         JScrollPane scrollPane = new JScrollPane(content);
         scrollPane.setBorder(null);
-        scrollPane.getViewport().setBackground(new Color(43, 45, 48));
+        scrollPane.getViewport().setBackground(currentTheme.background);
 
         int baseIncrement = 16;
         double multiplier = TIDEPreferences.getScrollSpeed() / 100.0;
@@ -500,13 +513,13 @@ public class SettingsDialog {
     private JPanel createSection(String title, int height) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(43, 45, 48));
+        panel.setBackground(currentTheme.background);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
 
         TitledBorder border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(80, 80, 80), 1), title);
-        border.setTitleColor(new Color(180, 180, 180));
+            BorderFactory.createLineBorder(currentTheme.border, 1), title);
+        border.setTitleColor(currentTheme.foregroundDim);
         border.setTitleFont(new Font("Segoe UI", Font.PLAIN, 12));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 border, new EmptyBorder(6, 8, 8, 8)));
