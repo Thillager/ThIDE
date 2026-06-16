@@ -509,26 +509,116 @@ public class ProjectRunner {
 	}
 
 	public void handleTBuild() {
-		if (currentProjectFolder == null) return;
+		if (currentProjectFolder == null) {
+			return;
+		}
+
 		File tbuildJar = new File(currentProjectFolder, "TBuild.jar");
+
 		if (tbuildJar.exists()) {
 			executeCommand("java -jar TBuild.jar", true);
-		} else {
-			new Thread(() -> {
-					try {
-						URL url = java.net.URI.create("https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar").toURL();
-						HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-						connection.setInstanceFollowRedirects(true);
-						try (InputStream in = connection.getInputStream()) {
-							Files.copy(in, tbuildJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
-						}
-						executeCommand("java -jar TBuild.jar", true);
-					} catch (Exception e) {
-						System.err.println("Fehler beim Herunterladen oder Ausführen von TBuild: " + e.getMessage());
-						e.printStackTrace();
-					}
-				}).start();
+			return;
 		}
+
+		int antwort = JOptionPane.showConfirmDialog(
+			null,
+			"TBuild nicht gefunden, möchtest du die Datei ins Projekt laden?",
+			"Bestätigung",
+			JOptionPane.YES_NO_OPTION
+		);
+
+		if (antwort != JOptionPane.YES_OPTION) {
+			return;
+		}
+
+		JDialog dialog = new JDialog((java.awt.Frame) null, "TBuild wird heruntergeladen...", true);
+
+		JProgressBar progressBar = new JProgressBar(0, 100);
+		progressBar.setStringPainted(true);
+
+		JLabel statusLabel = new JLabel("Download wird gestartet...");
+
+		JPanel panel = new JPanel(new BorderLayout(10, 10));
+		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		panel.add(statusLabel, BorderLayout.NORTH);
+		panel.add(progressBar, BorderLayout.CENTER);
+
+		dialog.setContentPane(panel);
+		dialog.setSize(400, 100);
+		dialog.setLocationRelativeTo(null);
+		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+
+		SwingWorker<Void, Integer> worker = new SwingWorker<>() {
+
+			@Override
+			protected Void doInBackground() throws Exception {
+
+				URL url = java.net.URI.create(
+					"https://github.com/Thillager/Tbuild/releases/latest/download/TBuild.jar"
+				).toURL();
+
+				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+				connection.setInstanceFollowRedirects(true);
+
+				int totalBytes = connection.getContentLength();
+
+				try (
+					InputStream in = connection.getInputStream();
+					FileOutputStream out = new FileOutputStream(tbuildJar)
+				) {
+					byte[] buffer = new byte[8192];
+					long downloadedBytes = 0;
+
+					int bytesRead;
+					while ((bytesRead = in.read(buffer)) != -1) {
+
+						out.write(buffer, 0, bytesRead);
+						downloadedBytes += bytesRead;
+
+						if (totalBytes > 0) {
+							int progress = (int) ((downloadedBytes * 100L) / totalBytes);
+							setProgress(progress);
+						}
+					}
+				}
+
+				return null;
+			}
+
+			@Override
+			protected void done() {
+				dialog.dispose();
+
+				try {
+					get(); // wirft Exception falls Download fehlgeschlagen
+
+					executeCommand("java -jar TBuild.jar", true);
+
+				} catch (Exception e) {
+					JOptionPane.showMessageDialog(
+						null,
+						"Fehler beim Herunterladen von TBuild:\n" + e.getMessage(),
+						"Fehler",
+						JOptionPane.ERROR_MESSAGE
+					);
+
+					e.printStackTrace();
+				}
+			}
+		};
+
+		worker.addPropertyChangeListener(evt -> {
+				if ("progress".equals(evt.getPropertyName())) {
+					int progress = (Integer) evt.getNewValue();
+
+					progressBar.setValue(progress);
+					statusLabel.setText("Download: " + progress + "%");
+				}
+			});
+
+		worker.execute();
+
+		dialog.setVisible(true);
 	}
 
 	private Runnable onRefreshFileTree;
