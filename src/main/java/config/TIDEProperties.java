@@ -1,9 +1,9 @@
-package config;
+52package config;
 
 public class TIDEProperties {
 
 	// ── Versionierung ──────────────────────────────────────────
-	public static final String APP_VERSION = "4.5.0";
+	public static final String APP_VERSION = "4.5.1";
 
 	// ── GitHub ─────────────────────────────────────────────────
 	// Aktuell in MainWindow.java als GITHUB_REPO hardcoded
