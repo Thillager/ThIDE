@@ -1,4 +1,4 @@
-52package config;
+package config;
 
 public class TIDEProperties {
 
