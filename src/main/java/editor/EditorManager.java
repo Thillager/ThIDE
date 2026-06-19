@@ -159,16 +159,9 @@ public class EditorManager {
 
     // ─────────────────────────────────────────────────────────────────────────
     // THEME LADEN
-    // Reihenfolge:
-    //   1. Benutzerdefinierter Dateipfad aus TIDEPreferences.getEditorThemePath()
-    //   2. Eigene Ressourcen im Classpath  (z.B. fire_syntax.xml unter
-    //      src/main/resources/org/fife/ui/rsyntaxtextarea/themes/)
-    //   3. Eingebaute RSyntaxTextArea-Themes  (dark, monokai, idea, …)
-    //   4. Fallback: dark.xml
     // ─────────────────────────────────────────────────────────────────────────
     private org.fife.ui.rsyntaxtextarea.Theme loadTheme(String themeSetting) {
 
-        // ── 1. Expliziter Dateipfad aus den Einstellungen ──────────────────
         String customPath = TIDEPreferences.getEditorThemePath();
         if (customPath != null && !customPath.isBlank()) {
             File themeFile = new File(customPath);
@@ -184,13 +177,10 @@ public class EditorManager {
 
         if (themeSetting == null || themeSetting.isBlank()) return null;
 
-        // Sicherstellen, dass der Name mit .xml endet
         String xmlName = themeSetting.toLowerCase().endsWith(".xml")
                 ? themeSetting
                 : themeSetting + ".xml";
 
-        // ── 2. Eigene Ressource (absoluter Classpath-Pfad) ─────────────────
-        //    Findet z.B. src/main/resources/org/fife/ui/rsyntaxtextarea/themes/fire_syntax.xml
         String ownResource = "/org/fife/ui/rsyntaxtextarea/themes/" + xmlName;
         try (InputStream is = EditorManager.class.getResourceAsStream(ownResource)) {
             if (is != null) {
@@ -201,8 +191,6 @@ public class EditorManager {
                     + e.getMessage() + "\n", Color.ORANGE);
         }
 
-        // ── 3. Eingebaute RSTA-Themes (relativ zu Theme.class) ────────────
-        //    Findet dark.xml, monokai.xml, idea.xml usw. aus der RSTA-JAR
         String builtinResource = "themes/" + xmlName;
         try (InputStream is = org.fife.ui.rsyntaxtextarea.Theme.class
                 .getResourceAsStream(builtinResource)) {
@@ -214,11 +202,10 @@ public class EditorManager {
                     + e.getMessage() + "\n", Color.ORANGE);
         }
 
-        return null; // kein Theme gefunden → Fallback greift im Aufrufer
+        return null;
     }
 
     private void applyTheme(RSyntaxTextArea textArea) {
-        // Theme-Name ermitteln: THEME-Objekt hat Vorrang vor den Preferences
         String themeSetting = (MainWindow.THEME != null && MainWindow.THEME.syntaxTheme != null)
                 ? MainWindow.THEME.syntaxTheme
                 : TIDEPreferences.getTheme();
@@ -229,7 +216,6 @@ public class EditorManager {
             if (rstaTheme != null) {
                 rstaTheme.apply(textArea);
             } else {
-                // ── 4. Fallback: dark.xml aus RSTA ────────────────────────
                 try (InputStream fallback = org.fife.ui.rsyntaxtextarea.Theme.class
                         .getResourceAsStream("themes/dark.xml")) {
                     if (fallback != null) {
@@ -243,7 +229,6 @@ public class EditorManager {
     }
 
     public void openFileInEditor(File file) {
-        // Schon geöffnete Datei aktivieren
         for (int i = 0; i < editorTabs.getTabCount(); i++) {
             if (file.equals(openFiles.get(editorTabs.getComponentAt(i)))) {
                 editorTabs.setSelectedIndex(i);
@@ -258,7 +243,6 @@ public class EditorManager {
             SwingUtilities.invokeLater(() -> installPopupLocalizationHook(textArea));
             textArea.setText(content);
 
-            // Syntax-Highlighting
             String fileName = file.getName().toLowerCase();
             if      (fileName.endsWith(".java"))                              textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
             else if (fileName.endsWith(".py"))                                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
@@ -270,24 +254,14 @@ public class EditorManager {
 
             textArea.setCodeFoldingEnabled(true);
 
-            // Font ZUERST setzen (verhindert Font-Reset durch Theme.apply)
             textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
-
-            // Theme anwenden
             applyTheme(textArea);
-
-            // Font nochmals setzen, falls Theme ihn überschrieben hat
             textArea.setFont(new Font(TIDEProperties.EDITOR_FONT, Font.PLAIN, TIDEPreferences.getEditorFontSize()));
-
             textArea.setCaretColor(Color.WHITE);
 
-            // ── Geteilte State-Holder für SmoothScroll ↔ Blur-Effekt ─────
             float[] sharedDynIntensity = { 0.0f };
             int[]   sharedScrollDir    = { 0 };
 
-            // ─────────────────────────────────────────────────────────────
-            // MOTION-BLUR SCROLL-PANE
-            // ─────────────────────────────────────────────────────────────
             RTextScrollPane sp = new RTextScrollPane(textArea) {
 
                 private int lastScrollValue = -1;
@@ -375,7 +349,6 @@ public class EditorManager {
                     textArea.getFontMetrics(textArea.getFont()).getHeight());
             sp.setBorder(null);
 
-            // Tab-Header mit Schließen-Button
             JPanel tabHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
             tabHeader.setOpaque(false);
             tabHeader.add(new JLabel(file.getName()));
@@ -401,7 +374,6 @@ public class EditorManager {
                 outlinePanel.refresh(textArea, file.getName());
             }
 
-            // Auto-Vervollständigung
             DefaultCompletionProvider provider = createCompletionProvider(textArea);
             AutoCompletion ac = new AutoCompletion(provider);
             ac.setAutoCompleteSingleChoices(false);
@@ -495,22 +467,106 @@ public class EditorManager {
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // FORMAT – sprachspezifisch, Cursor-Position per Zeile+Spalte gesichert
+    // ─────────────────────────────────────────────────────────────────────────
     public void formatCurrentFile() {
         Component tab = editorTabs.getSelectedComponent();
         if (!(tab instanceof RTextScrollPane sp)) return;
 
         RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
-        String[] lines   = ta.getText().split("\n", -1);
-        int      tabSize = ta.getTabSize();
-        boolean  useTabs = !ta.getTabsEmulated();
-        String   tabUnit = useTabs ? "\t" : " ".repeat(tabSize);
 
-        StringBuilder result = new StringBuilder();
+        // ── Cursor-Position als Zeile + Spalte sichern ────────────────────
+        // Ein absoluter Offset wird nach setText() falsch, weil sich Zeilen
+        // verschieben. Zeile + Spalte bleibt semantisch korrekt: wir landen
+        // exakt an der gleichen Stelle im Code, egal ob Leerzeilen wegfallen.
+        int savedLine = 0;
+        int savedCol  = 0;
+        try {
+            int caretOffset = ta.getCaretPosition();
+            savedLine = ta.getLineOfOffset(caretOffset);
+            savedCol  = caretOffset - ta.getLineStartOffset(savedLine);
+        } catch (Exception ignored) {}
+
+        // ── Sprache ermitteln ──────────────────────────────────────────────
+        File activeFile = getActiveFile();
+        String fileName = activeFile != null ? activeFile.getName().toLowerCase() : "";
+        boolean isPython = fileName.endsWith(".py");
+        boolean isJavaLike = fileName.endsWith(".java")
+                || fileName.endsWith(".c")
+                || fileName.endsWith(".cpp")
+                || fileName.endsWith(".h")
+                || fileName.endsWith(".hpp");
+
+        String formatted;
+        if (isPython) {
+            formatted = formatPython(ta.getText(), ta.getTabSize());
+        } else if (isJavaLike) {
+            formatted = formatBraces(ta.getText(), ta.getTabSize(), !ta.getTabsEmulated());
+        } else {
+            // Für alle anderen Dateien: nur Trailing-Whitespace entfernen
+            formatted = stripTrailingWhitespace(ta.getText());
+        }
+
+        // ── Text ersetzen und Cursor wiederherstellen ──────────────────────
+        ta.setText(formatted);
+
+        try {
+            int totalLines = ta.getLineCount();
+            // Falls durch Formatierung Zeilen weggefallen sind → auf letzte begrenzen
+            int targetLine = Math.min(savedLine, totalLines - 1);
+            int lineStart  = ta.getLineStartOffset(targetLine);
+            int lineLen    = ta.getLineEndOffset(targetLine) - lineStart;
+            // Spalte auf die tatsächliche Zeilenlänge begrenzen
+            int targetCol  = Math.min(savedCol, Math.max(0, lineLen - 1));
+            ta.setCaretPosition(lineStart + targetCol);
+        } catch (Exception ignored) {
+            // Fallback: Anfang
+            ta.setCaretPosition(0);
+        }
+
+        consolePanel.log("[FORMAT] " + (isPython ? "Python" : isJavaLike ? "Java/C" : "Datei")
+                + " formatiert.\n", Color.GREEN);
+    }
+
+    // ── Python-Formatter ──────────────────────────────────────────────────────
+    // Strategie: die logische Einrücktiefe liest sich aus dem vorhandenen Code.
+    // Wir normalisieren nur die Einrückzeichen (Tabs → Spaces oder umgekehrt)
+    // und entfernen trailing whitespace. Die Einrücktiefe selbst ändern wir NICHT –
+    // Python-Einrückung ist semantisch, der Benutzer hat sie absichtlich gesetzt.
+    private String formatPython(String code, int tabSize) {
+        String[] lines = code.split("\n", -1);
+        StringBuilder result = new StringBuilder(code.length() + 64);
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+
+            // Trailing whitespace entfernen
+            String trimmedRight = trimRight(line);
+
+            // Einrückung normalisieren: gemischte Tabs+Spaces → nur Spaces
+            // Wir expandieren führende Tabs auf tabSize Spaces
+            String normalized = expandLeadingTabs(trimmedRight, tabSize);
+
+            result.append(normalized);
+            if (i < lines.length - 1) result.append("\n");
+        }
+
+        return result.toString();
+    }
+
+    // ── Java/C-Brace-Formatter ────────────────────────────────────────────────
+    // Gleiche Logik wie vorher, aber sauberer refaktoriert und mit Tab-Unterstützung.
+    private String formatBraces(String code, int tabSize, boolean useTabs) {
+        String   tabUnit = useTabs ? "\t" : " ".repeat(Math.max(1, tabSize));
+        String[] lines   = code.split("\n", -1);
+        StringBuilder result = new StringBuilder(code.length() + 256);
         int indent = 0;
 
         for (int i = 0; i < lines.length; i++) {
-            String trimmed = lines[i].stripLeading();
+            String trimmed = trimRight(lines[i]).stripLeading();
 
+            // Schließende Klammern VOR der Einrückung verringern
             if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
                 indent = Math.max(0, indent - 1);
             }
@@ -520,9 +576,11 @@ public class EditorManager {
             }
             if (i < lines.length - 1) result.append("\n");
 
+            // Öffnende minus schließende Klammern auf dieser Zeile → Einrück-Delta
             long opens  = trimmed.chars().filter(c -> c == '{' || c == '(' || c == '[').count();
             long closes = trimmed.chars().filter(c -> c == '}' || c == ')' || c == ']').count();
 
+            // Die bereits verarbeitete führende schließende Klammer nicht doppelt zählen
             if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
                 closes = Math.max(0, closes - 1);
             }
@@ -530,10 +588,54 @@ public class EditorManager {
             indent = Math.max(0, indent + (int)(opens - closes));
         }
 
-        int caretPos = ta.getCaretPosition();
-        ta.setText(result.toString());
-        ta.setCaretPosition(Math.min(caretPos, ta.getDocument().getLength()));
-        consolePanel.log("[FORMAT] Datei formatiert.\n", Color.GREEN);
+        return result.toString();
+    }
+
+    // ── Hilfsmethoden ─────────────────────────────────────────────────────────
+
+    /** Entfernt nur Whitespace am Zeilenende (rechts), lässt Einrückung links. */
+    private static String trimRight(String s) {
+        int end = s.length();
+        while (end > 0 && Character.isWhitespace(s.charAt(end - 1))) end--;
+        return s.substring(0, end);
+    }
+
+    /** Expandiert führende Tabs zu Spaces (für Python-Normalisierung). */
+    private static String expandLeadingTabs(String line, int tabSize) {
+        if (line.isEmpty() || line.charAt(0) == ' ') return line; // Häufigster Fall: bereits Spaces
+        StringBuilder sb = new StringBuilder(line.length() + 16);
+        int col = 0;
+        int i   = 0;
+        // Nur den führenden Whitespace-Bereich verarbeiten
+        while (i < line.length()) {
+            char c = line.charAt(i);
+            if (c == '\t') {
+                int spaces = tabSize - (col % tabSize);
+                sb.append(" ".repeat(spaces));
+                col += spaces;
+                i++;
+            } else if (c == ' ') {
+                sb.append(' ');
+                col++;
+                i++;
+            } else {
+                // Rest der Zeile unverändert anhängen
+                sb.append(line, i, line.length());
+                break;
+            }
+        }
+        return sb.toString();
+    }
+
+    /** Entfernt nur Trailing-Whitespace, keine sonstige Formatierung. */
+    private static String stripTrailingWhitespace(String code) {
+        String[] lines = code.split("\n", -1);
+        StringBuilder result = new StringBuilder(code.length());
+        for (int i = 0; i < lines.length; i++) {
+            result.append(trimRight(lines[i]));
+            if (i < lines.length - 1) result.append("\n");
+        }
+        return result.toString();
     }
 
     public File getActiveFile() {
