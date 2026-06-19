@@ -42,7 +42,7 @@ public class LanguageManager {
 		texts.put("DE_AboutDialog.header", "Über TIDE");
 		texts.put("DE_searchUpdates", "Nach Updates suchen");
 		texts.put("DE_close", "Schließen");
-		texts.put("DE_oeffnen", "Oeffnen");
+		texts.put("DE_open", "Oeffnen");
 		texts.put("DE_format", "Formatieren");
 
 		// English
