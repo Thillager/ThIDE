@@ -1,6 +1,7 @@
 package ui;
 
 import editor.EditorManager;
+import config.Theme;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -19,16 +20,17 @@ public class GlobalSearchPanel extends JPanel {
     private JList<SearchMatch> resultList;
     
     private final EditorManager editorManager;
-    private final JTabbedPane editorTabs; // ← Jetzt korrekt deklariert!
+    private final JTabbedPane editorTabs;
     private File currentProjectFolder;
 
-    // Konstruktor erwartet nun EditorManager UND JTabbedPane
     public GlobalSearchPanel(EditorManager editorManager, JTabbedPane editorTabs) { 
         super(new BorderLayout());
         this.editorManager = editorManager;
-        this.editorTabs = editorTabs; // ← Jetzt korrekt zugewiesen!
-        
-        setBackground(new Color(45, 47, 49));
+        this.editorTabs = editorTabs;
+
+        Theme t = MainWindow.THEME;
+
+        setBackground(t.backgroundLight);
         setBorder(new EmptyBorder(5, 10, 5, 10));
         setVisible(false);
 
@@ -37,13 +39,20 @@ public class GlobalSearchPanel extends JPanel {
         topPanel.setOpaque(false);
         
         searchField = new JTextField(25);
+        searchField.setBackground(t.background);
+        searchField.setForeground(t.foreground);
+        searchField.setCaretColor(t.foreground);
+
         JButton btnSearch = new JButton("Projekt durchsuchen");
         matchCaseCB = new JCheckBox("Groß/Klein beachten");
-        matchCaseCB.setForeground(Color.WHITE);
+        matchCaseCB.setForeground(t.foreground);
         matchCaseCB.setOpaque(false);
         JButton btnClose = new JButton("x");
 
-        topPanel.add(new JLabel("Globale Suche:"));
+        JLabel label = new JLabel("Globale Suche:");
+        label.setForeground(t.foreground);
+
+        topPanel.add(label);
         topPanel.add(searchField);
         topPanel.add(btnSearch);
         topPanel.add(matchCaseCB);
@@ -52,12 +61,15 @@ public class GlobalSearchPanel extends JPanel {
         // ---- Ergebnisliste ----
         listModel = new DefaultListModel<>();
         resultList = new JList<>(listModel);
-        resultList.setBackground(new Color(30, 31, 34));
-        resultList.setForeground(Color.LIGHT_GRAY);
+        resultList.setBackground(t.background);
+        resultList.setForeground(t.foregroundDim);
         resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
         JScrollPane listScrollPane = new JScrollPane(resultList);
         listScrollPane.setPreferredSize(new Dimension(0, 120));
+        listScrollPane.setBackground(t.background);
+        listScrollPane.getViewport().setBackground(t.background);
+        listScrollPane.setBorder(BorderFactory.createLineBorder(t.border));
 
         add(topPanel, BorderLayout.NORTH);
         add(listScrollPane, BorderLayout.CENTER);
