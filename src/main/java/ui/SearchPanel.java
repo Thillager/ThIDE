@@ -39,7 +39,7 @@ public class SearchPanel extends JPanel {
 		btnPrev.addActionListener(e  -> search(false));
 		btnClose.addActionListener(e -> setVisible(false));
 
-		searchField.getContentPane().setBackground(currentTheme.background);
+		searchField.setBackground(currentTheme.background);
 
 		add(new JLabel("Suchen:"));
 		add(searchField);
