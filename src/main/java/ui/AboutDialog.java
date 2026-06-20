@@ -2,6 +2,7 @@ package ui;
 
 import update.UpdateManager;
 import config.LanguageManager;
+import config.Theme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -22,6 +23,8 @@ public class AboutDialog {
 	}
 
 	public void show() {
+		Theme t = MainWindow.THEME;
+
 		JDialog dialog = new JDialog(parent, LanguageManager.t("AboutDialog.header"), true);
 		dialog.setSize(420, 280);
 		dialog.setLocationRelativeTo(parent);
@@ -30,26 +33,26 @@ public class AboutDialog {
 		JPanel infoPanel = new JPanel();
 		infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
 		infoPanel.setBorder(new EmptyBorder(20, 30, 10, 30));
-		infoPanel.setBackground(new Color(43, 45, 48));
+		infoPanel.setBackground(t.background);
 
 		JLabel titleLabel = new JLabel(LanguageManager.t("AboutDialog.headline"));
 		titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-		titleLabel.setForeground(Color.WHITE);
+		titleLabel.setForeground(t.foreground);
 		titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		JLabel versionLabel = new JLabel("Version " + appVersion);
 		versionLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-		versionLabel.setForeground(new Color(180, 180, 180));
+		versionLabel.setForeground(t.foregroundDim);
 		versionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		JLabel repoLabel = new JLabel("github.com/" + githubRepo);
 		repoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-		repoLabel.setForeground(new Color(100, 150, 255));
+		repoLabel.setForeground(t.accent);
 		repoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		JLabel descLabel = new JLabel(LanguageManager.t("AboutDialog.slogan"));
 		descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-		descLabel.setForeground(new Color(160, 160, 160));
+		descLabel.setForeground(t.foregroundDim);
 		descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 		infoPanel.add(titleLabel);
@@ -61,12 +64,12 @@ public class AboutDialog {
 		infoPanel.add(descLabel);
 
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-		btnPanel.setBackground(new Color(43, 45, 48));
+		btnPanel.setBackground(t.background);
 
 		JButton btnUpdate = new JButton(LanguageManager.t("searchUpdates"));
 		JButton btnClose  = new JButton(LanguageManager.t("close"));
 
-		btnUpdate.setForeground(new Color(80, 200, 120));
+		btnUpdate.setForeground(t.accentGreen);
 		btnUpdate.addActionListener(e -> {
 				dialog.dispose();
 				updateManager.checkForUpdates();
@@ -78,7 +81,7 @@ public class AboutDialog {
 
 		dialog.add(infoPanel,  BorderLayout.CENTER);
 		dialog.add(btnPanel,   BorderLayout.SOUTH);
-		dialog.getContentPane().setBackground(new Color(43, 45, 48));
+		dialog.getContentPane().setBackground(t.background);
 		dialog.setVisible(true);
 	}
 }
