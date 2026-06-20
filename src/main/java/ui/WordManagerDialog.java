@@ -2,6 +2,7 @@ package ui;
 
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
+import config.Theme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -21,6 +22,8 @@ public class WordManagerDialog {
 	}
 
 	public void show(DefaultCompletionProvider provider, Set<String> knownWords) {
+		Theme t = MainWindow.THEME;
+
 		JDialog dialog = new JDialog(parent, "Wörter verwalten", true);
 		dialog.setSize(400, 480);
 		dialog.setLocationRelativeTo(parent);
@@ -34,24 +37,24 @@ public class WordManagerDialog {
 
 		JList<String> wordList = new JList<>(listModel);
 		wordList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		wordList.setBackground(new Color(30, 31, 34));
-		wordList.setForeground(Color.WHITE);
+		wordList.setBackground(t.background);
+		wordList.setForeground(t.foreground);
 		wordList.setFont(new Font("Consolas", Font.PLAIN, 13));
 
 		JScrollPane scroll = new JScrollPane(wordList);
 		scroll.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createLineBorder(Color.DARK_GRAY),
+				BorderFactory.createLineBorder(t.border),
 				"Gelernte Wörter (" + listModel.size() + ")",
 				javax.swing.border.TitledBorder.LEFT,
 				javax.swing.border.TitledBorder.TOP,
-				null, Color.LIGHT_GRAY));
+				null, t.foregroundDim));
 
 		JTextField filterField = new JTextField();
-		filterField.setBackground(new Color(45, 47, 49));
-		filterField.setForeground(Color.WHITE);
-		filterField.setCaretColor(Color.WHITE);
+		filterField.setBackground(t.backgroundLight);
+		filterField.setForeground(t.foreground);
+		filterField.setCaretColor(t.foreground);
 		filterField.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createMatteBorder(1, 1, 1, 1, Color.DARK_GRAY),
+				BorderFactory.createMatteBorder(1, 1, 1, 1, t.border),
 				BorderFactory.createEmptyBorder(4, 6, 4, 6)));
 		filterField.setToolTipText("Filtern...");
 
@@ -75,7 +78,7 @@ public class WordManagerDialog {
 
 		JButton btnDelete = new JButton("Ausgewählte löschen");
 		JButton btnClose  = new JButton("Schließen");
-		btnDelete.setForeground(new Color(255, 100, 100));
+		btnDelete.setForeground(t.accentRed);
 		btnDelete.addActionListener(e -> {
 				java.util.List<String> selected = wordList.getSelectedValuesList();
 				if (selected.isEmpty()) return;
@@ -89,11 +92,11 @@ public class WordManagerDialog {
 					provider.addCompletion(new BasicCompletion(provider, w));
 				}
 				scroll.setBorder(BorderFactory.createTitledBorder(
-						BorderFactory.createLineBorder(Color.DARK_GRAY),
+						BorderFactory.createLineBorder(t.border),
 						"Gelernte Wörter (" + listModel.size() + ")",
 						javax.swing.border.TitledBorder.LEFT,
 						javax.swing.border.TitledBorder.TOP,
-						null, Color.LIGHT_GRAY));
+						null, t.foregroundDim));
 				consolePanel.log("[INFO] " + selected.size() + " Wort/Wörter aus Autocomplete entfernt.\n", Color.LIGHT_GRAY);
 			});
 		btnClose.addActionListener(e -> dialog.dispose());
@@ -103,7 +106,7 @@ public class WordManagerDialog {
 		btnPanel.add(btnDelete);
 		btnPanel.add(btnClose);
 
-		dialog.getContentPane().setBackground(new Color(43, 45, 48));
+		dialog.getContentPane().setBackground(t.background);
 		dialog.add(topPanel, BorderLayout.NORTH);
 		dialog.add(scroll,   BorderLayout.CENTER);
 		dialog.add(btnPanel, BorderLayout.SOUTH);
