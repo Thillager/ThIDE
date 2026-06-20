@@ -125,6 +125,7 @@ public class MainWindow extends JFrame {
 		initSubsystems();
 		initUI();
 
+		
 		SwingUtilities.invokeLater(() -> {
 			horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
 			verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());

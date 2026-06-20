@@ -6,6 +6,8 @@ import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
 
+import config.TIDEPreferences;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -16,13 +18,14 @@ public class SearchPanel extends JPanel {
 	private JCheckBox matchCaseCB;
 	private JTabbedPane editorTabs;
 	private ConsolePanel consolePanel;
+	private final Theme currentTheme;
 
 	public SearchPanel(JTabbedPane editorTabs, ConsolePanel consolePanel) {
 		super(new FlowLayout(FlowLayout.LEFT));
 		this.editorTabs   = editorTabs;
 		this.consolePanel = consolePanel;
-
-		setBackground(new Color(45, 47, 49));
+		this.currentTheme      = Theme.byName(TIDEPreferences.getTheme());
+		
 		setVisible(false);
 
 		searchField = new JTextField(20);
@@ -35,6 +38,8 @@ public class SearchPanel extends JPanel {
 		btnNext.addActionListener(e  -> search(true));
 		btnPrev.addActionListener(e  -> search(false));
 		btnClose.addActionListener(e -> setVisible(false));
+
+		searchField.getContentPane().setBackground(currentTheme.background);
 
 		add(new JLabel("Suchen:"));
 		add(searchField);
