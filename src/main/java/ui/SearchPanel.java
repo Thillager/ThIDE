@@ -7,6 +7,7 @@ import org.fife.ui.rtextarea.SearchEngine;
 import org.fife.ui.rtextarea.SearchResult;
 
 import config.TIDEPreferences;
+import config.Theme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,6 +26,7 @@ public class SearchPanel extends JPanel {
 		this.editorTabs   = editorTabs;
 		this.consolePanel = consolePanel;
 		this.currentTheme      = Theme.byName(TIDEPreferences.getTheme());
+		this.setBackground(currentTheme.backgroundLight);
 		
 		setVisible(false);
 
