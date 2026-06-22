@@ -3,6 +3,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import ui.MainWindow;
 import update.UpdateManager;
 import config.TIDEPreferences;
+import config.Theme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -55,13 +56,19 @@ public class TIDE {
             System.setProperty("sun.java2d.accthreshold", "0");
         }
 
+        String savedTheme = config.TIDEPreferences.getTheme();
+        config.Theme currentTheme = config.Theme.byName(savedTheme);
+
         // ── 2. FlatLaf UI-Tweaks ───────────────────────────────────────────
         UIManager.put("Component.arc",                8);
         UIManager.put("Button.arc",                   8);
         UIManager.put("TextComponent.arc",            8);
         UIManager.put("ScrollBar.thumbArc",           8);
-        UIManager.put("TabbedPane.selectedBackground", new Color(60, 63, 65));
+        UIManager.put("TabbedPane.selectedBackground", currentTheme.backgroundLight);
         UIManager.put("TabbedPane.showTabSeparators",  true);
+
+        UIManager.put("Button.background", currentTheme.backgroundLight);
+        UIManager.put("Button.hoverBackground", currentTheme.backgroundHover);
 
         // ── 3. GUI START ───────────────────────────────────────────────────
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
