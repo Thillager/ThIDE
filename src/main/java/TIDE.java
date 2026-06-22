@@ -69,6 +69,19 @@ public class TIDE {
 
         UIManager.put("Button.background", currentTheme.backgroundLight);
         UIManager.put("Button.hoverBackground", currentTheme.backgroundHover);
+        // ── 3. Menü & Dropdown Highlights vom Theme ──────────────────────────────
+// Ändert die Hintergrundfarbe des ausgewählten Elements in ComboBoxen (Modus-Auswahl)
+UIManager.put("ComboBox.selectionBackground",   currentTheme.backgroundHover);
+UIManager.put("ComboBox.selectionForeground",   currentTheme.foreground);
+
+// Ändert die Hintergrundfarbe für markierte Einträge in Menüs (z.B. das Git- oder Kontextmenü)
+UIManager.put("MenuItem.selectionBackground",   currentTheme.backgroundHover);
+UIManager.put("MenuItem.selectionForeground",   currentTheme.foreground);
+
+// Optional: Falls du stattdessen deine Akzentfarbe (z.B. das Rot bei "Fire" oder Gelb bei "Dark") nutzen willst:
+// UIManager.put("MenuItem.selectionBackground", currentTheme.accent);// Ändert den Fokus-Rahmen von Boxen und Buttons auf deine Theme-Grenzfarbe oder Akzentfarbe
+UIManager.put("Component.focusColor",           currentTheme.accent);
+UIManager.put("PopupMenu.border",               BorderFactory.createLineBorder(currentTheme.border));
 
         // ── 3. GUI START ───────────────────────────────────────────────────
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
