@@ -24,11 +24,9 @@ public class TIDE {
         switch (hwMode) {
             case "on"  -> {
                 enableAccel = true;
-                System.out.println("[TIDE] Hardwarebeschleunigung: AN (manuell)");
             }
             case "off" -> {
                 enableAccel = false;
-                System.out.println("[TIDE] Hardwarebeschleunigung: AUS (manuell)");
             }
             default    -> {
                 // auto: JAR-Start = kein HW-Accel, jpackage-Start = HW-Accel an
