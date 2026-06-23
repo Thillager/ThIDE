@@ -101,9 +101,12 @@ UIManager.put("Button.foreground",             currentTheme.foreground);
 UIManager.put("Button.hoverBackground",        currentTheme.backgroundHover);
 UIManager.put("Button.focusedBackground",      currentTheme.backgroundLight);
 
+UIManager.put("MenuBar.hoverBackground",           currentTheme.backgroundHover);
+UIManager.put("MenuBar.selectionBackground",       currentTheme.backgroundHover);
+UIManager.put("MenuBar.selectionForeground",       currentTheme.foreground);
+        
 // --- Fokus-Rahmen & Trennlinien (Sehr wichtig für den Look) ---
 UIManager.put("Component.focusColor",           currentTheme.accent);
-UIManager.put("Component.borderColor",          currentTheme.border);
 UIManager.put("Separator.foreground",           currentTheme.border);
 
 // --- Scrollbalken (ScrollBars) ---
