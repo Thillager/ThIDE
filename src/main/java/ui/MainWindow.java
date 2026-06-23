@@ -275,7 +275,7 @@ public class MainWindow extends JFrame {
 		btnHotSwap.setToolTipText("Klassen im laufenden Prozess ersetzen (kein Neustart)");
 		btnHotSwap.setVisible(false);
 
-		btnTBuild = new JButton("T-Build");
+		btnTBuild = new JButton("TBuild");
 		btnClear  = new JButton(LanguageManager.t("clear"));
 		btnAbout  = new JButton(LanguageManager.t("about"));
 
@@ -312,7 +312,7 @@ public class MainWindow extends JFrame {
 		JMenu gitMenu = new JMenu("Git ▾");
 		gitMenu.setForeground(t.accent);
 		gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
-		gitMenu.setBackground(t.toolbar);
+		
 		JMenuItem gitCommit = new JMenuItem("Commit");
 		JMenuItem gitPush   = new JMenuItem("Push");
 		JMenuItem gitPull   = new JMenuItem("Pull");
