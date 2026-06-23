@@ -113,6 +113,12 @@ UIManager.put("Separator.foreground",           currentTheme.border);
 UIManager.put("ScrollBar.thumbColor",           currentTheme.backgroundHover);
 UIManager.put("ScrollBar.track",                currentTheme.background);
 
+        UIManager.put("Button.default.background",         currentTheme.backgroundLight);
+UIManager.put("Button.default.foreground",         currentTheme.foreground);
+UIManager.put("Button.default.hoverBackground",    currentTheme.backgroundHover);
+UIManager.put("Button.default.focusedBackground",  currentTheme.backgroundLight);
+UIManager.put("Button.default.focusColor",         currentTheme.accent);
+
         // ── 3. GUI START ───────────────────────────────────────────────────
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
     }
