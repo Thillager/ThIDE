@@ -60,28 +60,55 @@ public class TIDE {
         config.Theme currentTheme = config.Theme.byName(savedTheme);
 
         // ── 2. FlatLaf UI-Tweaks ───────────────────────────────────────────
-        UIManager.put("Component.arc",                8);
-        UIManager.put("Button.arc",                   8);
-        UIManager.put("TextComponent.arc",            8);
-        UIManager.put("ScrollBar.thumbArc",           8);
-        UIManager.put("TabbedPane.selectedBackground", currentTheme.backgroundLight);
-        UIManager.put("TabbedPane.showTabSeparators",  true);
+// ── 2. FlatLaf UI-Tweaks & Globales Theme-Skinning ───────────────────────
 
-        UIManager.put("Button.background", currentTheme.backgroundLight);
-        UIManager.put("Button.hoverBackground", currentTheme.backgroundHover);
-        // ── 3. Menü & Dropdown Highlights vom Theme ──────────────────────────────
-// Ändert die Hintergrundfarbe des ausgewählten Elements in ComboBoxen (Modus-Auswahl)
+// --- Eckenabrundungen (wie gehabt) ---
+UIManager.put("Component.arc",           8);
+UIManager.put("Button.arc",              8);
+UIManager.put("TextComponent.arc",       8);
+UIManager.put("ScrollBar.thumbArc",      8);
+
+// --- Registerkarten (Tabs) ---
+UIManager.put("TabbedPane.selectedBackground", currentTheme.backgroundLight);
+UIManager.put("TabbedPane.background",         currentTheme.background);
+UIManager.put("TabbedPane.foreground",         currentTheme.foreground);
+UIManager.put("TabbedPane.showTabSeparators",  true);
+
+// --- Dropdowns & Menüs (Das lästige Blau entfernen) ---
 UIManager.put("ComboBox.selectionBackground",   currentTheme.backgroundHover);
 UIManager.put("ComboBox.selectionForeground",   currentTheme.foreground);
+UIManager.put("ComboBox.background",            currentTheme.backgroundLight);
+UIManager.put("ComboBox.foreground",            currentTheme.foreground);
 
-// Ändert die Hintergrundfarbe für markierte Einträge in Menüs (z.B. das Git- oder Kontextmenü)
 UIManager.put("MenuItem.selectionBackground",   currentTheme.backgroundHover);
 UIManager.put("MenuItem.selectionForeground",   currentTheme.foreground);
+UIManager.put("MenuItem.background",            currentTheme.backgroundLight);
+UIManager.put("MenuItem.foreground",            currentTheme.foreground);
+UIManager.put("PopupMenu.background",           currentTheme.backgroundLight);
 
-// Optional: Falls du stattdessen deine Akzentfarbe (z.B. das Rot bei "Fire" oder Gelb bei "Dark") nutzen willst:
-// UIManager.put("MenuItem.selectionBackground", currentTheme.accent);// Ändert den Fokus-Rahmen von Boxen und Buttons auf deine Theme-Grenzfarbe oder Akzentfarbe
+// --- Dateibaum (Links) & Listen ---
+UIManager.put("Tree.selectionBackground",       currentTheme.backgroundHover);
+UIManager.put("Tree.selectionForeground",       currentTheme.foreground);
+UIManager.put("Tree.background",                currentTheme.background);
+UIManager.put("Tree.foreground",                currentTheme.foreground);
+
+UIManager.put("List.selectionBackground",       currentTheme.backgroundHover);
+UIManager.put("List.selectionForeground",       currentTheme.foreground);
+
+// --- Buttons allgemein ---
+UIManager.put("Button.background",             currentTheme.backgroundLight);
+UIManager.put("Button.foreground",             currentTheme.foreground);
+UIManager.put("Button.hoverBackground",        currentTheme.backgroundHover);
+UIManager.put("Button.focusedBackground",      currentTheme.backgroundLight);
+
+// --- Fokus-Rahmen & Trennlinien (Sehr wichtig für den Look) ---
 UIManager.put("Component.focusColor",           currentTheme.accent);
-UIManager.put("PopupMenu.border",               BorderFactory.createLineBorder(currentTheme.border));
+UIManager.put("Component.borderColor",          currentTheme.border);
+UIManager.put("Separator.foreground",           currentTheme.border);
+
+// --- Scrollbalken (ScrollBars) ---
+UIManager.put("ScrollBar.thumbColor",           currentTheme.backgroundHover);
+UIManager.put("ScrollBar.track",                currentTheme.background);
 
         // ── 3. GUI START ───────────────────────────────────────────────────
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
