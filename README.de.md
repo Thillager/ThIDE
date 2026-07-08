@@ -1,10 +1,10 @@
-# TIDE - Java IDE
+# ThIDE - Java IDE
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-100%25-orange)](https://www.java.com/)
-[![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/TIDE/releases/latest)
+[![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/ThIDE/releases/latest)
 
-TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development Environment)**, die speziell für Java-Entwicklung entwickelt wurde. Sie bietet alle wesentlichen Funktionen für das Schreiben, Kompilieren und Ausführen von Java-Programmen, jedoch auch für andere Sprachen, wie Batch, Python, C oder C++, jedoch ist Java am besten unterstützt.
+ThIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development Environment)**, die speziell für Java-Entwicklung entwickelt wurde. Sie bietet alle wesentlichen Funktionen für das Schreiben, Kompilieren und Ausführen von Java-Programmen, jedoch auch für andere Sprachen, wie Batch, Python, C oder C++, jedoch ist Java am besten unterstützt.
 
 ## Features
 
@@ -54,25 +54,25 @@ TIDE ist eine **leichte, benutzerfreundliche Java-IDE (Integrated Development En
 
 2. Führe die JAR-Datei aus:
 ```bash
-   java -jar TIDE.jar
+   java -jar ThIDE.jar
 ```
 
-3. Die TIDE IDE wird sich öffnen und ist bereit zur Verwendung.
+3. Die ThIDE IDE wird sich öffnen und ist bereit zur Verwendung.
 
-## Wie funktioniert TIDE?
+## Wie funktioniert ThIDE?
 
 ### Workflow-Beispiel
 
-1. **Projekt erstellen**: Starte TIDE und erstelle ein neues Projekt über das Menü von TBuild
+1. **Projekt erstellen**: Starte ThIDE und erstelle ein neues Projekt über das Menü von TBuild
 2. **Code schreiben**: Schreibe deine Java-Klassen im integrierten Editor
 3. **Kompilieren**: Nutze den Build-Button oder das Menü zum Kompilieren
-4. **Ausführen**: Führe dein Programm direkt aus TIDE heraus aus
+4. **Ausführen**: Führe dein Programm direkt aus ThIDE heraus aus
 5. **Debuggen**: Sieh dir Compiler-Fehler in der Konsole an
 
 ## Projektstruktur
 
 ```
-TIDE/
+ThIDE/
 ├── src/                      # Quellcode
 │   └── main/
 │       └── java/             # Java-Source-Dateien
@@ -87,8 +87,8 @@ Die Datei `T.xml` enthält die Projektkonfiguration:
 
 ```xml
 <project>
-  <mainClass>TIDE</mainClass>      <!-- Hauptklasse zum Ausführen -->
-  <appName>TIDE</appName>          <!-- Anwendungsname -->
+  <mainClass>ThIDE</mainClass>      <!-- Hauptklasse zum Ausführen -->
+  <appName>ThIDE</appName>          <!-- Anwendungsname -->
   <version>1.0.0</version>         <!-- Versions-String -->
 </project>
 ```
@@ -96,19 +96,19 @@ Die Datei `T.xml` enthält die Projektkonfiguration:
 Du kannst diese Datei anpassen, um verschiedene Konfigurationen für dein Projekt zu setzen.
 Oder du nutzt TBuild, das sich per TBuild-Knopf herunterladen und ausführen lässt und die T.xml dann grafisch bearbeiten kann.
 
-## Beispiel: Erstes Programm mit TIDE
+## Beispiel: Erstes Programm mit ThIDE
 
 ### Schritt 1: Neues Projekt erstellen
-Erstelle einen neuen Ordner. Starte TIDE. Drücke den TBuild-Knopf, dann Projekt initialisieren.
+Erstelle einen neuen Ordner. Starte ThIDE. Drücke den TBuild-Knopf, dann Projekt initialisieren.
 
 ### Schritt 2: Neue Java-Klasse erstellen
-Öffne src/main/java/Main.java in TIDE.
+Öffne src/main/java/Main.java in ThIDE.
 
 ### Schritt 3: Code schreiben
 ```java
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Willkommen bei TIDE!");
+        System.out.println("Willkommen bei ThIDE!");
     }
 }
 ```
@@ -122,7 +122,7 @@ public class Main {
 - Es kommen Updates wann immer ich Zeit finde, Ideen habe oder Fehler auftreten
 
 ### Wie installiere ich sie?
-- TIDE als Administrator starten
+- ThIDE als Administrator starten
 - Auf den "Über"-Button klicken
 - Auf den "Nach Updates suchen"-Button klicken
 - Installieren
@@ -141,7 +141,7 @@ public class Main {
 java -version
 
 # Führe mit explizitem Pfad aus
-java -jar /pfad/zu/TIDE.jar
+java -jar /pfad/zu/ThIDE.jar
 ```
 
 ### Problem: Compiler-Fehler trotz korrektem Code
@@ -153,16 +153,16 @@ java -jar /pfad/zu/TIDE.jar
 ## Dokumentation und Links
 
 - **Java Dokumentation**: https://docs.oracle.com/en/java/
-- **GitHub Repository**: https://github.com/Thillager/TIDE
+- **GitHub Repository**: https://github.com/Thillager/ThIDE
 - **TBuild**: https://github.com/Thillager/TBuild
 
 ## Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert. Siehe [LICENSE](LICENSE) für Details.
-In diesem Projekt werden Dependencies genutzt. Die nötigen Lizenzen stehen in der [THIRD_PARTY_LICENSES.md](https://github.com/Thillager/TIDE/blob/master/THIRD_PARTY_LICENSES.md).
+In diesem Projekt werden Dependencies genutzt. Die nötigen Lizenzen stehen in der [THIRD_PARTY_LICENSES.md](https://github.com/Thillager/ThIDE/blob/master/THIRD_PARTY_LICENSES.md).
 
 ## Built With
-TIDE nutzt die Power bewährter Open-Source-Bibliotheken:
+ThIDE nutzt die Power bewährter Open-Source-Bibliotheken:
 * **[JGit](https://www.eclipse.org/jgit/)** - Für die integrierte Versionsverwaltung.
 * **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - Für das Syntax-Highlighting im Editor.
 * **[Autocomplete](https://github.com/bobbylight/AutoComplete)** - Für automatische, intelligente Code-Vervollständigung.
@@ -181,10 +181,10 @@ Beiträge sind willkommen! Um beizutragen:
 ## Fragen und Support
 
 Falls du Fragen oder Probleme hast:
-- Öffne ein [GitHub Issue](https://github.com/Thillager/TIDE/issues)
+- Öffne ein [GitHub Issue](https://github.com/Thillager/ThIDE/issues)
 - Sieh dir existierende Issues an für häufig gestellte Fragen
 
 ---
 **Maintainer:** [@Thillager](https://github.com/Thillager)
 
-Viel Erfolg beim Programmieren mit TIDE!
+Viel Erfolg beim Programmieren mit ThIDE!
