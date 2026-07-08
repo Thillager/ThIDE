@@ -1,10 +1,10 @@
-# TIDE - Java IDE
+# ThIDE - Java IDE
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-100%25-orange)](https://www.java.com/)
-[![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/TIDE/releases/latest)
+[![Version](https://img.shields.io/badge/Version-latest-blue)](https://github.com/Thillager/ThIDE/releases/latest)
 
-TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environment)** developed specifically for Java development. It provides all essential features for Java programming, but also for other languages, like batch, python, c or c++, but java is the best supported one.
+ThIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environment)** developed specifically for Java development. It provides all essential features for Java programming, but also for other languages, like batch, python, c or c++, but java is the best supported one.
 
 ## Features
 
@@ -54,25 +54,25 @@ TIDE is a **lightweight, user-friendly Java IDE (Integrated Development Environm
 
 2. Run the JAR file:
    ```bash
-   java -jar TIDE.jar
+   java -jar ThIDE.jar
    ```
 
-3. The TIDE IDE will open and be ready to use.
+3. The ThIDE IDE will open and be ready to use.
 
-## How TIDE Works
+## How ThIDE Works
 
 ### Workflow Example
 
-1. **Create Project**: Start TIDE and create a new project via the menu of TBuild
+1. **Create Project**: Start ThIDE and create a new project via the menu of TBuild
 2. **Write Code**: Write your Java classes in the integrated editor
 3. **Compile**: Use the Build button or menu to compile
-4. **Run**: Execute your program directly from TIDE
+4. **Run**: Execute your program directly from ThIDE
 5. **Debug**: Check compiler errors in the console
 
 ## Project Structure
 
 ```
-TIDE/
+ThIDE/
 ├── src/                      # Source code
 │   └── main/
 │       └── java/             # Java source files
@@ -87,8 +87,8 @@ The `T.xml` file contains the project configuration:
 
 ```xml
 <project>
-  <mainClass>TIDE</mainClass>      <!-- Main class to run -->
-  <appName>TIDE</appName>          <!-- Application name -->
+  <mainClass>ThIDE</mainClass>      <!-- Main class to run -->
+  <appName>ThIDE</appName>          <!-- Application name -->
   <version>1.0.0</version>         <!-- Version string -->
 </project>
 ```
@@ -96,10 +96,10 @@ The `T.xml` file contains the project configuration:
 You can edit this file to set various configurations for your project.
 Or you can use TBuild, which can be downloaded and run via the TBuild button and can edit the T.xml graphically.
 
-## Example: Your First Program with TIDE
+## Example: Your First Program with ThIDE
 
 ### Step 1: Create a New Project
-Start TIDE and go to a new folder. Then Press TBuild and in TBuild Initialize project.
+Start ThIDE and go to a new folder. Then Press TBuild and in TBuild Initialize project.
 
 ### Step 2: Create a New Java Class
 Go to src/main/java/Main.java
@@ -108,7 +108,7 @@ Go to src/main/java/Main.java
 ```java
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Welcome to TIDE!");
+        System.out.println("Welcome to ThIDE!");
     }
 }
 ```
@@ -122,7 +122,7 @@ public class Main {
 - Updates come whenever I have time, ideas, or bugs to fix
 
 ### How do I install them?
-- Start TIDE as administrator
+- Start ThIDE as administrator
 - Click the "About" button
 - Click the "Check for Updates" button
 - Install
@@ -141,7 +141,7 @@ public class Main {
 java -version
 
 # Run with explicit path
-java -jar /path/to/TIDE.jar
+java -jar /path/to/ThIDE.jar
 ```
 
 ### Problem: Compiler errors despite correct code
@@ -153,7 +153,7 @@ java -jar /path/to/TIDE.jar
 ## Documentation and Links
 
 - **Java Documentation**: https://docs.oracle.com/en/java/
-- **GitHub Repository**: https://github.com/Thillager/TIDE
+- **GitHub Repository**: https://github.com/Thillager/ThIDE
 - **TBuild**:
 https://github.com/Thillager/Tbuild
 
@@ -163,7 +163,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 This project uses dependencies. The necessary licenses are in the THIRD_PARTY_LICENSES.md
 
 ## Built With
-TIDE uses the power of proven open-source libraries:
+ThIDE uses the power of proven open-source libraries:
 * **[JGit](https://www.eclipse.org/jgit/)** - For integrated version control.
 * **[RSyntaxTextArea](https://github.com/bobbylight/RSyntaxTextArea)** - For syntax highlighting in the editor.
 * **[Autocomplete](https://github.com/bobbylight/AutoComplete)** - For automatic intelligent code completion.
@@ -182,10 +182,10 @@ Contributions are welcome! To contribute:
 ## Questions and Support
 
 If you have questions or issues:
-- Open a [GitHub Issue](https://github.com/Thillager/TIDE/issues)
+- Open a [GitHub Issue](https://github.com/Thillager/ThIDE/issues)
 - Check existing issues for frequently asked questions
 
 ---
 **Maintainer:** [@Thillager](https://github.com/Thillager)
 
-Good luck programming with TIDE!
+Good luck programming with ThIDE!
