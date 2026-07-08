@@ -34,7 +34,7 @@ public class UpdateManager {
 					String apiUrl = "https://api.github.com/repos/" + githubRepo + "/releases/latest";
 					HttpURLConnection conn = (HttpURLConnection) java.net.URI.create(apiUrl).toURL().openConnection();
 					conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-					conn.setRequestProperty("User-Agent", "TIDE-App");
+					conn.setRequestProperty("User-Agent", "ThIDE-App");
 					conn.setConnectTimeout(TIDEProperties.CONNECT_TIMEOUT_MS);
 					conn.setReadTimeout(TIDEProperties.READ_TIMEOUT_MS);
 
@@ -94,7 +94,7 @@ public class UpdateManager {
 	
     public boolean isRunningAsJar() {
         // Explizites Flag, gesetzt via jpackage --java-options "-DTIDE_PACKAGED=true"
-        if ("true".equalsIgnoreCase(System.getProperty("TIDE_PACKAGED"))) {
+        if ("true".equalsIgnoreCase(System.getProperty("ThIDE_PACKAGED"))) {
             return false;
         }
 
@@ -278,10 +278,10 @@ public class UpdateManager {
 		+ (isWindows ? "java.exe" : "java");
 
 		if (isWindows) {
-			File bat = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.bat");
+			File bat = new File(System.getProperty("java.io.tmpdir"), "thide_jar_update.bat");
 			try (PrintWriter pw = new PrintWriter(bat)) {
 				pw.println("@echo off");
-				pw.println("echo Warte auf TIDE-Beendigung...");
+				pw.println("echo Warte auf ThIDE-Beendigung...");
 				pw.println("timeout /t 3 /nobreak > nul");
 				pw.println("echo Ersetze JAR...");
 				pw.println("copy /Y \"" + newJar.getAbsolutePath() + "\" \"" + currentJar.getAbsolutePath() + "\"");
@@ -297,7 +297,7 @@ public class UpdateManager {
 			consolePanel.log("[INFO] Starte JAR-Update (Windows)...\n", Color.CYAN);
 			SwingUtilities.invokeLater(() -> {
 					JOptionPane.showMessageDialog(parent,
-						"Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+						"Die JAR wird jetzt aktualisiert.\nThIDE startet automatisch neu.",
 						"JAR-Update", JOptionPane.INFORMATION_MESSAGE);
 					try {
 						new ProcessBuilder("cmd.exe", "/c", bat.getAbsolutePath()).start();
@@ -308,7 +308,7 @@ public class UpdateManager {
 					System.exit(0);
 				});
 		} else {
-			File sh = new File(System.getProperty("java.io.tmpdir"), "tide_jar_update.sh");
+			File sh = new File(System.getProperty("java.io.tmpdir"), "thide_jar_update.sh");
 			try (PrintWriter pw = new PrintWriter(sh)) {
 				pw.println("#!/bin/bash");
 				pw.println("sleep 2");
@@ -321,7 +321,7 @@ public class UpdateManager {
 			consolePanel.log("[INFO] Starte JAR-Update (Linux)...\n", Color.CYAN);
 			SwingUtilities.invokeLater(() -> {
 					JOptionPane.showMessageDialog(parent,
-						"Die JAR wird jetzt aktualisiert.\nTIDE startet automatisch neu.",
+						"Die JAR wird jetzt aktualisiert.\nThIDE startet automatisch neu.",
 						"JAR-Update", JOptionPane.INFORMATION_MESSAGE);
 					try {
 						new ProcessBuilder("bash", sh.getAbsolutePath()).start();
@@ -341,7 +341,7 @@ public class UpdateManager {
 		File batFile = new File(System.getProperty("java.io.tmpdir"), "tide_update.bat");
 		try (PrintWriter pw = new PrintWriter(batFile)) {
 			pw.println("@echo off");
-			pw.println("echo Warte auf TIDE-Beendigung...");
+			pw.println("echo Warte auf ThIDE-Beendigung...");
 			pw.println("timeout /t 5 /nobreak > nul");
 			pw.println("echo Installiere Update...");
 			pw.println("msiexec /i \"" + msiFile.getAbsolutePath() + "\" /qn /norestart");
@@ -357,7 +357,7 @@ public class UpdateManager {
 		SwingUtilities.invokeLater(() -> {
 				JOptionPane.showMessageDialog(parent,
 					"Das Update wird jetzt installiert.\n" +
-					"TIDE wird sich gleich beenden.",
+					"ThIDE wird sich gleich beenden.",
 					"Update wird installiert",
 					JOptionPane.INFORMATION_MESSAGE);
 				try {
@@ -410,7 +410,7 @@ public class UpdateManager {
 				JOptionPane.showMessageDialog(parent,
 					"Das Update wird jetzt installiert.\n" +
 					sudoHint + "\n" +
-					"TIDE wird sich gleich beenden.",
+					"ThIDE wird sich gleich beenden.",
 					"Update wird installiert",
 					JOptionPane.INFORMATION_MESSAGE);
 				try {
