@@ -1,178 +1,178 @@
 name: Build and Release Desktop Apps
 
 on:
-  push:
-    tags:
-      - 'v*'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────
-  # BUILD-JOB: Laeuft auf Linux UND Windows parallel
-  # ─────────────────────────────────────────────────────────────────────────
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: read
-      actions: read
-      packages: read
-    strategy:
-      fail-fast: false   # Beide Plattformen fertig bauen, auch wenn eine failt
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+  # ─────────────────────────────────────────────────────────────────────────
+  # BUILD-JOB: Laeuft auf Linux UND Windows parallel
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    strategy:
+      fail-fast: false   # Beide Plattformen fertig bauen, auch wenn eine failt
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
 
-      # ── Linux-spezifische Abhaengigkeiten fuer .deb-Erstellung ───────────
-      - name: Install Linux packaging tools
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y fakeroot dpkg-dev binutils
+      # ── Linux-spezifische Abhaengigkeiten fuer .deb-Erstellung ───────────
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fakeroot dpkg-dev binutils
 
-      # ── Windows: WiX Toolset fuer jpackage exe-Installer ─────────────────
-      - name: Install WiX Toolset (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "Checking WiX..."
-          if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
-            Write-Host "WiX already available"
-          } else {
-            Write-Host "Installing WiX via choco..."
-            choco install wixtoolset --no-progress -y
-            refreshenv
-          }
-        shell: pwsh
+      # ── Windows: WiX Toolset fuer jpackage exe-Installer ─────────────────
+      - name: Install WiX Toolset (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Checking WiX..."
+          if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
+            Write-Host "WiX already available"
+          } else {
+            Write-Host "Installing WiX via choco..."
+            choco install wixtoolset --no-progress -y
+            refreshenv
+          }
+        shell: pwsh
 
-      - name: Show Java version and jpackage
-        run: |
-          java -version
-          jpackage --version
+      - name: Show Java version and jpackage
+        run: |
+          java -version
+          jpackage --version
 
-      # ── TBuild.jar herunterladen falls nicht im Repo vorhanden ───────────
-      - name: Ensure TBuild.jar is available
-        run: |
-          if [ ! -f "TBuild.jar" ]; then
-            echo "TBuild.jar not found, downloading latest release..."
-            curl -L "https://github.com/Thillager/TBuild/releases/latest/download/TBuild.jar" -o TBuild.jar
-            echo "Download complete."
-          else
-            echo "TBuild.jar already present."
-          fi
-        shell: bash
+      # ── TBuild.jar herunterladen falls nicht im Repo vorhanden ───────────
+      - name: Ensure TBuild.jar is available
+        run: |
+          if [ ! -f "TBuild.jar" ]; then
+            echo "TBuild.jar not found, downloading latest release..."
+            curl -L "https://github.com/Thillager/TBuild/releases/latest/download/TBuild.jar" -o TBuild.jar
+            echo "Download complete."
+          else
+            echo "TBuild.jar already present."
+          fi
+        shell: bash
 
-      # ── Projekt bauen und Fat JAR erstellen ───────────────────────────────
-      - name: Build project and create Fat JAR
-        run: java -jar TBuild.jar build-export-fat
-        shell: bash
-        timeout-minutes: 15
+      # ── Projekt bauen und Fat JAR erstellen ───────────────────────────────
+      - name: Build project and create Fat JAR
+        run: java -jar TBuild.jar build-export-fat
+        shell: bash
+        timeout-minutes: 15
 
-     # ── Icon-Vorbereitung für Linux ──────────────────────────────────────
-      - name: Prepare Icon for Linux
-        if: runner.os == 'Linux'
-        run: |
-          # Ersetze den Platzhalter in T.xml mit der png-Erweiterung
-          sed -i 's/PLACEHOLDER/png/g' T.xml
-        shell: bash
+      # ── Icon-Vorbereitung für Linux ──────────────────────────────────────
+      - name: Prepare Icon for Linux
+        if: runner.os == 'Linux'
+        run: |
+          # Ersetze den Platzhalter in T.xml mit der png-Erweiterung
+          sed -i 's/PLACEHOLDER/png/g' T.xml
+        shell: bash
 
-      # ── Icon-Vorbereitung für Windows (PNG zu ICO konvertieren) ──────────
-      - name: Prepare Icon for Windows
-        if: runner.os == 'Windows'
-        run: |
-          # 1. Installiere ImageMagick via choco, um das PNG in ein ICO zu konvertieren
-          choco install imagemagick.tool --no-progress -y
-          
-          # 2. Konvertiere das PNG in eine ICO-Datei mit gängigen Auflösungen
-          magick assets/icon.png -define icon:auto-resize=16,32,48,64,256 assets/icon.ico
-          
-          # 3. Ersetze den Platzhalter in T.xml mit der ico-Erweiterung
-          (Get-Content T.xml) -replace 'PLACEHOLDER', 'ico' | Set-Content T.xml
-        shell: pwsh
+      # ── Icon-Vorbereitung für Windows (PNG zu ICO konvertieren) ──────────
+      - name: Prepare Icon for Windows
+        if: runner.os == 'Windows'
+        run: |
+          # 1. Installiere ImageMagick via choco, um das PNG in ein ICO zu konvertieren
+          choco install imagemagick.tool --no-progress -y
+          
+          # 2. Konvertiere das PNG in eine ICO-Datei mit gängigen Auflösungen
+          magick assets/icon.png -define icon:auto-resize=16,32,48,64,256 assets/icon.ico
+          
+          # 3. Ersetze den Platzhalter in T.xml mit der ico-Erweiterung
+          (Get-Content T.xml) -replace 'PLACEHOLDER', 'ico' | Set-Content T.xml
+        shell: pwsh
 
-      # ── Nativen Installer via jpackage erstellen ──────────────────────────
-      - name: Create native installer (jpackage)
-        run: java -jar TBuild.jar jpackage
-        shell: bash
-        timeout-minutes: 15
+      # ── Nativen Installer via jpackage erstellen ──────────────────────────
+      - name: Create native installer (jpackage)
+        run: java -jar TBuild.jar jpackage
+        shell: bash
+        timeout-minutes: 15
 
-      # ── Debug: zeige erzeugte Dateien ─────────────────────────────────────
-      - name: List generated files
-        run: |
-          echo "=== Project root ==="
-          ls -la
-          echo "=== dist/ ==="
-          ls -la dist/ || echo "(dist/ not found)"
-        shell: bash
+      # ── Debug: zeige erzeugte Dateien ─────────────────────────────────────
+      - name: List generated files
+        run: |
+          echo "=== Project root ==="
+          ls -la
+          echo "=== dist/ ==="
+          ls -la dist/ || echo "(dist/ not found)"
+        shell: bash
 
-      # ── Fat JAR als Artefakt hochladen (TBuild.jar explizit ausschliessen) ─
-      - name: Upload Fat JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: fat-jar-${{ matrix.os }}
-          path: |
-            *.jar
-            !TBuild.jar
-          if-no-files-found: error
+      # ── Fat JAR als Artefakt hochladen (TBuild.jar explizit ausschliessen) ─
+      - name: Upload Fat JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fat-jar-${{ matrix.os }}
+          path: |
+            *.jar
+            !TBuild.jar
+          if-no-files-found: error
 
-      # ── Installer als Artefakt hochladen ──────────────────────────────────
-      - name: Upload installer artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.os }}
-          path: dist/
-          if-no-files-found: error
+      # ── Installer als Artefakt hochladen ──────────────────────────────────
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: dist/
+          if-no-files-found: error
 
-  # ─────────────────────────────────────────────────────────────────────────
-  # RELEASE-JOB: Wartet auf beide Build-Jobs, erstellt dann den Release
-  # ─────────────────────────────────────────────────────────────────────────
-  release:
-    name: Create GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write   # Benoetigt um Releases zu erstellen
+  # ─────────────────────────────────────────────────────────────────────────
+  # RELEASE-JOB: Wartet auf beide Build-Jobs, erstellt dann den Release
+  # ─────────────────────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Benoetigt um Releases zu erstellen
 
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
 
-      - name: Show downloaded artifacts
-        run: find artifacts/ -type f | sort
+      - name: Show downloaded artifacts
+        run: find artifacts/ -type f | sort
 
-      # Dateien flach ablegen fuer den Release-Schritt
-      - name: Flatten artifact structure
-        run: |
-          mkdir -p release_files
-          # Fat JAR aus Linux-Build (TBuild.jar ist bereits ausgeschlossen)
-          find artifacts/fat-jar-ubuntu-latest/ -name "*.jar" \
-            -exec cp {} release_files/ \;
-          # Linux Installer
-          find artifacts/installer-ubuntu-latest/ -type f \( -name "*.deb" -o -name "*.rpm" \) \
-            -exec cp {} release_files/ \;
-          # Windows Installer
-          find artifacts/installer-windows-latest/ -type f \( -name "*.exe" -o -name "*.msi" \) \
-            -exec cp {} release_files/ \;
-          echo "=== Files to release ==="
-          ls -lh release_files/
+      # Dateien flach ablegen fuer den Release-Schritt
+      - name: Flatten artifact structure
+        run: |
+          mkdir -p release_files
+          # Fat JAR aus Linux-Build (TBuild.jar ist bereits ausgeschlossen)
+          find artifacts/fat-jar-ubuntu-latest/ -name "*.jar" \
+            -exec cp {} release_files/ \;
+          # Linux Installer
+          find artifacts/installer-ubuntu-latest/ -type f \( -name "*.deb" -o -name "*.rpm" \) \
+            -exec cp {} release_files/ \;
+          # Windows Installer
+          find artifacts/installer-windows-latest/ -type f \( -name "*.exe" -o -name "*.msi" \) \
+            -exec cp {} release_files/ \;
+          echo "=== Files to release ==="
+          ls -lh release_files/
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          files: release_files/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: release_files/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
