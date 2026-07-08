@@ -17,6 +17,8 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
+import thillager.gui.swing.ImageLoader;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -107,15 +109,15 @@ public class MainWindow extends JFrame {
 		applyFlatLafTheme(THEME);
 
 		LanguageManager.Language lang =
-			LanguageManager.Language.valueOf(TIDEPreferences.getLanguage());
+		LanguageManager.Language.valueOf(TIDEPreferences.getLanguage());
 
 		Locale locale = lang == LanguageManager.Language.DE
-			? Locale.GERMAN : Locale.ENGLISH;
+		? Locale.GERMAN : Locale.ENGLISH;
 
 		Locale.setDefault(locale);
 		JComponent.setDefaultLocale(locale);
 
-		setTitle("TIDE v" + TIDEProperties.APP_VERSION);
+		setTitle("ThIDE v" + TIDEProperties.APP_VERSION);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		setSize(TIDEPreferences.getWindowWidth(), TIDEPreferences.getWindowHeight());
@@ -125,30 +127,30 @@ public class MainWindow extends JFrame {
 		initSubsystems();
 		initUI();
 
-		
+
 		SwingUtilities.invokeLater(() -> {
-			horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
-			verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());
+				horizontalSplit.setDividerLocation(TIDEPreferences.getDividerHProportion());
+				verticalSplit.setDividerLocation(TIDEPreferences.getDividerVProportion());
 
-			editorOutlineSplit.addComponentListener(new java.awt.event.ComponentAdapter() {
-				private boolean done = false;
+				editorOutlineSplit.addComponentListener(new java.awt.event.ComponentAdapter() {
+						private boolean done = false;
 
-				@Override
-				public void componentResized(java.awt.event.ComponentEvent e) {
-					if (done) return;
-					int w = editorOutlineSplit.getWidth();
-					if (w > 0) {
-						done = true;
-						int savedWidth = TIDEPreferences.getOutlineWidth();
-						int loc = w - savedWidth;
-						if (loc > 0 && loc < w) {
-							editorOutlineSplit.setDividerLocation(loc);
+						@Override
+						public void componentResized(java.awt.event.ComponentEvent e) {
+							if (done) return;
+							int w = editorOutlineSplit.getWidth();
+							if (w > 0) {
+								done = true;
+								int savedWidth = TIDEPreferences.getOutlineWidth();
+								int loc = w - savedWidth;
+								if (loc > 0 && loc < w) {
+									editorOutlineSplit.setDividerLocation(loc);
+								}
+								editorOutlineSplit.removeComponentListener(this);
+							}
 						}
-						editorOutlineSplit.removeComponentListener(this);
-					}
-				}
+					});
 			});
-		});
 	}
 
 	// ── FlatLaf-Theme-Mapping ────────────────────────────────────────────────
@@ -156,43 +158,43 @@ public class MainWindow extends JFrame {
 	// FlatMacDarkLaf/FlatMacLightLaf sind auf allen Plattformen nutzbar,
 	// sie heißen nur "Mac" wegen des visuellen Stils.
 	public static void applyFlatLafTheme(Theme theme) {
-    try {
-        switch (theme.flatLafClass) {
-            case "dark"      -> UIManager.setLookAndFeel(new FlatDarkLaf());
-            case "light"     -> UIManager.setLookAndFeel(new FlatLightLaf());
-            case "mac-dark"  -> UIManager.setLookAndFeel(new FlatMacDarkLaf());
-            case "mac-light" -> UIManager.setLookAndFeel(new FlatMacLightLaf());
-            default          -> UIManager.setLookAndFeel(new FlatDarkLaf());
-        }
-        // FlatLaf UI-Tweaks
-        UIManager.put("Component.arc",                 8);
-        UIManager.put("Button.arc",                    8);
-        UIManager.put("TextComponent.arc",             8);
-        UIManager.put("ScrollBar.thumbArc",            8);
-        UIManager.put("TabbedPane.selectedBackground", theme.backgroundLight);
-        UIManager.put("TabbedPane.showTabSeparators",  true);
+		try {
+			switch (theme.flatLafClass) {
+				case "dark"      -> UIManager.setLookAndFeel(new FlatDarkLaf());
+				case "light"     -> UIManager.setLookAndFeel(new FlatLightLaf());
+				case "mac-dark"  -> UIManager.setLookAndFeel(new FlatMacDarkLaf());
+				case "mac-light" -> UIManager.setLookAndFeel(new FlatMacLightLaf());
+				default          -> UIManager.setLookAndFeel(new FlatDarkLaf());
+			}
+			// FlatLaf UI-Tweaks
+			UIManager.put("Component.arc",                 8);
+			UIManager.put("Button.arc",                    8);
+			UIManager.put("TextComponent.arc",             8);
+			UIManager.put("ScrollBar.thumbArc",            8);
+			UIManager.put("TabbedPane.selectedBackground", theme.backgroundLight);
+			UIManager.put("TabbedPane.showTabSeparators",  true);
 
-        // Basis-Farben für alle Swing-Komponenten
-        UIManager.put("Panel.background",              theme.background);
-        UIManager.put("ScrollPane.background",         theme.background);
-        UIManager.put("Tree.background",               theme.background);
-        UIManager.put("Tree.textBackground",           theme.background);
-        UIManager.put("Tree.textForeground",           theme.foreground);
-        UIManager.put("List.background",               theme.background);
-        UIManager.put("TextArea.background",           theme.background);
-        UIManager.put("TextArea.foreground",           theme.foreground);
-        UIManager.put("TextField.background",          theme.backgroundLight);
-        UIManager.put("TextField.foreground",          theme.foreground);
-        UIManager.put("ComboBox.background",           theme.backgroundLight);
-        UIManager.put("ComboBox.foreground",           theme.foreground);
-        UIManager.put("SplitPane.background",          theme.background);
-        UIManager.put("ToolBar.background",            theme.toolbar);
-        UIManager.put("Label.foreground",              theme.foreground);
+			// Basis-Farben für alle Swing-Komponenten
+			UIManager.put("Panel.background",              theme.background);
+			UIManager.put("ScrollPane.background",         theme.background);
+			UIManager.put("Tree.background",               theme.background);
+			UIManager.put("Tree.textBackground",           theme.background);
+			UIManager.put("Tree.textForeground",           theme.foreground);
+			UIManager.put("List.background",               theme.background);
+			UIManager.put("TextArea.background",           theme.background);
+			UIManager.put("TextArea.foreground",           theme.foreground);
+			UIManager.put("TextField.background",          theme.backgroundLight);
+			UIManager.put("TextField.foreground",          theme.foreground);
+			UIManager.put("ComboBox.background",           theme.backgroundLight);
+			UIManager.put("ComboBox.foreground",           theme.foreground);
+			UIManager.put("SplitPane.background",          theme.background);
+			UIManager.put("ToolBar.background",            theme.toolbar);
+			UIManager.put("Label.foreground",              theme.foreground);
 
-    } catch (Exception ex) {
-        System.err.println("[TIDE] FlatLaf-Theme konnte nicht geladen werden: " + ex.getMessage());
-    }
-}
+		} catch (Exception ex) {
+			System.err.println("[ThIDE] FlatLaf-Theme konnte nicht geladen werden: " + ex.getMessage());
+		}
+	}
 
 	private void initSubsystems() {
 		consolePanel      = new ConsolePanel();
@@ -214,16 +216,16 @@ public class MainWindow extends JFrame {
 		editorManager.setOutlinePanel(outlinePanel);
 
 		settingsDialog = new SettingsDialog(this, editorManager, () -> {
-			btnOpen.setText(LanguageManager.t("open"));
-			btnSave.setText(LanguageManager.t("save"));
-			btnClear.setText(LanguageManager.t("clear"));
-			btnAbout.setText(LanguageManager.t("about"));
-			modeLabel.setText(LanguageManager.t("mode"));
-			mainClassLabel.setText(LanguageManager.t("main"));
-			btnFormat.setText(LanguageManager.t("format"));
-			revalidate();
-			repaint();
-		});
+				btnOpen.setText(LanguageManager.t("open"));
+				btnSave.setText(LanguageManager.t("save"));
+				btnClear.setText(LanguageManager.t("clear"));
+				btnAbout.setText(LanguageManager.t("about"));
+				modeLabel.setText(LanguageManager.t("mode"));
+				mainClassLabel.setText(LanguageManager.t("main"));
+				btnFormat.setText(LanguageManager.t("format"));
+				revalidate();
+				repaint();
+			});
 	}
 
 	private void initUI() {
@@ -300,9 +302,9 @@ public class MainWindow extends JFrame {
 			btn.setContentAreaFilled(true);
 			btn.setOpaque(true);
 			btn.addMouseListener(new MouseAdapter() {
-				@Override public void mouseEntered(MouseEvent e) { btn.setBackground(btnHover); }
-				@Override public void mouseExited(MouseEvent e)  { btn.setBackground(btnBg); }
-			});
+					@Override public void mouseEntered(MouseEvent e) { btn.setBackground(btnHover); }
+					@Override public void mouseExited(MouseEvent e)  { btn.setBackground(btnBg); }
+				});
 		}
 
 		// ── Git-Dropdown ─────────────────────────────────────────────────────
@@ -312,7 +314,7 @@ public class MainWindow extends JFrame {
 		JMenu gitMenu = new JMenu("Git ▾");
 		gitMenu.setForeground(t.accent);
 		gitMenu.setFont(gitMenu.getFont().deriveFont(Font.BOLD));
-		
+
 		JMenuItem gitCommit = new JMenuItem("Commit");
 		JMenuItem gitPush   = new JMenuItem("Push");
 		JMenuItem gitPull   = new JMenuItem("Pull");
@@ -328,27 +330,27 @@ public class MainWindow extends JFrame {
 		langSel.setMaximumSize(new Dimension(95, 28));
 		langSel.setToolTipText("Language / Sprache");
 		langSel.addActionListener(e -> {
-			LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
-			LanguageManager.set(selected);
-			TIDEPreferences.saveLanguage(selected.name());
+				LanguageManager.Language selected = (LanguageManager.Language) langSel.getSelectedItem();
+				LanguageManager.set(selected);
+				TIDEPreferences.saveLanguage(selected.name());
 
-			Locale neueLocale = selected.name().equalsIgnoreCase("DE") ? Locale.GERMAN : Locale.ENGLISH;
-			Locale.setDefault(neueLocale);
-			JComponent.setDefaultLocale(neueLocale);
+				Locale neueLocale = selected.name().equalsIgnoreCase("DE") ? Locale.GERMAN : Locale.ENGLISH;
+				Locale.setDefault(neueLocale);
+				JComponent.setDefaultLocale(neueLocale);
 
-			if (editorManager != null) editorManager.updateUIWithLocale(neueLocale);
+				if (editorManager != null) editorManager.updateUIWithLocale(neueLocale);
 
-			btnOpen.setText(LanguageManager.t("open"));
-			btnSave.setText(LanguageManager.t("save"));
-			btnClear.setText(LanguageManager.t("clear"));
-			btnAbout.setText(LanguageManager.t("about"));
-			modeLabel.setText(LanguageManager.t("mode"));
-			mainClassLabel.setText(LanguageManager.t("main"));
-			btnFormat.setText(LanguageManager.t("format"));
+				btnOpen.setText(LanguageManager.t("open"));
+				btnSave.setText(LanguageManager.t("save"));
+				btnClear.setText(LanguageManager.t("clear"));
+				btnAbout.setText(LanguageManager.t("about"));
+				modeLabel.setText(LanguageManager.t("mode"));
+				mainClassLabel.setText(LanguageManager.t("main"));
+				btnFormat.setText(LanguageManager.t("format"));
 
-			revalidate();
-			repaint();
-		});
+				revalidate();
+				repaint();
+			});
 
 		// ── Toolbar befüllen ─────────────────────────────────────────────────
 		toolBar.add(btnOpen);
@@ -387,13 +389,13 @@ public class MainWindow extends JFrame {
 
 		// ── FileTree MouseListener ───────────────────────────────────────────
 		fileTreePanel.getViewport().getView().addMouseListener(new MouseAdapter() {
-			@Override public void mousePressed(MouseEvent me) {
-				if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
-			}
-			@Override public void mouseReleased(MouseEvent me) {
-				if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
-			}
-		});
+				@Override public void mousePressed(MouseEvent me) {
+					if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
+				}
+				@Override public void mouseReleased(MouseEvent me) {
+					if (me.isPopupTrigger()) fileTreePanel.showFileTreePopup(me, currentProjectFolder, null);
+				}
+			});
 
 		// ── Layout ───────────────────────────────────────────────────────────
 		JPanel editorContainer = new JPanel(new BorderLayout());
@@ -431,112 +433,112 @@ public class MainWindow extends JFrame {
 		btnAbout.addActionListener(e  -> aboutDialog.show());
 
 		btnTerminate.addActionListener(e -> {
-			projectRunner.stopRunningProcess();
-			debugRunner.stopDebugProcess();
-		});
+				projectRunner.stopRunningProcess();
+				debugRunner.stopDebugProcess();
+			});
 
 		btnRun.addActionListener(e -> {
-			String mode      = (String) modeSelector.getSelectedItem();
-			String mainClass = mainClassInput.getText().trim();
-			String runMode   = (String) runModeSelector.getSelectedItem();
-			if (RUN_MODE_DEBUG.equals(runMode)) {
-				debugRunner.startDebug(mainClass);
-			} else {
-				projectRunner.runProject(mode, mainClass);
-			}
-		});
+				String mode      = (String) modeSelector.getSelectedItem();
+				String mainClass = mainClassInput.getText().trim();
+				String runMode   = (String) runModeSelector.getSelectedItem();
+				if (RUN_MODE_DEBUG.equals(runMode)) {
+					debugRunner.startDebug(mainClass);
+				} else {
+					projectRunner.runProject(mode, mainClass);
+				}
+			});
 
 		btnHotSwap.addActionListener(e -> debugRunner.hotSwap());
 		modeSelector.addActionListener(e -> updateDynamicUI());
 
 		consolePanel.getTerminalInput().addKeyListener(new KeyAdapter() {
-			@Override public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-					String cmd = consolePanel.getTerminalInput().getText().trim();
-					if (!cmd.isEmpty()) {
-						projectRunner.executeCommand(cmd, false);
-						consolePanel.getTerminalInput().setText("");
+				@Override public void keyPressed(KeyEvent e) {
+					if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						String cmd = consolePanel.getTerminalInput().getText().trim();
+						if (!cmd.isEmpty()) {
+							projectRunner.executeCommand(cmd, false);
+							consolePanel.getTerminalInput().setText("");
+						}
 					}
 				}
-			}
-		});
+			});
 
 		// ── Globale Hotkeys ──────────────────────────────────────────────────
 		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
-			if (e.getID() != KeyEvent.KEY_PRESSED) return false;
+				if (e.getID() != KeyEvent.KEY_PRESSED) return false;
 
-			int mod = 0;
-			if (e.isControlDown()) mod |= InputEvent.CTRL_DOWN_MASK;
-			if (e.isShiftDown())   mod |= InputEvent.SHIFT_DOWN_MASK;
-			if (e.isAltDown())     mod |= InputEvent.ALT_DOWN_MASK;
+				int mod = 0;
+				if (e.isControlDown()) mod |= InputEvent.CTRL_DOWN_MASK;
+				if (e.isShiftDown())   mod |= InputEvent.SHIFT_DOWN_MASK;
+				if (e.isAltDown())     mod |= InputEvent.ALT_DOWN_MASK;
 
-			int key = e.getKeyCode();
+				int key = e.getKeyCode();
 
-			if (key == TIDEPreferences.getHotkey("save", KeyEvent.VK_S)
-				&& mod == TIDEPreferences.getHotkeyModifier("save", InputEvent.CTRL_DOWN_MASK)) {
-				editorManager.saveCurrentFile();
-				return true;
-			}
-			if (key == TIDEPreferences.getHotkey("search", KeyEvent.VK_F)
-				&& mod == TIDEPreferences.getHotkeyModifier("search", InputEvent.CTRL_DOWN_MASK)) {
-				searchPanel.setVisible(!searchPanel.isVisible());
-				if (searchPanel.isVisible()) searchPanel.getSearchField().requestFocusInWindow();
-				revalidate();
-				return true;
-			}
-			if (key == TIDEPreferences.getHotkey("gsearch", KeyEvent.VK_F)
-				&& mod == TIDEPreferences.getHotkeyModifier("gsearch", InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
-				globalSearchPanel.setVisible(!globalSearchPanel.isVisible());
-				if (globalSearchPanel.isVisible()) globalSearchPanel.getSearchField().requestFocusInWindow();
-				revalidate();
-				return true;
-			}
-			if (key == TIDEPreferences.getHotkey("stop", KeyEvent.VK_X)
-				&& mod == TIDEPreferences.getHotkeyModifier("stop", InputEvent.CTRL_DOWN_MASK)) {
-				projectRunner.stopRunningProcess();
-				debugRunner.stopDebugProcess();
-				return true;
-			}
-			if (key == TIDEPreferences.getHotkey("run", KeyEvent.VK_R)
-				&& mod == TIDEPreferences.getHotkeyModifier("run", InputEvent.CTRL_DOWN_MASK)) {
-				runModeSelector.setSelectedItem(RUN_MODE_STANDARD);
-				projectRunner.runProject((String) modeSelector.getSelectedItem(), mainClassInput.getText().trim());
-				return true;
-			}
-			if (key == TIDEPreferences.getHotkey("debug", KeyEvent.VK_R)
-				&& mod == TIDEPreferences.getHotkeyModifier("debug", InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
-				runModeSelector.setSelectedItem(RUN_MODE_DEBUG);
-				debugRunner.startDebug(mainClassInput.getText().trim());
-				return true;
-			}
-			return false;
-		});
+				if (key == TIDEPreferences.getHotkey("save", KeyEvent.VK_S)
+					&& mod == TIDEPreferences.getHotkeyModifier("save", InputEvent.CTRL_DOWN_MASK)) {
+					editorManager.saveCurrentFile();
+					return true;
+				}
+				if (key == TIDEPreferences.getHotkey("search", KeyEvent.VK_F)
+					&& mod == TIDEPreferences.getHotkeyModifier("search", InputEvent.CTRL_DOWN_MASK)) {
+					searchPanel.setVisible(!searchPanel.isVisible());
+					if (searchPanel.isVisible()) searchPanel.getSearchField().requestFocusInWindow();
+					revalidate();
+					return true;
+				}
+				if (key == TIDEPreferences.getHotkey("gsearch", KeyEvent.VK_F)
+					&& mod == TIDEPreferences.getHotkeyModifier("gsearch", InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
+					globalSearchPanel.setVisible(!globalSearchPanel.isVisible());
+					if (globalSearchPanel.isVisible()) globalSearchPanel.getSearchField().requestFocusInWindow();
+					revalidate();
+					return true;
+				}
+				if (key == TIDEPreferences.getHotkey("stop", KeyEvent.VK_X)
+					&& mod == TIDEPreferences.getHotkeyModifier("stop", InputEvent.CTRL_DOWN_MASK)) {
+					projectRunner.stopRunningProcess();
+					debugRunner.stopDebugProcess();
+					return true;
+				}
+				if (key == TIDEPreferences.getHotkey("run", KeyEvent.VK_R)
+					&& mod == TIDEPreferences.getHotkeyModifier("run", InputEvent.CTRL_DOWN_MASK)) {
+					runModeSelector.setSelectedItem(RUN_MODE_STANDARD);
+					projectRunner.runProject((String) modeSelector.getSelectedItem(), mainClassInput.getText().trim());
+					return true;
+				}
+				if (key == TIDEPreferences.getHotkey("debug", KeyEvent.VK_R)
+					&& mod == TIDEPreferences.getHotkeyModifier("debug", InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK)) {
+					runModeSelector.setSelectedItem(RUN_MODE_DEBUG);
+					debugRunner.startDebug(mainClassInput.getText().trim());
+					return true;
+				}
+				return false;
+			});
 
 		// ── windowClosing: alle Prefs auf einmal speichern ───────────────────
 		addWindowListener(new WindowAdapter() {
-			@Override public void windowClosing(WindowEvent e) {
-				TIDEPreferences.saveWindowWidth(getWidth());
-				TIDEPreferences.saveWindowHeight(getHeight());
-				if (currentProjectFolder != null)
+				@Override public void windowClosing(WindowEvent e) {
+					TIDEPreferences.saveWindowWidth(getWidth());
+					TIDEPreferences.saveWindowHeight(getHeight());
+					if (currentProjectFolder != null)
 					TIDEPreferences.saveLastFolder(currentProjectFolder.getAbsolutePath());
 
-				// Outline-Breite (absolut in Pixel)
-				int total   = editorOutlineSplit.getWidth();
-				int divider = editorOutlineSplit.getDividerLocation();
-				if (total > 0 && divider > 0)
+					// Outline-Breite (absolut in Pixel)
+					int total   = editorOutlineSplit.getWidth();
+					int divider = editorOutlineSplit.getDividerLocation();
+					if (total > 0 && divider > 0)
 					TIDEPreferences.saveOutlineWidth(total - divider);
 
-				// FileTree-Proportion
-				if (horizontalSplit.getWidth() > 0)
+					// FileTree-Proportion
+					if (horizontalSplit.getWidth() > 0)
 					TIDEPreferences.saveDividerHProportion(
 						horizontalSplit.getDividerLocation() / (double) horizontalSplit.getWidth());
 
-				// Editor/Console-Proportion
-				if (verticalSplit.getHeight() > 0)
+					// Editor/Console-Proportion
+					if (verticalSplit.getHeight() > 0)
 					TIDEPreferences.saveDividerVProportion(
 						verticalSplit.getDividerLocation() / (double) verticalSplit.getHeight());
-			}
-		});
+				}
+			});
 
 		// ── Sprache & letzter Ordner ─────────────────────────────────────────
 		LanguageManager.set(LanguageManager.Language.valueOf(TIDEPreferences.getLanguage()));
@@ -563,17 +565,17 @@ public class MainWindow extends JFrame {
 
 		// ── Outline bei Tab-Wechsel ──────────────────────────────────────────
 		editorTabs.addChangeListener(e -> {
-			Component tab = editorTabs.getSelectedComponent();
-			if (tab instanceof org.fife.ui.rtextarea.RTextScrollPane sp) {
-				Component view = sp.getViewport().getView();
-				if (view instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea textArea) {
-					File f = openFiles.get(tab);
-					outlinePanel.refresh(textArea, f != null ? f.getName() : null);
+				Component tab = editorTabs.getSelectedComponent();
+				if (tab instanceof org.fife.ui.rtextarea.RTextScrollPane sp) {
+					Component view = sp.getViewport().getView();
+					if (view instanceof org.fife.ui.rsyntaxtextarea.RSyntaxTextArea textArea) {
+						File f = openFiles.get(tab);
+						outlinePanel.refresh(textArea, f != null ? f.getName() : null);
+					}
+				} else {
+					outlinePanel.refresh(null, null);
 				}
-			} else {
-				outlinePanel.refresh(null, null);
-			}
-		});
+			});
 
 		// ── Smooth Scrolling ─────────────────────────────────────────────────
 		for (Component c : getAllComponents(this)) {
@@ -587,6 +589,9 @@ public class MainWindow extends JFrame {
 				enableSmoothScrolling(sp);
 			}
 		}
+
+		Image windowImg = ImageLoader.holeBild("/app-image.png", Image.class);
+		setIconImage(windowImg);
 	}
 
 	private java.util.List<Component> getAllComponents(Container container) {
@@ -603,8 +608,8 @@ public class MainWindow extends JFrame {
 	}
 
 	public Timer enableSmoothScrolling(JScrollPane scrollPane,
-			float[] sharedDynIntensity,
-			int[]   sharedScrollDir) {
+		float[] sharedDynIntensity,
+		int[]   sharedScrollDir) {
 		JScrollBar bar = scrollPane.getVerticalScrollBar();
 
 		double[] velocity     = { 0.0 };
@@ -617,75 +622,75 @@ public class MainWindow extends JFrame {
 		Timer timer = new Timer(7, null);
 
 		timer.addActionListener(e -> {
-			long now = System.nanoTime();
-			double dt = (now - lastTick[0]) / 1_000_000_000.0;
-			lastTick[0] = now;
-			if (dt > 0.1) dt = 0.1;
+				long now = System.nanoTime();
+				double dt = (now - lastTick[0]) / 1_000_000_000.0;
+				lastTick[0] = now;
+				if (dt > 0.1) dt = 0.1;
 
-			velocity[0] *= Math.pow(FRICTION_PER_SECOND, dt);
+				velocity[0] *= Math.pow(FRICTION_PER_SECOND, dt);
 
-			if (Math.abs(velocity[0]) < 3.0) {
-				velocity[0] = 0.0;
-				dynIntensity[0] *= (float) Math.pow(0.001, dt);
-				if (dynIntensity[0] < 0.01f) {
-					dynIntensity[0] = 0.0f;
-					timer.stop();
+				if (Math.abs(velocity[0]) < 3.0) {
+					velocity[0] = 0.0;
+					dynIntensity[0] *= (float) Math.pow(0.001, dt);
+					if (dynIntensity[0] < 0.01f) {
+						dynIntensity[0] = 0.0f;
+						timer.stop();
+					}
+					scrollPane.paintImmediately(0, 0, scrollPane.getWidth(), scrollPane.getHeight());
+					return;
 				}
-				scrollPane.paintImmediately(0, 0, scrollPane.getWidth(), scrollPane.getHeight());
-				return;
-			}
 
-			double current = bar.getValue();
-			double nextPos = current + velocity[0] * dt * 60.0;
+				double current = bar.getValue();
+				double nextPos = current + velocity[0] * dt * 60.0;
 
-			int max = bar.getMaximum() - bar.getVisibleAmount();
-			if (nextPos < 0)        { nextPos = 0;   velocity[0] = 0.0; }
-			else if (nextPos > max) { nextPos = max;  velocity[0] = 0.0; }
+				int max = bar.getMaximum() - bar.getVisibleAmount();
+				if (nextPos < 0)        { nextPos = 0;   velocity[0] = 0.0; }
+				else if (nextPos > max) { nextPos = max;  velocity[0] = 0.0; }
 
-			bar.setValue((int) Math.round(nextPos));
+				bar.setValue((int) Math.round(nextPos));
 
-			if      (velocity[0] > 0.1)  scrollDir[0] = 1;
-			else if (velocity[0] < -0.1) scrollDir[0] = -1;
+				if      (velocity[0] > 0.1)  scrollDir[0] = 1;
+				else if (velocity[0] < -0.1) scrollDir[0] = -1;
 
-			float targetIntensity = (float) Math.min(Math.abs(velocity[0]) / 20.0, 1.0);
-			double riseRate = Math.pow(0.0001, dt * 60);
-			double fallRate = Math.pow(0.05,   dt * 60);
-			if (targetIntensity > dynIntensity[0])
+				float targetIntensity = (float) Math.min(Math.abs(velocity[0]) / 20.0, 1.0);
+				double riseRate = Math.pow(0.0001, dt * 60);
+				double fallRate = Math.pow(0.05,   dt * 60);
+				if (targetIntensity > dynIntensity[0])
 				dynIntensity[0] += (float)((targetIntensity - dynIntensity[0]) * (1.0 - riseRate));
-			else
+				else
 				dynIntensity[0] += (float)((targetIntensity - dynIntensity[0]) * (1.0 - fallRate));
 
-			scrollPane.repaint();
-		});
+				scrollPane.repaint();
+			});
 
 		scrollPane.addMouseWheelListener(e -> {
-			e.consume();
+				e.consume();
 
-			int fps     = config.TIDEPreferences.getScrollFPS();
-			int delayMs = Math.max(1, 1000 / fps);
+				int fps     = config.TIDEPreferences.getScrollFPS();
+				int delayMs = Math.max(1, 1000 / fps);
 
-			if (timer.getDelay() != delayMs) {
-				timer.setDelay(delayMs);
-				velocity[0] = 0.0;
-				dynIntensity[0] = 0.0f;
-				scrollDir[0] = 0;
+				if (timer.getDelay() != delayMs) {
+					timer.setDelay(delayMs);
+					velocity[0] = 0.0;
+					dynIntensity[0] = 0.0f;
+					scrollDir[0] = 0;
+					lastTick[0] = System.nanoTime();
+				}
+
 				lastTick[0] = System.nanoTime();
-			}
 
-			lastTick[0] = System.nanoTime();
+				int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
+				double speedMultiplier = config.TIDEPreferences.getScrollSpeed() / 100.0;
+				double rot  = e.getPreciseWheelRotation();
+				double push = rot * increment * 4.0 * speedMultiplier;
+				velocity[0] += push;
 
-			int increment = bar.getUnitIncrement() > 0 ? bar.getUnitIncrement() : 16;
-			double speedMultiplier = config.TIDEPreferences.getScrollSpeed() / 100.0;
-			double rot  = e.getPreciseWheelRotation();
-			double push = rot * increment * 4.0 * speedMultiplier;
-			velocity[0] += push;
+				double maxSpeed = 80.0 * speedMultiplier;
+				if (velocity[0] >  maxSpeed) velocity[0] =  maxSpeed;
+				if (velocity[0] < -maxSpeed) velocity[0] = -maxSpeed;
 
-			double maxSpeed = 80.0 * speedMultiplier;
-			if (velocity[0] >  maxSpeed) velocity[0] =  maxSpeed;
-			if (velocity[0] < -maxSpeed) velocity[0] = -maxSpeed;
-
-			if (!timer.isRunning()) timer.start();
-		});
+				if (!timer.isRunning()) timer.start();
+			});
 
 		bar.setUnitIncrement(16);
 		return timer;
@@ -721,7 +726,7 @@ public class MainWindow extends JFrame {
 		File txml = new File(folder, "T.xml");
 		if (!txml.exists()) {
 			consolePanel.log("[WARNUNG] Keine T.xml im Projektordner gefunden.\n", Color.ORANGE);
-			setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + folder.getName());
+			setTitle("ThIDE v" + TIDEProperties.APP_VERSION + " - " + folder.getName());
 			return;
 		}
 		try {
@@ -735,7 +740,7 @@ public class MainWindow extends JFrame {
 			if (mainClass != null && !mainClass.isEmpty()) mainClassInput.setText(mainClass);
 			String titleAppName = (appName != null && !appName.isEmpty()) ? appName : folder.getName();
 			String titleVersion = (version != null && !version.isEmpty()) ? version : "";
-			setTitle("TIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName
+			setTitle("ThIDE v" + TIDEProperties.APP_VERSION + " - " + titleAppName
 				+ (titleVersion.isEmpty() ? "" : " v" + titleVersion));
 			consolePanel.log("[INFO] T.xml geladen — Main-Class: " + mainClass + " | App: " + titleAppName + "\n", Color.GREEN);
 		} catch (Exception e) {
