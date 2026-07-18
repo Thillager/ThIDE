@@ -13,14 +13,14 @@ public class TIDE {
 	public static void main(String[] args) {
 
 		try {
-        Toolkit.getDefaultToolkit().getDesktopProperty("awt.appID");
-        System.setProperty("sun.awt.warmup", "false");
-        // Setze hier einen eindeutigen Namen für deine App (z.B. "Thillager.ThIDE.4.7")
-        Class<?> shellClass = Class.forName("com.sun.jna.platform.win32.Shell32"); 
-        // Alternativ über jni/jna falls im Projekt, ansonsten reicht oft der obige jpackage-Wrapper
-    } catch (Exception e) {
-        // Ignorieren auf Linux/Mac
-    }
+			Toolkit.getDefaultToolkit().getDesktopProperty("awt.appID");
+			System.setProperty("sun.awt.warmup", "false");
+			// Setze hier einen eindeutigen Namen für deine App (z.B. "Thillager.ThIDE.4.7")
+			Class<?> shellClass = Class.forName("com.sun.jna.platform.win32.Shell32");
+			// Alternativ über jni/jna falls im Projekt, ansonsten reicht oft der obige jpackage-Wrapper
+		} catch (Exception e) {
+			// Ignorieren auf Linux/Mac
+		}
 
 		String os = System.getProperty("os.name", "").toLowerCase();
 
@@ -77,6 +77,13 @@ public class TIDE {
 		UIManager.put("Button.arc",              8);
 		UIManager.put("TextComponent.arc",       8);
 		UIManager.put("ScrollBar.thumbArc",      8);
+
+		// --- Titelleiste ---
+		/* JFrame.setDefaultLookAndFeelDecorated(true);
+		UIManager.put("TitlePane.background", new Color(60, 63, 65));
+		UIManager.put("TitlePane.inactiveBackground", new Color(75, 78, 80));
+		UIManager.put("TitlePane.foreground", Color.WHITE);
+		*/
 
 		// --- Registerkarten (Tabs) ---
 		UIManager.put("TabbedPane.selectedBackground", currentTheme.backgroundLight);

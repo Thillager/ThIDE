@@ -157,8 +157,15 @@ public class MainWindow extends JFrame {
 	// Wählt anhand des Theme-Namens den passenden FlatLaf-LookAndFeel aus.
 	// FlatMacDarkLaf/FlatMacLightLaf sind auf allen Plattformen nutzbar,
 	// sie heißen nur "Mac" wegen des visuellen Stils.
+	// ── FlatLaf-Theme-Mapping ────────────────────────────────────────────────
+	// Wählt anhand des Theme-Namens den passenden FlatLaf-LookAndFeel aus.
+	// FlatMacDarkLaf/FlatMacLightLaf sind auf allen Plattformen nutzbar,
+	// sie heißen nur "Mac" wegen des visuellen Stils.
 	public static void applyFlatLafTheme(Theme theme) {
 		try {
+			// Zuerst dem System sagen, dass FlatLaf die Fensterdekorationen übernehmen soll
+			JFrame.setDefaultLookAndFeelDecorated(true);
+
 			switch (theme.flatLafClass) {
 				case "dark"      -> UIManager.setLookAndFeel(new FlatDarkLaf());
 				case "light"     -> UIManager.setLookAndFeel(new FlatLightLaf());
@@ -166,6 +173,20 @@ public class MainWindow extends JFrame {
 				case "mac-light" -> UIManager.setLookAndFeel(new FlatMacLightLaf());
 				default          -> UIManager.setLookAndFeel(new FlatDarkLaf());
 			}
+
+			// ── NEU: Titelleisten-Styling (Anhand deines aktuellen Themes) ──
+			// Nutzt ein passendes Grau/Hintergrundfarbe deines aktiven Themes
+			UIManager.put("TitlePane.background",              theme.backgroundLight);
+			UIManager.put("TitlePane.inactiveBackground",      theme.background);
+			UIManager.put("TitlePane.foreground",              theme.foreground);
+			UIManager.put("TitlePane.inactiveForeground",      theme.foregroundDim);
+			// ── NEU: Titelleisten-Styling ──
+			UIManager.put("TitlePane.unifiedBackground",       false); // <--- DAS HIER DEAKTIVIEREN!
+			UIManager.put("TitlePane.background",              new Color(60, 63, 65)); // Hier dein festes Wunsch-Grau
+			UIManager.put("TitlePane.inactiveBackground",      new Color(75, 78, 80));
+			UIManager.put("TitlePane.foreground",              Color.WHITE);
+			UIManager.put("TitlePane.inactiveForeground",      theme.foregroundDim);
+
 			// FlatLaf UI-Tweaks
 			UIManager.put("Component.arc",                 8);
 			UIManager.put("Button.arc",                    8);
