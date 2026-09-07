@@ -464,8 +464,6 @@ public class EditorManager {
 
 			installCompletion(sp, textArea, file, manageWordsBtn);
 
-			installCompletion(sp, textArea, file, manageWordsBtn);
-
 		} catch (Exception e) {
 			consolePanel.log("Öffnen fehlgeschlagen\n", Color.RED);
 		}
