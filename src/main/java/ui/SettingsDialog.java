@@ -38,7 +38,7 @@ public class SettingsDialog {
 
     public void show() {
         JDialog dialog = new JDialog(parent, "Einstellungen / Settings", true);
-        dialog.setSize(600, 750); 
+        dialog.setSize(1200, 600); 
         dialog.setLocationRelativeTo(parent);
         dialog.setLayout(new BorderLayout(10, 10));
         
