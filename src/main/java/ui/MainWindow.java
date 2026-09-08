@@ -187,8 +187,8 @@ public class MainWindow extends JFrame {
 			// wird mehr manuell nachträglich überschrieben. Panel-, Baum-,
 			// Listen-, Titelleisten- und sonstige Farben kommen vollständig aus
 			// dem geladenen LnF selbst (entweder einer echten FlatLaf-Klasse
-				// oder, für Fire/eigene Themes, aus der zugehörigen .properties-
-				// Ressource via loadCustomFlatLaf() - siehe dort).
+			// oder, für Fire/eigene Themes, aus der zugehörigen .properties-
+			// Ressource via loadCustomFlatLaf() - siehe dort).
 			UIManager.put("Component.arc",                8);
 			UIManager.put("Button.arc",                   8);
 			UIManager.put("TextComponent.arc",            8);
@@ -362,18 +362,18 @@ public class MainWindow extends JFrame {
 
 		/* JButton[] borderButtons = {btnFormat, btnOpen, btnSave, btnTBuild, btnAbout, btnSettings, btnHotSwap, btnClear};
 		for (JButton btn : borderButtons) {
-			btn.setBorder(customRoundedBorder);
-			btn.setMargin(new Insets(5, 10, 5, 10));
-			btn.putClientProperty("JButton.outline", "default");
-			btn.putClientProperty("JButton.buttonType", "roundRect");
-			//btn.setBackground(btnBg);
-			//btn.setContentAreaFilled(true);
-			//btn.setOpaque(true);
-			//btn.addMouseListener(new MouseAdapter() {
-					//		@Override public void mouseEntered(MouseEvent e) { btn.setBackground(btnHover); }
-					//		@Override public void mouseExited(MouseEvent e)  { btn.setBackground(btnBg); }
-					//	});
-			// btn.putClientProperty("JButton.arc", 999);
+		btn.setBorder(customRoundedBorder);
+		btn.setMargin(new Insets(5, 10, 5, 10));
+		btn.putClientProperty("JButton.outline", "default");
+		btn.putClientProperty("JButton.buttonType", "roundRect");
+		//btn.setBackground(btnBg);
+		//btn.setContentAreaFilled(true);
+		//btn.setOpaque(true);
+		//btn.addMouseListener(new MouseAdapter() {
+		//		@Override public void mouseEntered(MouseEvent e) { btn.setBackground(btnHover); }
+		//		@Override public void mouseExited(MouseEvent e)  { btn.setBackground(btnBg); }
+		//	});
+		// btn.putClientProperty("JButton.arc", 999);
 		} */
 
 		// Ersetze die bestehende Buttons-Schleife durch diese Version:
@@ -530,7 +530,7 @@ public class MainWindow extends JFrame {
 		btnSave.addActionListener(e  -> editorManager.saveCurrentFile());
 		btnClear.addActionListener(e -> consolePanel.clear());
 		btnTBuild.addActionListener(e -> projectRunner.handleTBuild());
-		btnFormat.addActionListener(e -> formatter.formatCurrentFile());
+		btnFormat.addActionListener(e -> editorManager.formatCurrentFile());
 		btnAbout.addActionListener(e  -> aboutDialog.show());
 
 		btnTerminate.addActionListener(e -> {

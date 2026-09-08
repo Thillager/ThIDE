@@ -719,128 +719,26 @@ public class EditorManager {
 	// ─────────────────────────────────────────────────────────────────────────
 	// FORMAT – sprachspezifisch, Cursor-Position per Zeile+Spalte gesichert
 	// ─────────────────────────────────────────────────────────────────────────
-	public void formatCurrentFile() {
-		Component tab = editorTabs.getSelectedComponent();
-		if (!(tab instanceof RTextScrollPane sp)) return;
+	// In EditorManager.java ersetzen:
+public void formatCurrentFile() {
+    Component tab = editorTabs.getSelectedComponent();
+    if (!(tab instanceof RTextScrollPane sp)) return;
 
-		RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
+    RSyntaxTextArea ta = (RSyntaxTextArea) sp.getTextArea();
+    File activeFile = getActiveFile();
 
-		// ── Cursor-Position als Zeile + Spalte sichern ────────────────────
-		// Ein absoluter Offset wird nach setText() falsch, weil sich Zeilen
-		// verschieben. Zeile + Spalte bleibt semantisch korrekt: wir landen
-		// exakt an der gleichen Stelle im Code, egal ob Leerzeilen wegfallen.
-		int savedLine = 0;
-		int savedCol  = 0;
-		try {
-			int caretOffset = ta.getCaretPosition();
-			savedLine = ta.getLineOfOffset(caretOffset);
-			savedCol  = caretOffset - ta.getLineStartOffset(savedLine);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    // Ruft jetzt direkt die neue Formatter-Klasse auf
+    Formatter.format(ta, activeFile);
 
-		// ── Sprache ermitteln ──────────────────────────────────────────────
-		File activeFile = getActiveFile();
-		String fileName = activeFile != null ? activeFile.getName().toLowerCase() : "";
-		boolean isPython = fileName.endsWith(".py");
-		boolean isJavaLike = fileName.endsWith(".java")
-		|| fileName.endsWith(".c")
-		|| fileName.endsWith(".cpp")
-		|| fileName.endsWith(".h")
-		|| fileName.endsWith(".hpp");
+    String fileName = activeFile != null ? activeFile.getName().toLowerCase() : "";
+    boolean isPython = fileName.endsWith(".py");
+    boolean isJavaLike = fileName.endsWith(".java") || fileName.endsWith(".c")
+            || fileName.endsWith(".cpp") || fileName.endsWith(".h") || fileName.endsWith(".hpp");
 
-		String formatted;
-		if (isPython) {
-			formatted = formatPython(ta.getText(), ta.getTabSize());
-		} else if (isJavaLike) {
-			formatted = formatBraces(ta.getText(), ta.getTabSize(), !ta.getTabsEmulated());
-		} else {
-			// Für alle anderen Dateien: nur Trailing-Whitespace entfernen
-			formatted = stripTrailingWhitespace(ta.getText());
-		}
-
-		// ── Text ersetzen und Cursor wiederherstellen ──────────────────────
-		ta.setText(formatted);
-
-		try {
-			int totalLines = ta.getLineCount();
-			// Falls durch Formatierung Zeilen weggefallen sind → auf letzte begrenzen
-			int targetLine = Math.min(savedLine, totalLines - 1);
-			int lineStart  = ta.getLineStartOffset(targetLine);
-			int lineLen    = ta.getLineEndOffset(targetLine) - lineStart;
-			// Spalte auf die tatsächliche Zeilenlänge begrenzen
-			int targetCol  = Math.min(savedCol, Math.max(0, lineLen - 1));
-			ta.setCaretPosition(lineStart + targetCol);
-		} catch (Exception ignored) {
-			// Fallback: Anfang
-			ta.setCaretPosition(0);
-		}
-
-		consolePanel.log("[FORMAT] " + (isPython ? "Python" : isJavaLike ? "Java/C" : "Datei")
-			+ " formatiert.\n", Color.GREEN);
-	}
-
-	// ── Python-Formatter ──────────────────────────────────────────────────────
-	// Strategie: die logische Einrücktiefe liest sich aus dem vorhandenen Code.
-	// Wir normalisieren nur die Einrückzeichen (Tabs → Spaces oder umgekehrt)
-	// und entfernen trailing whitespace. Die Einrücktiefe selbst ändern wir NICHT –
-	// Python-Einrückung ist semantisch, der Benutzer hat sie absichtlich gesetzt.
-	private String formatPython(String code, int tabSize) {
-		String[] lines = code.split("\n", -1);
-		StringBuilder result = new StringBuilder(code.length() + 64);
-
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
-
-			// Trailing whitespace entfernen
-			String trimmedRight = trimRight(line);
-
-			// Einrückung normalisieren: gemischte Tabs+Spaces → nur Spaces
-			// Wir expandieren führende Tabs auf tabSize Spaces
-			String normalized = expandLeadingTabs(trimmedRight, tabSize);
-
-			result.append(normalized);
-			if (i < lines.length - 1) result.append("\n");
-		}
-
-		return result.toString();
-	}
-
-	// ── Java/C-Brace-Formatter ────────────────────────────────────────────────
-	// Gleiche Logik wie vorher, aber sauberer refaktoriert und mit Tab-Unterstützung.
-	private String formatBraces(String code, int tabSize, boolean useTabs) {
-		String   tabUnit = useTabs ? "\t" : " ".repeat(Math.max(1, tabSize));
-		String[] lines   = code.split("\n", -1);
-		StringBuilder result = new StringBuilder(code.length() + 256);
-		int indent = 0;
-
-		for (int i = 0; i < lines.length; i++) {
-			String trimmed = trimRight(lines[i]).stripLeading();
-
-			// Schließende Klammern VOR der Einrückung verringern
-			if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
-	indent = Math.max(0, indent - 1);
+    consolePanel.log("[FORMAT] " + (isPython ? "Python" : isJavaLike ? "Java/C" : "Datei")
+        + " formatiert.\n", Color.GREEN);
 }
 
-if (!trimmed.isEmpty()) {
-	result.append(tabUnit.repeat(indent)).append(trimmed);
-}
-if (i < lines.length - 1) result.append("\n");
-
-// Öffnende minus schließende Klammern auf dieser Zeile → Einrück-Delta
-long opens  = trimmed.chars().filter(c -> c == '{' || c == '(' || c == '[').count();
-			long closes = trimmed.chars().filter(c -> c == '}' || c == ')' || c == ']').count();
-
-// Die bereits verarbeitete führende schließende Klammer nicht doppelt zählen
-if (trimmed.startsWith("}") || trimmed.startsWith(")") || trimmed.startsWith("]")) {
-closes = Math.max(0, closes - 1);
-}
-
-indent = Math.max(0, indent + (int)(opens - closes));
-}
-
-return result.toString();
-}
 
 // ── Hilfsmethoden ─────────────────────────────────────────────────────────
 
