@@ -530,7 +530,7 @@ public class MainWindow extends JFrame {
 		btnSave.addActionListener(e  -> editorManager.saveCurrentFile());
 		btnClear.addActionListener(e -> consolePanel.clear());
 		btnTBuild.addActionListener(e -> projectRunner.handleTBuild());
-		btnFormat.addActionListener(e -> editorManager.formatCurrentFile());
+		btnFormat.addActionListener(e -> formatter.formatCurrentFile());
 		btnAbout.addActionListener(e  -> aboutDialog.show());
 
 		btnTerminate.addActionListener(e -> {
