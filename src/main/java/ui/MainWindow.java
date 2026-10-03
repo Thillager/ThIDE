@@ -53,6 +53,8 @@ public class MainWindow extends JFrame {
 	public static final String MODE_CPP    = ProjectRunner.MODE_CPP;
 	public static final String MODE_BATCH  = ProjectRunner.MODE_BATCH;
 	public static final String Mode_CS     = ProjectRunner.MODE_CS;
+	public static final String MODE_CUSTOM     = ProjectRunner.MODE_CUSTOM;
+
 
 	private static final String RUN_MODE_STANDARD = "Standard";
 	private static final String RUN_MODE_DEBUG     = "Debug";
@@ -310,7 +312,7 @@ public class MainWindow extends JFrame {
 		btnTerminate.setFont(btnTerminate.getFont().deriveFont(Font.BOLD, 14f));
 		btnTerminate.setVisible(false);
 
-		modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH});
+		modeSelector = new JComboBox<>(new String[]{MODE_JAVA, MODE_PYTHON, MODE_C, MODE_CPP, MODE_BATCH, MODE_CUSTOM});
 		modeSelector.setPreferredSize(new Dimension(90, 28));
 		modeSelector.setMaximumSize(new Dimension(90, 28));
 

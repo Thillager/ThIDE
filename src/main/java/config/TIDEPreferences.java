@@ -96,7 +96,7 @@ public class TIDEPreferences {
 
 	// ── Scroll Geschwindigkeit ─────────────────────────────────────────────
 	public static int getScrollSpeed() {
-		return prefs.getInt("scrollSpeed", 100); 
+		return prefs.getInt("scrollSpeed", 100);
 	}
 
 	public static void saveScrollSpeed(int speed) {
@@ -114,14 +114,14 @@ public class TIDEPreferences {
 		}
 	}
 
-		public static String getTheme() {
+	public static String getTheme() {
 		return prefs.get("theme", "dark");
 	}
 
 	public static void saveTheme(String theme) {
 		prefs.put("theme", theme);
 	}
-	
+
 	public static String getEditorThemePath() {
 		return prefs.get("editorThemePath", "");
 	}
@@ -130,7 +130,7 @@ public class TIDEPreferences {
 		prefs.put("editorThemePath", path);
 	}
 
-		public static String getFlatLafThemePath() {
+	public static String getFlatLafThemePath() {
 		return prefs.get("flatLafThemePath", "");
 	}
 
@@ -142,7 +142,7 @@ public class TIDEPreferences {
 	// Wortbasiert (bisheriges Verhalten) vs. intelligent über Language
 	// Server Protocol. Der LSP-Modus startet Server-Prozesse nur, wenn er
 	// hier auch tatsächlich aktiv ist. Die passenden Server (Java: Eclipse
-	// JDT LS, Python: python-lsp-server) werden dann vollautomatisch im
+		// JDT LS, Python: python-lsp-server) werden dann vollautomatisch im
 	// Hintergrund beschafft und gestartet - siehe lsp.LspProvisioner /
 	// lsp.LspManager. Es gibt bewusst keine Einstellung für ein manuelles
 	// Server-Kommando, dafür ist nichts einzutragen.
@@ -151,5 +151,13 @@ public class TIDEPreferences {
 	}
 	public static void saveCompletionMode(CompletionMode mode) {
 		prefs.put("completionMode", (mode == null ? CompletionMode.WORD_BASED : mode).name());
+	}
+
+	public static void saveCustomStartCommand(String command) {
+		prefs.put("customStartCommand", command == null ? "" : command);
+	}
+
+	public static String getCustomStartCommand() {
+		return prefs.get("customStartCommand", "");
 	}
 }
